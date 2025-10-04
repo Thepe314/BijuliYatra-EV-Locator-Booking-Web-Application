@@ -1,24 +1,39 @@
 import logo from './logo.svg';
 import './App.css';
 
+import React from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate
+} from 'react-router-dom';
+
+
+// import other page components
+import Home from './components/Guest/home';
+import Login from './components/Auth/login';
+import Signup from './components/Auth/signup';
+
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Routes>
+        {/* default route: when URL is “/”, show Home */}
+        <Route path="/" element={<Home/>} />
+
+        {/* route for /home */}
+        <Route path="/home" element={<Home />} />
+
+        {/* other routes */}
+        <Route path ="/login" element={<Login/>} />
+        <Route path ="/signup" element={<Signup/>} />
+      
+
+        {/* catch-all: redirect unknown paths to /home or / */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
   );
 }
 
