@@ -1,8 +1,8 @@
 package com.ev.configuration;
 
-
 import java.util.Date;
 import java.util.UUID;
+import java.security.Key;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -10,13 +10,11 @@ import org.springframework.stereotype.Component;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import java.security.Key;
 
 @Component
 public class JwtUtil {
 
-	
-	@Value("${jwt.secret}")
+    @Value("${jwt.secret}")
     private String base64Key;
 
     private Key getSigningKey() {
@@ -38,16 +36,19 @@ public class JwtUtil {
           .signWith(getSigningKey(), SignatureAlgorithm.HS256)
           .compact();
     }
-    
-    
+
     public String getJti(String token) {
-        return Jwts.parserBuilder().setSigningKey(getSigningKey())
-          .build().parseClaimsJws(token).getBody().getId();
+        return Jwts.parser()
+          .setSigningKey(getSigningKey())
+          .build()
+          .parseClaimsJws(token)
+          .getBody()
+          .getId();
     }
-    
+
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder()
+            Jwts.parser()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token);
@@ -58,7 +59,7 @@ public class JwtUtil {
     }
 
     public String getEmailFromToken(String token) {
-        return Jwts.parserBuilder()
+        return Jwts.parser()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
@@ -67,7 +68,7 @@ public class JwtUtil {
     }
 
     public String getRoleFromToken(String token) {
-        return Jwts.parserBuilder()
+        return Jwts.parser()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
