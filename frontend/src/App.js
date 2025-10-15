@@ -9,6 +9,12 @@ import BookingPage from './components/Booking/BookingPage.js';
 import UserProfile from './components/General/UserProfile.js';
 import StationDetailsPage from './components/General/StationDetailsPage.js';
 import PaymentPage from './components/General/PaymentPage.js';
+import StationManagement from './components/Admin/StationManagement.js';
+import UserManagement from './components/Admin/UserManage.js';
+import AdminAnalytics from './components/Admin/AdminAnalytics.js';
+
+
+
 
 
 function App() {
@@ -26,8 +32,10 @@ function App() {
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/stationdetails" element={<StationDetailsPage />} />
-         <Route path="/payment" element={<PaymentPage />} />
-
+        <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/usermanagement" element={<UserManagement/>} />
+        <Route path="/stationmangement" element={<StationManagement/>} />
+        <Route path="/analytics" element={<AdminAnalytics/>} />
 
         {/* You can add more routes later, e.g. a home/dashboard route */}
         {/* <Route path="/home" element={<Home />} /> */}
