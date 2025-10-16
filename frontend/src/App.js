@@ -12,6 +12,7 @@ import PaymentPage from './components/General/PaymentPage.js';
 import StationManagement from './components/Admin/StationManagement.js';
 import UserManagement from './components/Admin/UserManage.js';
 import AdminAnalytics from './components/Admin/AdminAnalytics.js';
+import { UserSessionProvider } from './components/Context/UserSessionContext.js';
 
 
 
@@ -19,15 +20,16 @@ import AdminAnalytics from './components/Admin/AdminAnalytics.js';
 
 function App() {
   return (
+    <UserSessionProvider>
+      
     <Router>
       <Routes>
         {/* Default route: redirect to login or you can choose */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-
+        <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/home" element={<HomePage />} />
-        <Route path="/dashboard" element={<AdminDashboard />} />
+        <Route path="admin/dashboard" element={<AdminDashboard />} />
         <Route path="/map" element={<ChargingStationsMap />} />
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/profile" element={<UserProfile />} />
@@ -41,6 +43,7 @@ function App() {
         {/* <Route path="/home" element={<Home />} /> */}
       </Routes>
     </Router>
+    </UserSessionProvider>
   );
 }
 

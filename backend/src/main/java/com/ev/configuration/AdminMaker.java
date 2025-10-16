@@ -48,6 +48,7 @@ public class AdminMaker {
                     newAdmin.setEmail(adminEmail);
                     newAdmin.setPassword(passwordEncoder.encode(adminPassword));
                     newAdmin.setFullname("admin");
+   
 
                     Role adminRole = roleRepo.findByName(RoleType.ROLE_ADMIN)
                             .orElseGet(() -> {

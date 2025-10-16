@@ -14,40 +14,33 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
-
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
+    private final jwtUtil jwtUtil;
 
-    public JwtRequestFilter(JwtUtil jwtUtil) {
+    public JwtRequestFilter(jwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
 
-    
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
-    	
         try {
-            if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
-                // Skip authentication for preflight requests
+            String method = request.getMethod();
+            String path = request.getRequestURI();
+
+            // Allow OPTIONS and public endpoints to pass through
+            if ("OPTIONS".equalsIgnoreCase(method) ||
+                path.startsWith("/auth/login") ||
+                path.startsWith("/auth/register") ||
+                path.startsWith("/auth/forgot-password")) {
                 chain.doFilter(request, response);
                 return;
             }
-            
-//            String path = request.getRequestURI();
-//            if (path.startsWith("/auth/")) {
-//                // 👈 Skip JWT filter for login, register, forgot-password etc.
-//                chain.doFilter(request, response);
-//                return;
-//            }
-
-            
-
 
             final String header = request.getHeader("Authorization");
 
@@ -57,57 +50,36 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
                 if (jwtUtil.validateToken(token)) {
                     String username = jwtUtil.getEmailFromToken(token);
-                    String role = jwtUtil.getRoleFromToken(token);
+                    String rolesString = jwtUtil.getRolesFromToken(token);
 
-                    System.out.println("[JwtRequestFilter] Username from token: " + username);
-                    System.out.println("[JwtRequestFilter] Role from token: " + role);
+                    if (username != null && rolesString != null &&
+                        SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                    if (username != null && role != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                        List<GrantedAuthority> authorities = List.of(
-                            new SimpleGrantedAuthority(role.toLowerCase()),
-                            new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())
-                        );
+                        List<GrantedAuthority> authorities = new ArrayList<>();
+                        for (String role : rolesString.split(",")) {
+                            role = role.trim();
+                            authorities.add(new SimpleGrantedAuthority(role));
+                            if (!role.startsWith("ROLE_")) {
+                                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                            }
+                        }
 
                         UsernamePasswordAuthenticationToken auth =
                                 new UsernamePasswordAuthenticationToken(username, null, authorities);
-
                         SecurityContextHolder.getContext().setAuthentication(auth);
 
-                        System.out.println("[JwtRequestFilter] Authentication set for user: " + username);
-                    } else {
-                        System.out.println("[JwtRequestFilter] Authentication not set: username or role null or authentication already exists");
+                        System.out.println("[JwtRequestFilter] Authenticated user: " + username);
                     }
-
                 } else {
-                    // 🔐 JWT token is invalid or expired → logout
-                    System.out.println("[JwtRequestFilter] JWT token validation failed");
-
-                    // Invalidate session
-                    HttpSession session = request.getSession(false);
-                    if (session != null) {
-                        session.invalidate();
-                        System.out.println("[JwtRequestFilter] Session invalidated");
-                    }
-
-                    // Clear authentication
-                    SecurityContextHolder.clearContext();
-
-                    // Respond with 401
+                    System.out.println("[JwtRequestFilter] Invalid JWT token");
+                    invalidateSession(request);
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token expired or invalid");
                     return;
                 }
 
             } else {
-                // 🔐 No JWT token present → logout
-                System.out.println("[JwtRequestFilter] No Bearer token found in Authorization header");
-
-                HttpSession session = request.getSession(false);
-                if (session != null) {
-                    session.invalidate();
-                    System.out.println("[JwtRequestFilter] Session invalidated");
-                }
-
-                SecurityContextHolder.clearContext();
+                System.out.println("[JwtRequestFilter] No Bearer token found");
+                invalidateSession(request);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing JWT token");
                 return;
             }
@@ -115,14 +87,19 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             chain.doFilter(request, response);
 
         } catch (Exception ex) {
-            System.err.println("[JwtRequestFilter] Exception in filter: " + ex.getMessage());
-
-            // Fail-safe: clear context and send error if something unexpected goes wrong
-            SecurityContextHolder.clearContext();
-            HttpSession session = request.getSession(false);
-            if (session != null) session.invalidate();
-
+            System.err.println("[JwtRequestFilter] Exception: " + ex.getMessage());
+            ex.printStackTrace();
+            invalidateSession(request);
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Error processing JWT filter");
+        }
+    }
+
+    private void invalidateSession(HttpServletRequest request) {
+        SecurityContextHolder.clearContext();
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+            System.out.println("[JwtRequestFilter] Session invalidated");
         }
     }
 }

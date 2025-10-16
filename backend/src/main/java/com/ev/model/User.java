@@ -3,6 +3,7 @@ package com.ev.model;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
@@ -53,7 +54,7 @@ public abstract class User {
     
     private LocalDateTime otpExpiry;
     
-    // Composition: roles
+    
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_roles",
@@ -61,7 +62,18 @@ public abstract class User {
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
-    
+
+    public String getRoleString() {
+        return roles == null ? "" : roles.stream()
+            .map(role -> role.getName().name()) // assuming RoleType enum
+            .collect(Collectors.joining(","));
+    }
+
+    public String getPrimaryRole() {
+        return (roles == null || roles.isEmpty()) ? "ROLE_USER"
+            : roles.iterator().next().getName().name();
+    }
+
    
     @Column(unique = true, nullable = false)
     private String email;

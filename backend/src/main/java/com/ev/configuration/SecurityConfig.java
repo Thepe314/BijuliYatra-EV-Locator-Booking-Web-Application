@@ -42,13 +42,17 @@ public class SecurityConfig {
                     // Allow all GET requests for these endpoints (anonymous access)
                     .requestMatchers(HttpMethod.GET).permitAll()
                     
-                    .requestMatchers(HttpMethod.POST).permitAll()
+                    .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                     
                     // Allow OPTIONS for all (preflight)
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     
+                    //Role Admin Access
+                    .requestMatchers("/admin/**")
+                    .hasRole("ADMIN")
+                    
                     // Allow static and images folder access
-                    .requestMatchers( "//**").permitAll()
+                    .requestMatchers( "/auth/**").permitAll()
                     
 //                    // Restricted endpoints needing roles
 //                    .requestMatchers(HttpMethod.GET)
