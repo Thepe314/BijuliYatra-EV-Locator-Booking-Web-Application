@@ -134,7 +134,7 @@ export default function LoginPage() {
       // ✅ Navigate to the redirect path or default based on role
       const path = redirectPath || data.redirect || (
         payload.role === "admin"
-          ? "/dashboard"
+          ? "/admin/dashboard"
           : payload.role === "chargingOperator"
           ? "/operator/dashboard"
           : "/home"

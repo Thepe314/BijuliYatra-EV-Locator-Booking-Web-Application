@@ -17,7 +17,7 @@ import jakarta.persistence.Table;
 	    private Long id;
 
 	    @Enumerated(EnumType.STRING)
-	    @Column(nullable = false, unique = true)
+	    @Column(name = "name", length = 50, unique = true, nullable = false)
 	    private RoleType name;
 
 	    private String description;

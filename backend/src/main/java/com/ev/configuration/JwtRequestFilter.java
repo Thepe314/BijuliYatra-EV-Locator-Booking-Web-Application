@@ -36,7 +36,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             // Allow OPTIONS and public endpoints to pass through
             if ("OPTIONS".equalsIgnoreCase(method) ||
                 path.startsWith("/auth/login") ||
-                path.startsWith("/auth/register") ||
+                path.startsWith("/auth/signup") ||
+                path.startsWith("/auth/COsignup") ||
                 path.startsWith("/auth/forgot-password")) {
                 chain.doFilter(request, response);
                 return;

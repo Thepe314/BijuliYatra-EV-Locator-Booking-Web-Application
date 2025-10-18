@@ -13,6 +13,7 @@ import StationManagement from './components/Admin/StationManagement.js';
 import UserManagement from './components/Admin/UserManage.js';
 import AdminAnalytics from './components/Admin/AdminAnalytics.js';
 import { UserSessionProvider } from './components/Context/UserSessionContext.js';
+import ChargingOperatorSignUp from './components/Auth/ChargingOperatorSignUp.js';
 
 
 
@@ -25,11 +26,12 @@ function App() {
     <Router>
       <Routes>
         {/* Default route: redirect to login or you can choose */}
-        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/COsignup" element={<ChargingOperatorSignUp />} />
         <Route path="/home" element={<HomePage />} />
-        <Route path="admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/map" element={<ChargingStationsMap />} />
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/profile" element={<UserProfile />} />

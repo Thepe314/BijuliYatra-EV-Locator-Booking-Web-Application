@@ -3,19 +3,15 @@ package com.ev.dto;
 
 public class SignupRequest {
 
-//    @NotBlank(message = "Email is required")
-//    @Email(message = "Email should be valid")
+
     private String email;
 
-//    @NotBlank(message = "Password is required")
-//    @Size(min = 8, message = "Password must be at least 8 characters")
+
     private String password;
 
-//    @NotBlank(message = "Phone number is required")
-//    @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be 10 digits")
+
     private String phoneNumber;
 
-//    @NotBlank(message = "Full name is required")
     private String fullname;
 
     private String address;
@@ -28,11 +24,8 @@ public class SignupRequest {
 
     private String chargingType;
 
-//    @NotBlank(message = "Role is required")
-//    @Pattern(regexp = "USER|CHARGER_OPERATOR|ADMIN", message = "Role must be USER, CHARGER_OPERATOR, or ADMIN")
     private String role;
 
-    // Getters and Setters
     public String getEmail() {
         return email;
     }

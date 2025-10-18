@@ -23,7 +23,7 @@ import com.ev.dto.LoginRequest;
 import com.ev.dto.SignupRequest;
 import com.ev.model.Admin;
 import com.ev.model.ChargerOperator;
-import com.ev.model.NormalUser;
+import com.ev.model.EvOwner;
 import com.ev.model.RefreshToken;
 import com.ev.model.Role;
 import com.ev.model.RoleType;
@@ -32,8 +32,6 @@ import com.ev.repository.RefreshTokenRepo;
 import com.ev.repository.RoleRepository;
 import com.ev.repository.UserRepository;
 import com.ev.configuration.jwtUtil;
-
-
 
 
 @RestController
@@ -80,13 +78,13 @@ public class AuthController {
                     user = new ChargerOperator();
                     roleType = RoleType.ROLE_CHARGER_OPERATOR;
                     break;
-                case "USER":
-                    user = new NormalUser();
-                    roleType = RoleType.ROLE_NORMAL_USER;
+                case "EV_OWNER":
+                    user = new EvOwner();
+                    roleType = RoleType.ROLE_EV_OWNER;
                     break;
                 default:
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("message", "Invalid role. Must be USER, CHARGER_OPERATOR, or ADMIN"));
+                        .body(Map.of("message", "Invalid role. Must be EV_OWNER, CHARGER_OPERATOR, or ADMIN"));
             }
 
             // Set common user fields
@@ -166,7 +164,7 @@ public class AuthController {
 
 	        // Determine redirect URL based on primary role
 	        String redirectUrl = switch (primaryRole.replace("ROLE_", "").toLowerCase()) {
-	            case "admin" -> "/dashboard";
+	            case "admin" -> "/admin/dashboard";
 	            case "charger_operator" -> "/partner/dashboard";
 	            case "user" -> "/home";
 	            default -> "/";

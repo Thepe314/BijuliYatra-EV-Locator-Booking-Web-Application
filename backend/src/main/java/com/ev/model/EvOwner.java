@@ -5,8 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "normal_users")
-@DiscriminatorValue("USER")
-public class NormalUser extends User {
+@Table(name = "ev_owner")
+@DiscriminatorValue("EV_OWNER")
+public class EvOwner extends User {
     
 }
