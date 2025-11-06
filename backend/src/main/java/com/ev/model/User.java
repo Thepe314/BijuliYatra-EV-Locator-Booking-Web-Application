@@ -36,15 +36,14 @@ public abstract class User {
 
     private String fullname;
     
+    private String region;
+    
+    private String city;
+    
+    private String district;
+    
     private String address;
 
-    private String vehicleBrand;  
-
-    private String vechicleModel; 
-
-    private String vechileRegistrationModel; 
-    
-    private String chargingType; 
     
     private LocalDateTime joinDate;
     
@@ -118,8 +117,29 @@ public abstract class User {
 		this.fullname = fullname;
 	}
 
+	public String getRegion() {
+		return region;
+	}
 
-	
+	public void setRegion(String region) {
+		this.region = region;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
+	}
+
+	public String getDistrict() {
+		return district;
+	}
+
+	public void setDistrict(String district) {
+		this.district = district;
+	}
 
 	public String getAddress() {
 		return address;
@@ -128,46 +148,6 @@ public abstract class User {
 
 	public void setAddress(String address) {
 		this.address = address;
-	}
-
-
-	public String getVehicleBrand() {
-		return vehicleBrand;
-	}
-
-
-	public void setVehicleBrand(String vehicleBrand) {
-		this.vehicleBrand = vehicleBrand;
-	}
-
-
-	public String getVechicleModel() {
-		return vechicleModel;
-	}
-
-
-	public void setVechicleModel(String vechicleModel) {
-		this.vechicleModel = vechicleModel;
-	}
-
-
-	public String getVechileRegistrationModel() {
-		return vechileRegistrationModel;
-	}
-
-
-	public void setVechileRegistrationModel(String vechileRegistrationModel) {
-		this.vechileRegistrationModel = vechileRegistrationModel;
-	}
-
-
-	public String getChargingType() {
-		return chargingType;
-	}
-
-
-	public void setChargingType(String chargingType) {
-		this.chargingType = chargingType;
 	}
 
 

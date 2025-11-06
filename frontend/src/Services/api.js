@@ -59,21 +59,35 @@ api.interceptors.response.use(
 
 // Auth API services
 const authService = {
- login: async (credentials) => {
-  const response = await api.post("/auth/login", credentials);
-  if (response.data.accessToken) {
-    localStorage.setItem("accessToken", response.data.accessToken);
-    localStorage.setItem("refreshToken", response.data.refreshToken);
-    localStorage.setItem("jwtToken", response.data.token);
-    localStorage.setItem('userId', response.data.id);
-  }
+  login: async (credentials) => {
+    const response = await api.post("/auth/login", credentials);
+    const data = response.data;
+
+    if (data.token) {
+      // Save JWT
+      localStorage.setItem("jwtToken", data.token);
+
+      // Decode payload
+      const payload = JSON.parse(atob(data.token.split('.')[1]));
+
+      if (payload.userId) localStorage.setItem("userId", payload.userId.toString());
+      if (payload.role) localStorage.setItem("userRole", payload.role);
+    }
+
+    return data;
+  },
+
+  signupEvOwner: async (userData) => {
+  const response = await api.post("/auth/signup/ev-owner", userData);
   return response.data;
 },
 
-  signup: async (userData) => {
-    const response = await api.post("/auth/signup", userData);
-    return response.data;
-  },
+signupOperator: async (userData) => {
+  const response = await api.post("/auth/signup/operator", userData);
+  return response.data;
+},
+
+
 
   
   requestPasswordReset: async (email) => {

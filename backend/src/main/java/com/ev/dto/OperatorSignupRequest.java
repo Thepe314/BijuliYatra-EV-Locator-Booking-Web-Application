@@ -1,16 +1,9 @@
-package com.ev.model;
+package com.ev.dto;
 
 import java.math.BigDecimal;
 
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+public class OperatorSignupRequest extends SignupRequestBase {
 
-@Entity
-@Table(name = "charger_operator")
-@DiscriminatorValue("CHARGER_OPERATOR")
-public class ChargerOperator extends User {
-	
 
     private String companyName;
 

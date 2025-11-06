@@ -1,52 +1,45 @@
 import React, { useState } from 'react';
-import { Zap, Mail, Lock, User, Eye, EyeOff, Phone, MapPin, Building2, DollarSign, Zap as ZapIcon, FileText, ArrowRight, ArrowLeft, Check } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Zap, Mail, Lock, User, Eye, EyeOff, Phone, MapPin, Building2, DollarSign, FileText, ArrowRight, ArrowLeft, Check, Clock } from 'lucide-react';
 import { authService } from '../../Services/api';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function ChargingOperatorSignUp() {
-  const navigate = useNavigate();
+   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
 
+
   const [formData, setFormData] = useState({
-    // Step 1: Personal Information
     fullName: "",
     email: "",
     phoneNumber: "",
     password: "",
     confirmPassword: "",
-    
-    // Step 2: Business Information
-    businessName: "",
-    businessType: "",
-    businessRegistrationNumber: "",
-    businessLicense: "",
-    
-    // Step 3: Location & Infrastructure
-    street: "",
+    companyName: "",
+    companyType: "",
+    companyRegistrationNo: "",
+    companyPan: "",
+    companyLicenseNo: "",
+    address: "",
     city: "",
-    state: "",
-    zipCode: "",
-    country: "",
-    numberOfChargingStations: "",
-    
-    // Step 4: Charging Details
-    chargingTypes: [],
-    operatingHours: "",
-    dailyCapacity: "",
-    bankAccountDetails: ""
+    district: "",
+    stationCount: "",
+    chargingType: [],
+    openingHours: "",
+    closingHours: "",
+    chargePerKwh: ""
   });
 
   const [errors, setErrors] = useState({});
 
   const steps = [
     { number: 1, title: "Personal Info", icon: User },
-    { number: 2, title: "Business Info", icon: Building2 },
+    { number: 2, title: "Company Info", icon: Building2 },
     { number: 3, title: "Location", icon: MapPin },
-    { number: 4, title: "Charging Details", icon: ZapIcon }
+    { number: 4, title: "Pricing", icon: DollarSign }
   ];
 
   const handleInputChange = (e) => {
@@ -55,9 +48,9 @@ export default function ChargingOperatorSignUp() {
     if (type === 'checkbox') {
       setFormData(prev => ({
         ...prev,
-        chargingTypes: checked
-          ? [...prev.chargingTypes, value]
-          : prev.chargingTypes.filter(ct => ct !== value)
+        chargingType: checked
+          ? [...prev.chargingType, value]
+          : prev.chargingType.filter(ct => ct !== value)
       }));
     } else {
       setFormData(prev => ({
@@ -98,26 +91,24 @@ export default function ChargingOperatorSignUp() {
     }
     
     if (step === 2) {
-      if (!formData.businessName.trim()) newErrors.businessName = "Business name is required";
-      if (!formData.businessType) newErrors.businessType = "Business type is required";
-      if (!formData.businessRegistrationNumber.trim()) newErrors.businessRegistrationNumber = "Registration number is required";
-      if (!formData.businessLicense.trim()) newErrors.businessLicense = "Business license number is required";
+      if (!formData.companyName.trim()) newErrors.companyName = "Company name is required";
+      if (!formData.companyType) newErrors.companyType = "Company type is required";
+      if (!formData.companyRegistrationNo.trim()) newErrors.companyRegistrationNo = "Registration number is required";
+      if (!formData.companyPan.trim()) newErrors.companyPan = "PAN number is required";
+      if (!formData.companyLicenseNo.trim()) newErrors.companyLicenseNo = "License number is required";
     }
     
     if (step === 3) {
-      if (!formData.street.trim()) newErrors.street = "Street address is required";
+      if (!formData.address.trim()) newErrors.address = "Address is required";
       if (!formData.city.trim()) newErrors.city = "City is required";
-      if (!formData.state.trim()) newErrors.state = "State is required";
-      if (!formData.zipCode.trim()) newErrors.zipCode = "ZIP code is required";
-      if (!formData.country.trim()) newErrors.country = "Country is required";
-      if (!formData.numberOfChargingStations.trim()) newErrors.numberOfChargingStations = "Number of stations is required";
+      if (!formData.stationCount.trim()) newErrors.stationCount = "Number of stations is required";
     }
     
     if (step === 4) {
-      if (formData.chargingTypes.length === 0) newErrors.chargingTypes = "Select at least one charging type";
-      if (!formData.operatingHours.trim()) newErrors.operatingHours = "Operating hours are required";
-      if (!formData.dailyCapacity.trim()) newErrors.dailyCapacity = "Daily capacity is required";
-      if (!formData.bankAccountDetails.trim()) newErrors.bankAccountDetails = "Bank account details are required";
+      if (formData.chargingType.length === 0) newErrors.chargingType = "Select at least one charging type";
+      if (!formData.openingHours.trim()) newErrors.openingHours = "Opening hours are required";
+      if (!formData.closingHours.trim()) newErrors.closingHours = "Closing hours are required";
+      if (!formData.chargePerKwh.trim()) newErrors.chargePerKwh = "Charge per kWh is required";
     }
     
     setErrors(newErrors);
@@ -149,19 +140,21 @@ export default function ChargingOperatorSignUp() {
         phoneNumber: formData.phoneNumber,
         password: formData.password,
         role: "CHARGING_OPERATOR",
-        businessName: formData.businessName,
-        businessType: formData.businessType,
-        businessRegistrationNumber: formData.businessRegistrationNumber,
-        businessLicense: formData.businessLicense,
-        address: `${formData.street}, ${formData.city}, ${formData.state}, ${formData.zipCode}, ${formData.country}`,
-        numberOfChargingStations: formData.numberOfChargingStations,
-        chargingTypes: formData.chargingTypes,
-        operatingHours: formData.operatingHours,
-        dailyCapacity: formData.dailyCapacity,
-        bankAccountDetails: formData.bankAccountDetails
+        companyName: formData.companyName,
+        companyType: formData.companyType,
+        companyRegistrationNo: formData.companyRegistrationNo,
+        companyPan: formData.companyPan,
+        companyLicenseNo: formData.companyLicenseNo,
+        address: formData.address,
+        city: formData.city,
+        stationCount: formData.stationCount,
+        chargingType: formData.chargingType.join(", "),
+        openingHours: formData.openingHours,
+        closingHours: formData.closingHours,
+        chargePerKwh: formData.chargePerKwh
       };
 
-      const response = await authService.signup(userData);
+     const response = await authService.signupOperator(userData);
       console.log("Signup successful:", response);
       
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -240,7 +233,6 @@ export default function ChargingOperatorSignUp() {
         )}
 
         <div className="space-y-5">
-          {/* Step 1: Personal Information */}
           {currentStep === 1 && (
             <>
               <div>
@@ -285,7 +277,7 @@ export default function ChargingOperatorSignUp() {
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
                     className={`w-full pl-12 pr-4 py-3 border-2 ${errors.phoneNumber ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
-                    placeholder="+1 234 567 8900"
+                    placeholder="+977 1234567890"
                   />
                 </div>
                 {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>}
@@ -339,94 +331,108 @@ export default function ChargingOperatorSignUp() {
             </>
           )}
 
-          {/* Step 2: Business Information */}
           {currentStep === 2 && (
             <>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Business Name</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Company Name</label>
                 <div className="relative">
                   <Building2 className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="text"
-                    name="businessName"
-                    value={formData.businessName}
+                    name="companyName"
+                    value={formData.companyName}
                     onChange={handleInputChange}
-                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.businessName ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.companyName ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
                     placeholder="PowerGrid Charging Solutions"
                   />
                 </div>
-                {errors.businessName && <p className="text-red-500 text-xs mt-1">{errors.businessName}</p>}
+                {errors.companyName && <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Business Type</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Company Type</label>
                 <select
-                  name="businessType"
-                  value={formData.businessType}
+                  name="companyType"
+                  value={formData.companyType}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border-2 ${errors.businessType ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                  className={`w-full px-4 py-3 border-2 ${errors.companyType ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
                 >
-                  <option value="">Select business type</option>
+                  <option value="">Select company type</option>
                   <option value="individual">Individual Operator</option>
-                  <option value="private_company">Private Company</option>
-                  <option value="public_company">Public Company</option>
-                  <option value="non_profit">Non-Profit Organization</option>
-                  <option value="government">Government Agency</option>
+                  <option value="private">Private Limited</option>
+                  <option value="public">Public Limited</option>
+                  <option value="cooperative">Cooperative</option>
+                  <option value="government">Government</option>
                 </select>
-                {errors.businessType && <p className="text-red-500 text-xs mt-1">{errors.businessType}</p>}
+                {errors.companyType && <p className="text-red-500 text-xs mt-1">{errors.companyType}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Business Registration Number</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Company Registration Number</label>
                 <div className="relative">
                   <FileText className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="text"
-                    name="businessRegistrationNumber"
-                    value={formData.businessRegistrationNumber}
+                    name="companyRegistrationNo"
+                    value={formData.companyRegistrationNo}
                     onChange={handleInputChange}
-                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.businessRegistrationNumber ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.companyRegistrationNo ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
                     placeholder="REG-2024-001234"
                   />
                 </div>
-                {errors.businessRegistrationNumber && <p className="text-red-500 text-xs mt-1">{errors.businessRegistrationNumber}</p>}
+                {errors.companyRegistrationNo && <p className="text-red-500 text-xs mt-1">{errors.companyRegistrationNo}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Business License Number</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">PAN Number</label>
                 <div className="relative">
                   <FileText className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="text"
-                    name="businessLicense"
-                    value={formData.businessLicense}
+                    name="companyPan"
+                    value={formData.companyPan}
                     onChange={handleInputChange}
-                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.businessLicense ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.companyPan ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                    placeholder="PAN123456789"
+                  />
+                </div>
+                {errors.companyPan && <p className="text-red-500 text-xs mt-1">{errors.companyPan}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Company License Number</label>
+                <div className="relative">
+                  <FileText className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    name="companyLicenseNo"
+                    value={formData.companyLicenseNo}
+                    onChange={handleInputChange}
+                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.companyLicenseNo ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
                     placeholder="LIC-2024-567890"
                   />
                 </div>
-                {errors.businessLicense && <p className="text-red-500 text-xs mt-1">{errors.businessLicense}</p>}
+                {errors.companyLicenseNo && <p className="text-red-500 text-xs mt-1">{errors.companyLicenseNo}</p>}
               </div>
             </>
           )}
 
-          {/* Step 3: Location & Infrastructure */}
           {currentStep === 3 && (
             <>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Street Address</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Address</label>
                 <div className="relative">
                   <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="text"
-                    name="street"
-                    value={formData.street}
+                    name="address"
+                    value={formData.address}
                     onChange={handleInputChange}
-                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.street ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
-                    placeholder="456 Industrial Avenue"
+                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.address ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                    placeholder="123 Charging Avenue, Industrial Zone"
                   />
                 </div>
-                {errors.street && <p className="text-red-500 text-xs mt-1">{errors.street}</p>}
+                {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -438,72 +444,43 @@ export default function ChargingOperatorSignUp() {
                     value={formData.city}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border-2 ${errors.city ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
-                    placeholder="Denver"
+                    placeholder="Kathmandu"
                   />
                   {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">State/Province</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">District</label>
                   <input
                     type="text"
-                    name="state"
-                    value={formData.state}
+                    name="district"
+                    value={formData.district}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 ${errors.state ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
-                    placeholder="Colorado"
+                    className={`w-full px-4 py-3 border-2 ${errors.district ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                    placeholder="Kathmandu District"
                   />
-                  {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">ZIP/Postal Code</label>
-                  <input
-                    type="text"
-                    name="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 ${errors.zipCode ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
-                    placeholder="80202"
-                  />
-                  {errors.zipCode && <p className="text-red-500 text-xs mt-1">{errors.zipCode}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Country</label>
-                  <input
-                    type="text"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 ${errors.country ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
-                    placeholder="United States"
-                  />
-                  {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country}</p>}
+                  {errors.district && <p className="text-red-500 text-xs mt-1">{errors.district}</p>}
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Number of Charging Stations</label>
                 <div className="relative">
-                  <ZapIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                  <Zap className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="number"
-                    name="numberOfChargingStations"
-                    value={formData.numberOfChargingStations}
+                    name="stationCount"
+                    value={formData.stationCount}
                     onChange={handleInputChange}
-                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.numberOfChargingStations ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.stationCount ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
                     placeholder="15"
                   />
                 </div>
-                {errors.numberOfChargingStations && <p className="text-red-500 text-xs mt-1">{errors.numberOfChargingStations}</p>}
+                {errors.stationCount && <p className="text-red-500 text-xs mt-1">{errors.stationCount}</p>}
               </div>
             </>
           )}
 
-          {/* Step 4: Charging Details */}
           {currentStep === 4 && (
             <>
               <div>
@@ -513,9 +490,9 @@ export default function ChargingOperatorSignUp() {
                     <label key={type} className="flex items-center">
                       <input
                         type="checkbox"
-                        name="chargingTypes"
+                        name="chargingType"
                         value={type}
-                        checked={formData.chargingTypes.includes(type)}
+                        checked={formData.chargingType.includes(type)}
                         onChange={handleInputChange}
                         className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500 focus:outline-none cursor-pointer"
                       />
@@ -528,54 +505,60 @@ export default function ChargingOperatorSignUp() {
                     </label>
                   ))}
                 </div>
-                {errors.chargingTypes && <p className="text-red-500 text-xs mt-2">{errors.chargingTypes}</p>}
+                {errors.chargingType && <p className="text-red-500 text-xs mt-2">{errors.chargingType}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Opening Hours</label>
+                  <div className="relative">
+                    <Clock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                    <input
+                      type="time"
+                      name="openingHours"
+                      value={formData.openingHours}
+                      onChange={handleInputChange}
+                      className={`w-full pl-12 pr-4 py-3 border-2 ${errors.openingHours ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                    />
+                  </div>
+                  {errors.openingHours && <p className="text-red-500 text-xs mt-1">{errors.openingHours}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Closing Hours</label>
+                  <div className="relative">
+                    <Clock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                    <input
+                      type="time"
+                      name="closingHours"
+                      value={formData.closingHours}
+                      onChange={handleInputChange}
+                      className={`w-full pl-12 pr-4 py-3 border-2 ${errors.closingHours ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                    />
+                  </div>
+                  {errors.closingHours && <p className="text-red-500 text-xs mt-1">{errors.closingHours}</p>}
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Operating Hours</label>
-                <input
-                  type="text"
-                  name="operatingHours"
-                  value={formData.operatingHours}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border-2 ${errors.operatingHours ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
-                  placeholder="24/7 or 6:00 AM - 10:00 PM"
-                />
-                {errors.operatingHours && <p className="text-red-500 text-xs mt-1">{errors.operatingHours}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Daily Capacity (kWh)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Charge Per kWh (NPR)</label>
                 <div className="relative">
                   <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
-                    type="text"
-                    name="dailyCapacity"
-                    value={formData.dailyCapacity}
+                    type="number"
+                    step="0.01"
+                    name="chargePerKwh"
+                    value={formData.chargePerKwh}
                     onChange={handleInputChange}
-                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.dailyCapacity ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
-                    placeholder="5000"
+                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.chargePerKwh ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                    placeholder="25.50"
                   />
                 </div>
-                {errors.dailyCapacity && <p className="text-red-500 text-xs mt-1">{errors.dailyCapacity}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Bank Account Details</label>
-                <textarea
-                  name="bankAccountDetails"
-                  value={formData.bankAccountDetails}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border-2 ${errors.bankAccountDetails ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors resize-none`}
-                  rows="3"
-                  placeholder="Bank name, Account number, SWIFT code, etc."
-                />
-                {errors.bankAccountDetails && <p className="text-red-500 text-xs mt-1">{errors.bankAccountDetails}</p>}
+                {errors.chargePerKwh && <p className="text-red-500 text-xs mt-1">{errors.chargePerKwh}</p>}
               </div>
             </>
           )}
 
-          {/* Navigation Buttons */}
           <div className="flex gap-4 pt-4">
             {currentStep > 1 && (
               <button
@@ -607,10 +590,7 @@ export default function ChargingOperatorSignUp() {
           </div>
 
           <p className="text-center text-sm text-slate-600 mt-6">
-            Already have an account?{' '}
-            <Link to="/login" className="text-amber-600 hover:text-amber-700 font-semibold">
-              Sign In
-            </Link>
+            Already have an account? <a href="#login" className="text-amber-600 hover:text-amber-700 font-semibold">Sign In</a>
           </p>
         </div>
       </div>

@@ -20,11 +20,11 @@ export default function EVOwnerSignUp() {
     confirmPassword: "",
     
     // Step 2: Address Information
-    street: "",
+    region: "",
     city: "",
-    state: "",
-    zipCode: "",
-    country: "",
+    district: "",
+    address: "",
+  
     
     // Step 3: Vehicle Details
     vehicleBrand: "",
@@ -82,11 +82,10 @@ export default function EVOwnerSignUp() {
     }
     
     if (step === 2) {
-      if (!formData.street.trim()) newErrors.street = "Street address is required";
+      if (!formData.region.trim()) newErrors.region = "Region is required";
       if (!formData.city.trim()) newErrors.city = "City is required";
-      if (!formData.state.trim()) newErrors.state = "State is required";
-      if (!formData.zipCode.trim()) newErrors.zipCode = "ZIP code is required";
-      if (!formData.country.trim()) newErrors.country = "Country is required";
+      if (!formData.district.trim()) newErrors.district = "District is required";
+      if (!formData.address.trim()) newErrors.address = "Address is required";
     }
     
     if (step === 3) {
@@ -126,14 +125,15 @@ export default function EVOwnerSignUp() {
         phoneNumber: formData.phoneNumber,
         password: formData.password,
         role: "EV_OWNER",
-        address: `${formData.street}, ${formData.city}, ${formData.state}, ${formData.zipCode}, ${formData.country}`,
+        address: `${formData.region}, ${formData.city}, ${formData.district}, ${formData.address}}`,
         vehicleBrand: formData.vehicleBrand,
         vehicleModel: formData.vehicleModel,
+        vehicleYear: formData.vehicleYear,
         vehicleRegistrationNumber: formData.registrationNumber,
         chargingType: formData.chargingType
       };
 
-      const response = await authService.signup(userData);
+      const response = await authService.signupEvOwner(userData);
       console.log("Signup successful:", response);
       
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -315,19 +315,19 @@ export default function EVOwnerSignUp() {
           {currentStep === 2 && (
             <>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Street Address</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Region</label>
                 <div className="relative">
                   <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="text"
-                    name="street"
-                    value={formData.street}
+                    name="region"
+                    value={formData.region}
                     onChange={handleInputChange}
-                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.street ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-emerald-500 focus:outline-none transition-colors`}
-                    placeholder="123 Main Street"
+                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.region ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-emerald-500 focus:outline-none transition-colors`}
+                    placeholder="Bagmati"
                   />
                 </div>
-                {errors.street && <p className="text-red-500 text-xs mt-1">{errors.street}</p>}
+                {errors.region && <p className="text-red-500 text-xs mt-1">{errors.region}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -339,51 +339,40 @@ export default function EVOwnerSignUp() {
                     value={formData.city}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border-2 ${errors.city ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-emerald-500 focus:outline-none transition-colors`}
-                    placeholder="San Francisco"
+                    placeholder="Lalitpur"
                   />
                   {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">State/Province</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">District</label>
                   <input
                     type="text"
-                    name="state"
-                    value={formData.state}
+                    name="district"
+                    value={formData.district}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 ${errors.state ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-emerald-500 focus:outline-none transition-colors`}
-                    placeholder="California"
+                    className={`w-full px-4 py-3 border-2 ${errors.district ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-emerald-500 focus:outline-none transition-colors`}
+                    placeholder="Jhamsikhel"
                   />
-                  {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
+                  {errors.district && <p className="text-red-500 text-xs mt-1">{errors.district}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">ZIP/Postal Code</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Address</label>
                   <input
                     type="text"
-                    name="zipCode"
-                    value={formData.zipCode}
+                    name="address"
+                    value={formData.address}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 ${errors.zipCode ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-emerald-500 focus:outline-none transition-colors`}
-                    placeholder="94102"
+                    className={`w-full px-4 py-3 border-2 ${errors.address ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-emerald-500 focus:outline-none transition-colors`}
+                    placeholder="House no./building/street/area"
                   />
-                  {errors.zipCode && <p className="text-red-500 text-xs mt-1">{errors.zipCode}</p>}
+                  {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Country</label>
-                  <input
-                    type="text"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 ${errors.country ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-emerald-500 focus:outline-none transition-colors`}
-                    placeholder="United States"
-                  />
-                  {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country}</p>}
-                </div>
+                
               </div>
             </>
           )}
@@ -522,7 +511,7 @@ export default function EVOwnerSignUp() {
           </p>
           <p className="text-center text-sm text-slate-600 mt-6">
             Signup as an Charging Operator?{''}
-            <Link to="/COsignup" className="text-emerald-600 hover:text-emerald-700 font-semibold">
+            <Link to="/signup/operator" className="text-emerald-600 hover:text-emerald-700 font-semibold">
               Sign Up
             </Link>
           </p>

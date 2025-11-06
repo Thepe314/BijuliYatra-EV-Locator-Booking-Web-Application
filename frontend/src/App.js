@@ -14,6 +14,8 @@ import UserManagement from './components/Admin/UserManage.js';
 import AdminAnalytics from './components/Admin/AdminAnalytics.js';
 import { UserSessionProvider } from './components/Context/UserSessionContext.js';
 import ChargingOperatorSignUp from './components/Auth/ChargingOperatorSignUp.js';
+import EVUserDashboard from './components/User/UserDashboard.js';
+import OperatorDashboard from './components/ChargeOperators/OperatorDashboard.js';
 
 
 
@@ -28,8 +30,8 @@ function App() {
         {/* Default route: redirect to login or you can choose */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/COsignup" element={<ChargingOperatorSignUp />} />
+        <Route path="/signup/ev-owner" element={<SignUpPage />} />
+        <Route path="/signup/operator" element={<ChargingOperatorSignUp />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/map" element={<ChargingStationsMap />} />
@@ -40,6 +42,8 @@ function App() {
         <Route path="/usermanagement" element={<UserManagement/>} />
         <Route path="/stationmangement" element={<StationManagement/>} />
         <Route path="/analytics" element={<AdminAnalytics/>} />
+         <Route path="/ev-owner/dashboard" element={<EVUserDashboard/>} />
+            <Route path="/operator/dashboard" element={<OperatorDashboard/>} />
 
         {/* You can add more routes later, e.g. a home/dashboard route */}
         {/* <Route path="/home" element={<Home />} /> */}

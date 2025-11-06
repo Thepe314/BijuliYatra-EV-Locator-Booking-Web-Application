@@ -42,7 +42,7 @@ public class SecurityConfig {
                     // Allow all GET requests for these endpoints (anonymous access)
                     .requestMatchers(HttpMethod.GET).permitAll()
                     
-                    .requestMatchers(HttpMethod.POST, "/auth/login","/auth/signup").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/auth/login","/auth/signup/ev-owner","/auth/signup/operators").permitAll()
                     
                     // Allow OPTIONS for all (preflight)
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

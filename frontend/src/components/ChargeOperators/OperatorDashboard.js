@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Zap, TrendingUp, AlertCircle, DollarSign, Activity, MapPin, Settings, Users, Calendar, Download } from 'lucide-react';
 
-export default function CPODashboard() {
+export default function OperatorDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedStation, setSelectedStation] = useState(null);
 

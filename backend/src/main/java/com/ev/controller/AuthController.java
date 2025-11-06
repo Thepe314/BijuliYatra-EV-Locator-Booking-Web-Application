@@ -19,8 +19,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ev.dto.EvOwnerSignupRequest;
 import com.ev.dto.LoginRequest;
-import com.ev.dto.SignupRequest;
+import com.ev.dto.OperatorSignupRequest;
 import com.ev.model.Admin;
 import com.ev.model.ChargerOperator;
 import com.ev.model.EvOwner;
@@ -55,155 +56,177 @@ public class AuthController {
 	 private RoleRepository roleRepo;
 	
 	
-	//Signup 
-	@PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody @Validated SignupRequest signupRequest) {
+	// --------- EV Owner Signup ---------
+    @PostMapping("/signup/ev-owner")
+    public ResponseEntity<?> signupEvOwner(@RequestBody @Validated EvOwnerSignupRequest request) {
+        if (uRepo.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", "Email already registered"));
+        }
+
+        EvOwner user = new EvOwner();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setFullname(request.getFullname());
+        user.setRegion(request.getRegion());
+        user.setCity(request.getCity());
+        user.setDistrict(request.getDistrict());
+        user.setAddress(request.getAddress());
+        user.setVehicleBrand(request.getVehicleBrand());
+        user.setVehicleModel(request.getVehicleModel());
+        user.setVehicleYear(request.getVehicleYear());
+        user.setVehileRegistrationModel(request.getVehicleRegistrationNumber());
+        user.setChargingType(request.getChargingType());
+        user.setJoinDate(LocalDateTime.now());
+        user.setStatus("active");
+
+        assignRole(user, RoleType.ROLE_EV_OWNER);
+
+        User savedUser = uRepo.save(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+            "message", "EV Owner registration successful",
+            "userId", savedUser.getUser_id(),
+            "email", savedUser.getEmail(),
+            "status", savedUser.getStatus()
+        ));
+    }
+
+    // --------- Charger Operator Signup ---------
+    @PostMapping("/signup/operator")
+    public ResponseEntity<?> signupOperator(@RequestBody @Validated OperatorSignupRequest request) {
+        if (uRepo.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", "Email already registered"));
+        }
+
+        ChargerOperator user = new ChargerOperator();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setFullname(request.getFullname());
+        user.setAddress(request.getAddress());
+        user.setJoinDate(LocalDateTime.now());
+        user.setStatus("pending"); // needs approval
+
+        assignRole(user, RoleType.ROLE_CHARGER_OPERATOR);
+
+        User savedUser = uRepo.save(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+            "message", "Charger Operator registration successful. Pending approval.",
+            "userId", savedUser.getUser_id(),
+            "email", savedUser.getEmail(),
+            "status", savedUser.getStatus()
+        ));
+    }
+
+    
+    // ---------- Helper to assign role ----------
+    private void assignRole(User user, RoleType roleType) {
+        Role role = roleRepo.findByName(roleType)
+            .orElseThrow(() -> new RuntimeException("Role not found: " + roleType));
+        user.setRoles(Set.of(role));
+    }
+
+	//Login
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody @Validated LoginRequest loginRequest) {
         try {
-            // Check if email already exists
-            if (uRepo.findByEmail(signupRequest.getEmail()).isPresent()) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("message", "Email already registered"));
+            // Find user by email
+            User existingUser = uRepo.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Validate password
+            if (!passwordEncoder.matches(loginRequest.getPassword(), existingUser.getPassword())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Invalid email or password"));
             }
 
-            // Create user based on role
-            User user;
-            RoleType roleType;
+            // Extract roles
+            String roleString = existingUser.getRoleString(); // e.g., "ROLE_ADMIN,ROLE_USER"
+            String primaryRole = existingUser.getPrimaryRole(); // e.g., "ROLE_ADMIN"
+
+            // Generate JWT access token
+            String accessToken = jwtUtil.generateToken(
+                existingUser.getEmail(),
+                roleString,
+                existingUser.getUser_id()
+            );
+
+            // Determine redirect URL based on primary role
+            String redirectUrl = getRedirectUrl(primaryRole);
             
-            switch (signupRequest.getRole().toUpperCase()) {
-                case "ADMIN":
-                    user = new Admin();
-                    roleType = RoleType.ROLE_ADMIN;
-                    break;
-                case "CHARGER_OPERATOR":
-                    user = new ChargerOperator();
-                    roleType = RoleType.ROLE_CHARGER_OPERATOR;
-                    break;
-                case "EV_OWNER":
-                    user = new EvOwner();
-                    roleType = RoleType.ROLE_EV_OWNER;
-                    break;
-                default:
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("message", "Invalid role. Must be EV_OWNER, CHARGER_OPERATOR, or ADMIN"));
-            }
+            System.out.println("=== LOGIN SUCCESS ===");
+            System.out.println("Email: " + existingUser.getEmail());
+            System.out.println("Primary Role: " + primaryRole);
+            System.out.println("Redirect URL: " + redirectUrl);
+            System.out.println("====================");
 
-            // Set common user fields
-            user.setEmail(signupRequest.getEmail());
-            user.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
-            user.setPhoneNumber(signupRequest.getPhoneNumber());
-            user.setFullname(signupRequest.getFullname());
-            user.setAddress(signupRequest.getAddress());
-            user.setVehicleBrand(signupRequest.getVehicleBrand());
-            user.setVechicleModel(signupRequest.getVehicleModel());
-            user.setVechileRegistrationModel(signupRequest.getVehicleRegistrationNumber());
-            user.setChargingType(signupRequest.getChargingType());
-            user.setJoinDate(LocalDateTime.now());
-            
-            // Set status based on role
-            if (roleType == RoleType.ROLE_CHARGER_OPERATOR) {
-                user.setStatus("pending"); // Operators need approval
-            } else {
-                user.setStatus("active");
-            }
+            // Refresh token handling
+            refreshTokenRepo.deleteById(existingUser.getUser_id());
 
-            // Assign role
-            Role role = roleRepo.findByName(roleType)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleType));
-            
-            Set<Role> roles = new HashSet<>();
-            roles.add(role);
-            user.setRoles(roles);
+            String sessionId = UUID.randomUUID().toString();
+            String jti = jwtUtil.getJti(accessToken);
 
-            // Save user
-            User savedUser = uRepo.save(user);
+            RefreshToken rt = new RefreshToken();
+            rt.setUser(existingUser);
+            rt.setToken(UUID.randomUUID().toString());
+            rt.setSessionId(sessionId);
+            rt.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
+            rt.setJti(jti);
+            refreshTokenRepo.save(rt);
 
-            return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of(
-                    "message", roleType == RoleType.ROLE_CHARGER_OPERATOR 
-                        ? "Registration successful. Your account is pending approval." 
-                        : "Registration successful",
-                    "userId", savedUser.getUser_id(),
-                    "email", savedUser.getEmail(),
-                    "status", savedUser.getStatus()
-                ));
+            // Return response
+            return ResponseEntity.ok(Map.of(
+                "message", "Login successful",
+                "token", accessToken,
+                "refreshToken", rt.getToken(),
+                "role", primaryRole,
+                "roles", roleString,
+                "sessionId", sessionId,
+                "redirect", redirectUrl,
+                "userId", existingUser.getUser_id()
+            ));
 
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            System.out.println("=== LOGIN FAILED ===");
+            System.out.println("Error: " + e.getMessage());
+            System.out.println("====================");
+            
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
+            System.out.println("=== LOGIN ERROR ===");
             e.printStackTrace();
+            System.out.println("====================");
+            
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "Registration failed: " + e.getMessage()));
+                .body(Map.of("message", "Login failed: " + e.getMessage()));
         }
     }
-	
-	//Login
-	@PostMapping("/login")
-	public ResponseEntity<?> login(@RequestBody @Validated LoginRequest loginRequest) {
-	    try {
-	        // Find user by email
-	        User existingUser = uRepo.findByEmail(loginRequest.getEmail())
-	            .orElseThrow(() -> new RuntimeException("User not found"));
 
-	        // Validate password
-	        if (!passwordEncoder.matches(loginRequest.getPassword(), existingUser.getPassword())) {
-	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-	                .body(Map.of("message", "Invalid username or password"));
-	        }
+    /**
+     * Helper method to determine redirect URL based on role
+     */
+    private String getRedirectUrl(String primaryRole) {
+        if (primaryRole == null || primaryRole.isEmpty()) {
+            return "/";
+        }
 
-	        // Extract roles
-	        String roleString = existingUser.getRoleString();      // e.g., "ROLE_ADMIN,ROLE_USER"
-	        String primaryRole = existingUser.getPrimaryRole();    // e.g., "ROLE_ADMIN"
+        // Remove "ROLE_" prefix and convert to lowercase for comparison
+        String normalizedRole = primaryRole
+            .replace("ROLE_", "")
+            .toLowerCase()
+            .trim();
 
-	        // Generate JWT access token
-	        String accessToken = jwtUtil.generateToken(
-	            existingUser.getEmail(),
-	            roleString,
-	            existingUser.getUser_id()
-	        );
-
-	        // Determine redirect URL based on primary role
-	        String redirectUrl = switch (primaryRole.replace("ROLE_", "").toLowerCase()) {
-	            case "admin" -> "/admin/dashboard";
-	            case "charger_operator" -> "/partner/dashboard";
-	            case "user" -> "/home";
-	            default -> "/";
-	        };
-
-	        // Refresh token handling
-	        refreshTokenRepo.deleteById(existingUser.getUser_id());
-
-	        String sessionId = UUID.randomUUID().toString();
-	        String jti = jwtUtil.getJti(accessToken);
-
-	        RefreshToken rt = new RefreshToken();
-	        rt.setUser(existingUser);
-	        rt.setToken(UUID.randomUUID().toString());
-	        rt.setSessionId(sessionId);
-	        rt.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
-	        rt.setJti(jti);
-	        refreshTokenRepo.save(rt);
-
-	        // Return response
-	        return ResponseEntity.ok(Map.of(
-	            "message", "Login successful",
-	            "token", accessToken,
-	            "refreshToken", rt.getToken(),
-	            "role", primaryRole,
-	            "roles", roleString,
-	            "sessionId", sessionId,
-	            "redirect", redirectUrl,
-	            "userId", existingUser.getUser_id()
-	        ));
-
-	    } catch (RuntimeException e) {
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-	            .body(Map.of("message", e.getMessage()));
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	            .body(Map.of("message", "Login failed: " + e.getMessage()));
-	    }
-	}
-
+        return switch (normalizedRole) {
+            case "admin" -> "/admin/dashboard";
+            case "charger_operator" -> "/operator/dashboard";
+            case "ev_owner" -> "/ev-owner/dashboard";
+            default -> {
+                System.out.println("WARNING: Unknown role '" + normalizedRole + "', redirecting to /");
+                yield "/";
+            }
+        };
+    }
 }

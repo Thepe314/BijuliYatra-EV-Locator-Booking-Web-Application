@@ -89,7 +89,7 @@ export default function LoginPage() {
     })
   }
 
-  const handleLogin = async (e) => {
+const handleLogin = async (e) => {
   e.preventDefault();
   setTouched({ email: true, password: true });
 
@@ -105,44 +105,37 @@ export default function LoginPage() {
     });
 
     console.log("Login successful:", data);
-    console.log("Saved JWT token:", data.token);
 
-    if (data.token && data.redirect) {
-      const payload = JSON.parse(atob(data.token.split('.')[1]));
-      const userData = {
-        email: payload.sub,
-        role: payload.role,
-      };
-
-      // ✅ Store token and user role
-      localStorage.setItem("jwtToken", data.token);
-      localStorage.setItem("userRole", payload.role);
-
-      // ✅ NEW: Save userId if present in token
-      if (payload.userId !== undefined) {
-        localStorage.setItem("userId", payload.userId.toString());
-        console.log("Saved userId:", payload.userId);
-      } else {
-        console.warn("userId not found in token");
-      }
-
-      login(userData, data.token);
-
-      // Check if we have a redirect path from location state
-      const redirectPath = location.state?.from;
-      
-      // ✅ Navigate to the redirect path or default based on role
-      const path = redirectPath || data.redirect || (
-        payload.role === "admin"
-          ? "/admin/dashboard"
-          : payload.role === "chargingOperator"
-          ? "/operator/dashboard"
-          : "/home"
-      );
-      navigate(path, { replace: true });
-    } else {
-      setApiError("Login failed: missing token or redirect.");
+    if (!data.token) {
+      setApiError("Login failed: missing token.");
+      setIsSubmitting(false);
+      return;
     }
+
+    // Save token and user data
+    localStorage.setItem("jwtToken", data.token);
+    if (data.userId) localStorage.setItem("userId", data.userId.toString());
+    if (data.role) localStorage.setItem("userRole", data.role);
+
+    // Determine redirect path with proper priority
+    let redirectPath;
+    
+    // Priority 1: Was user sent to login page from a protected route?
+    if (location.state?.from) {
+      redirectPath = location.state.from;
+    }
+    // Priority 2: Use the redirect from backend (role-based)
+    else if (data.redirect) {
+      redirectPath = data.redirect;
+    }
+    // Priority 3: Fallback to root
+    else {
+      redirectPath = "/";
+    }
+
+    console.log("Final redirect path:", redirectPath);
+    navigate(redirectPath, { replace: true });
+
   } catch (error) {
     console.error("Login failed:", error);
     if (error.response) {
@@ -284,7 +277,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-slate-600 mt-6">
           Don’t have an account?{' '}
-          <Link to="/signup" className="text-emerald-600 hover:text-emerald-700 font-semibold">
+          <Link to="/signup/ev-owner" className="text-emerald-600 hover:text-emerald-700 font-semibold">
             Sign up
           </Link>
         </p>
