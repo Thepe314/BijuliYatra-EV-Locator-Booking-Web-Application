@@ -44,6 +44,7 @@ function App() {
         <Route path="/analytics" element={<AdminAnalytics/>} />
          <Route path="/ev-owner/dashboard" element={<EVUserDashboard/>} />
             <Route path="/operator/dashboard" element={<OperatorDashboard/>} />
+        
 
         {/* You can add more routes later, e.g. a home/dashboard route */}
         {/* <Route path="/home" element={<Home />} /> */}

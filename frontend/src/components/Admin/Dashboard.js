@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Battery, MapPin, Users, DollarSign, TrendingUp, Calendar, Search, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
   const [timeRange, setTimeRange] = useState('week');
+   const navigate = useNavigate();
   
   const stats = [
     { label: 'Total Users', value: '2,847', change: '+12%', icon: Users, color: 'bg-blue-500' },
@@ -26,6 +28,10 @@ export default function AdminDashboard() {
     { name: 'City Center', status: 'Maintenance', chargers: '0/6', usage: 0 },
     { name: 'Tech Park', status: 'Active', chargers: '4/12', usage: 33 },
   ];
+
+ const handleManage = () => {
+     navigate('/usermanagement');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -110,7 +116,12 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-gray-900">Station Status</h2>
-              <button className="text-blue-600 text-sm font-medium hover:text-blue-700">Manage</button>
+              <button
+      onClick={handleManage}
+      className="text-blue-600 text-sm font-medium hover:text-blue-700"
+    >
+      Manage
+    </button>
             </div>
             <div className="space-y-4">
               {stations.map((station, idx) => (

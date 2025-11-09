@@ -40,23 +40,20 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                     // Allow all GET requests for these endpoints (anonymous access)
-                    .requestMatchers(HttpMethod.GET).permitAll()
+            		.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     
-                    .requestMatchers(HttpMethod.POST, "/auth/login","/auth/signup/ev-owner","/auth/signup/operators").permitAll()
+                    // Public endpoints - Authentication
+                    .requestMatchers("/auth/login").permitAll()
+                    .requestMatchers("/auth/signup/ev-owner").permitAll()
+                    .requestMatchers("/auth/signup/operators").permitAll()
+                    .requestMatchers("/auth/**").permitAll()
                     
-                    // Allow OPTIONS for all (preflight)
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    
-                    //Role Admin Access
-                    .requestMatchers("/admin/**")
-                    .hasRole("ADMIN")
-                    
-                    // Allow static and images folder access
-                    .requestMatchers( "/auth/**").permitAll()
-
+                    // Admin endpoints - Only ADMIN role
+                    .requestMatchers("/admin/**").hasRole("ADMIN")
                     
                     // All other requests require authentication
                     .anyRequest().authenticated()
+
             		)
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
