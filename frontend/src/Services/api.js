@@ -153,17 +153,20 @@ requestPasswordReset: async (email) => {
 };
 
 //User Management
- const userService = {
+ export const userService = {
   // Get all users
   listUsers: async () => {
-    try {
-      const response = await api.get('/admin/users');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      throw error;
-    }
-  },
+  try {
+    const token = localStorage.getItem("jwtToken");
+    const response = await api.get("/admin/users", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+},
 
   // Get user by ID
   getUserById: async (userId) => {
@@ -248,5 +251,74 @@ requestPasswordReset: async (email) => {
   // }
 };
 
+  export const stationService = {
+    // Get all stations
+  listStation: async () => {
+  try {
+    const token = localStorage.getItem("jwtToken");
+    const response = await api.get("/operators/stations", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching stations:", error);
+    throw error;
+  }
+},
 
-export {api,authService,userService};
+  // Get station by ID
+  //if cant get change userId to stationId
+  getStationById: async (userId) => {
+    try {
+      const response = await api.get(`/operators/stations/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching station:', error);
+      throw error;
+    }
+  },
+
+  
+
+  // Create new station
+createStation: async (stationData) => {
+  try {
+    const token = localStorage.getItem("jwtToken");
+    const response = await api.post('/operator/stations', stationData, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating station:', error);
+    throw error;
+  }
+},
+
+  // Update station
+  updateStation: async (userId, userData) => {
+    try {
+      const response = await api.put(`/operator/station/edit/${userId}`, userData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating station:', error);
+      throw error;
+    }
+  },
+
+  // Delete station
+  deleteStation: async (userId) => {
+    try {
+      const response = await api.delete(`/operator/station/delete/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting station:', error);
+      throw error;
+    }
+  },
+
+  
+};
+
+
+
+export {api,authService};

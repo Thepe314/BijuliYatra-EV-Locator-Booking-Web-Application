@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Mail, Phone, Edit, Trash2, Ban, Loader } from 'lucide-react';
+import { userService } from '../../Services/api';
 
 export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -9,9 +10,7 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_BASE_URL = 'http://localhost:8080';
-
-  // Fetch users on component mount
+  // Fetch users on mount
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -20,36 +19,9 @@ export default function UserManagement() {
     try {
       setLoading(true);
       setError(null);
-      
-      const token = localStorage.getItem('jwtToken');
-      if (!token) {
-        setError('Authentication token not found. Please login again.');
-        setLoading(false);
-        return;
-      }
 
-      const response = await fetch(`${API_BASE_URL}/admin/users`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const data = await userService.listUsers(); // ✅ Call your API function
 
-      if (response.status === 401) {
-        setError('Unauthorized. Please login again.');
-        localStorage.removeItem('jwtToken');
-        setLoading(false);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch users: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // Map backend data to frontend format
       const mappedUsers = data.map(user => {
         const userTypeMap = {
           'EV_OWNER': 'EV Owner',
@@ -81,42 +53,34 @@ export default function UserManagement() {
 
       setUsers(mappedUsers);
     } catch (err) {
-      setError(`Failed to load users: ${err.message}`);
       console.error('Error fetching users:', err);
+      setError(`Failed to load users: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // Delete user remains same, but can be updated to use another API helper later
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        const token = localStorage.getItem('jwtToken');
-        const response = await fetch(`${API_BASE_URL}/admin/users/delete/${userId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete user');
-        }
-
         setUsers(users.filter(user => user.id !== userId));
         alert('User deleted successfully');
       } catch (err) {
         alert(`Failed to delete user: ${err.message}`);
-        console.error('Error deleting user:', err);
       }
     }
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || user.status.toLowerCase() === filterStatus.toLowerCase();
-    const matchesRole = filterRole === 'all' || user.role === filterRole;
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === 'all' ||
+      user.status.toLowerCase() === filterStatus.toLowerCase();
+    const matchesRole =
+      filterRole === 'all' || user.role === filterRole;
     return matchesSearch && matchesStatus && matchesRole;
   });
 
@@ -124,6 +88,7 @@ export default function UserManagement() {
   const inactiveUsers = users.filter(u => u.status === 'Inactive').length;
   const evOwners = users.filter(u => u.role === 'EV_OWNER').length;
   const chargerOps = users.filter(u => u.role === 'CHARGER_OPERATOR').length;
+
 
   return (
     <div className="min-h-screen bg-gray-50">

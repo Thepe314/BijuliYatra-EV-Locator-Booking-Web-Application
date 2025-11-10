@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 
 @RestController
-@RequestMapping("/admin/users")
+@RequestMapping("/admin")
 
 public class AdminController {
 
@@ -31,11 +31,10 @@ public class AdminController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /**
-     * Get all users
-     * @return List of all users
-     */
-    @GetMapping
+   
+     //List of all users
+     
+    @GetMapping("/{users}")
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
         try {
             List<User> users = userRepository.findAll();

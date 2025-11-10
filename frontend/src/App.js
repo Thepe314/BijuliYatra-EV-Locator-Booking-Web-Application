@@ -16,6 +16,7 @@ import { UserSessionProvider } from './components/Context/UserSessionContext.js'
 import ChargingOperatorSignUp from './components/Auth/ChargingOperatorSignUp.js';
 import EVUserDashboard from './components/User/UserDashboard.js';
 import OperatorDashboard from './components/ChargeOperators/OperatorDashboard.js';
+import AddStationPage from './components/ChargeOperators/AddStation.js';
 
 
 
@@ -44,6 +45,7 @@ function App() {
         <Route path="/analytics" element={<AdminAnalytics/>} />
          <Route path="/ev-owner/dashboard" element={<EVUserDashboard/>} />
             <Route path="/operator/dashboard" element={<OperatorDashboard/>} />
+            <Route path="/operator/addstation" element={<AddStationPage/>} />
         
 
         {/* You can add more routes later, e.g. a home/dashboard route */}

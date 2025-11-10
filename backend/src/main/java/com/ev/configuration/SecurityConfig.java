@@ -48,6 +48,9 @@ public class SecurityConfig {
                     .requestMatchers("/auth/signup/operators").permitAll()
                     .requestMatchers("/auth/**").permitAll()
                     
+                    // Operator endpoints - Allow all
+                    .requestMatchers("/operator/**").permitAll()
+                    
                     // Admin endpoints - Only ADMIN role
                     .requestMatchers("/admin/**").hasRole("ADMIN")
                     

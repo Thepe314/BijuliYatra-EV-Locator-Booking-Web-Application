@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Zap, TrendingUp, AlertCircle, DollarSign, Activity, MapPin, Settings, Users, Calendar, Download } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function OperatorDashboard() {
+   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedStation, setSelectedStation] = useState(null);
+
+const handleAddStation= () => {
+     navigate('/operator/addstation');
+  };
 
   // Mock data
   const stationData = [
@@ -166,7 +172,7 @@ export default function OperatorDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Station Management</h2>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center" onClick={handleAddStation}>
           <MapPin className="w-4 h-4 mr-2" />
           Add New Station
         </button>
