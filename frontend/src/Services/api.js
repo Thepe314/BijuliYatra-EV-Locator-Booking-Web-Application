@@ -16,7 +16,7 @@ const getCookie = (name) => {
 // Add request interceptor to add token to headers
 api.interceptors.request.use(
   config => {
-    const token = localStorage.getItem('accessToken'); // or jwtToken
+    const token = localStorage.getItem('authToken'); // or jwtToken
     if (token) {
       config.headers['Authorization'] = 'Bearer ' + token;
     }
@@ -65,7 +65,7 @@ const authService = {
 
     if (data.token) {
       // Save JWT
-      localStorage.setItem("jwtToken", data.token);
+      localStorage.setItem('authToken', data.token);
 
       // Decode payload
       const payload = JSON.parse(atob(data.token.split('.')[1]));
@@ -98,7 +98,7 @@ signupOperator: async (userData) => {
 
 
 logout: async () => {
-  localStorage.removeItem("accessToken");
+  localStorage.removeItem("'authToken'");
   localStorage.removeItem("refreshToken");
 
   try {
@@ -123,7 +123,7 @@ logout: async () => {
   try {
     const response = await api.post("/auth/refresh", { refreshToken });
     if (response.data.accessToken) {
-      localStorage.setItem("accessToken", response.data.accessToken);
+      localStorage.setItem("authToken", response.data.accessToken);
       return response.data.accessToken;
     }
   } catch (error) {
@@ -149,7 +149,7 @@ requestPasswordReset: async (email) => {
     return response.data;
   },
 
-  isAuthenticated: () => !!localStorage.getItem("jwtToken"),
+  isAuthenticated: () => !!localStorage.getItem("'authToken'"),
 };
 
 //User Management
@@ -157,7 +157,7 @@ requestPasswordReset: async (email) => {
   // Get all users
   listUsers: async () => {
   try {
-    const token = localStorage.getItem("jwtToken");
+    const token = localStorage.getItem("'authToken'");
     const response = await api.get("/admin/users", {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -224,15 +224,28 @@ requestPasswordReset: async (email) => {
   },
 
   // Delete user
-  deleteUser: async (userId) => {
-    try {
-      const response = await api.delete(`/admin/users/delete/${userId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      throw error;
+ deleteUser: async (userId) => {
+  try {
+    const token = localStorage.getItem('authToken');
+    
+    if (!token) {
+      console.error('No auth token found');
+      throw new Error('You must be logged in to delete users');
     }
-  },
+
+    const response = await api.delete(`/admin/delete/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
+},
 
 
   // changeUserStatus: async (id, status) => {
@@ -255,7 +268,7 @@ requestPasswordReset: async (email) => {
     // Get all stations
   listStation: async () => {
   try {
-    const token = localStorage.getItem("jwtToken");
+    const token = localStorage.getItem("authToken");
     const response = await api.get("/operators/stations", {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -283,7 +296,7 @@ requestPasswordReset: async (email) => {
   // Create new station
 createStation: async (stationData) => {
   try {
-    const token = localStorage.getItem("jwtToken");
+    const token = localStorage.getItem("authToken");
     const response = await api.post('/operator/stations', stationData, {
       headers: { Authorization: `Bearer ${token}` },
     });

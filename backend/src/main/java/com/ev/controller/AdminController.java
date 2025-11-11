@@ -3,6 +3,7 @@ package com.ev.controller;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -11,10 +12,19 @@ import com.ev.model.EvOwner;
 import com.ev.model.RoleType;
 import com.ev.model.ChargerOperator;
 import com.ev.model.Admin;
+import com.ev.repository.RefreshTokenRepo;
 import com.ev.repository.UserRepository;
+
+import jakarta.transaction.Transactional;
+
 import com.ev.dto.UserResponseDTO;
 import com.ev.dto.UserCreateDTO;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -27,14 +37,19 @@ public class AdminController {
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private RefreshTokenRepo refreshTokenRepo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    private static final Logger log = LoggerFactory.getLogger(com.ev.controller.AdminController.class);
+
    
      //List of all users
      
-    @GetMapping("/{users}")
+    @GetMapping("/users")
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
         try {
             List<User> users = userRepository.findAll();
@@ -245,18 +260,39 @@ public class AdminController {
      * @return No content response
      */
     @DeleteMapping("/delete/{userId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
+    @Transactional
+    public ResponseEntity<?> deleteUser(@PathVariable Long userId) {
+        log.info("Received DELETE request for userId: {}", userId);
+
         try {
-            if (userRepository.existsById(userId)) {
+            boolean exists = userRepository.existsById(userId);
+            log.info("User exists check result: {}", exists);
+
+            if (exists) {
+                // Delete related refresh tokens first (foreign key constraint)
+                log.info("Deleting refresh tokens for user: {}", userId);
+                refreshTokenRepo.deleteByUserUser_id(userId);
+                
+                // IMPORTANT: Flush to ensure the delete is executed immediately
+                userRepository.flush();
+                log.info("Flushed refresh token deletions");
+
+                // Now delete the user
                 userRepository.deleteById(userId);
+                userRepository.flush();
+                log.info("Successfully deleted user with id: {}", userId);
                 return ResponseEntity.noContent().build();
+            } else {
+                log.warn("User with id {} not found; cannot delete", userId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "User not found with id: " + userId));
             }
-            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            return ResponseEntity.status(500).build();
+            log.error("Exception when trying to delete user with id: {}", userId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to delete user: " + e.getMessage()));
         }
     }
-
     /**
      * Convert User entity to UserResponseDTO
      * @param user User entity

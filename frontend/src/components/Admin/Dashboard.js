@@ -30,8 +30,12 @@ export default function AdminDashboard() {
   ];
 
  const handleManage = () => {
-     navigate('/usermanagement');
+     navigate('/stationmangement');
   };
+
+  const handleUsers=() =>{
+     navigate('/usermanagement');
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -61,7 +65,7 @@ export default function AdminDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" onClick={handleUsers}>
           {stats.map((stat, idx) => (
             <div key={idx} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-4">

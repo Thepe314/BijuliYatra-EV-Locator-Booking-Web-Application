@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Mail, Phone, Edit, Trash2, Ban, Loader } from 'lucide-react';
 import { userService } from '../../Services/api';
+import { useNavigate } from 'react-router-dom';
 
 export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -9,6 +10,9 @@ export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const navigate = useNavigate();
+  const [activeActionMenu, setActiveActionMenu] = useState(null);
 
   // Fetch users on mount
   useEffect(() => {
@@ -20,7 +24,7 @@ export default function UserManagement() {
       setLoading(true);
       setError(null);
 
-      const data = await userService.listUsers(); // ✅ Call your API function
+      const data = await userService.listUsers();
 
       const mappedUsers = data.map(user => {
         const userTypeMap = {
@@ -60,15 +64,22 @@ export default function UserManagement() {
     }
   };
 
-  // Delete user remains same, but can be updated to use another API helper later
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        setUsers(users.filter(user => user.id !== userId));
-        alert('User deleted successfully');
-      } catch (err) {
-        alert(`Failed to delete user: ${err.message}`);
-      }
+  const deleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+
+    setDeleting(true);
+    try {
+      await userService.deleteUser(userId);
+      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+      setActiveActionMenu(null);
+      console.log('User deleted successfully');
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setError('Failed to delete user');
+      // Optionally show error to user
+      alert('Failed to delete user: ' + error.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -89,6 +100,9 @@ export default function UserManagement() {
   const evOwners = users.filter(u => u.role === 'EV_OWNER').length;
   const chargerOps = users.filter(u => u.role === 'CHARGER_OPERATOR').length;
 
+  const editUser = () => {
+    navigate('/admin/editUser');
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -247,15 +261,20 @@ export default function UserManagement() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
+                              <button 
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors" 
+                                title="Edit" 
+                                onClick={editUser}
+                              >
                                 <Edit className="w-4 h-4 text-gray-600" />
                               </button>
                               <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Suspend">
                                 <Ban className="w-4 h-4 text-orange-600" />
                               </button>
                               <button 
-                                onClick={() => handleDeleteUser(user.id)}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors" 
+                                onClick={() => deleteUser(user.id)}
+                                disabled={deleting}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50" 
                                 title="Delete"
                               >
                                 <Trash2 className="w-4 h-4 text-red-600" />

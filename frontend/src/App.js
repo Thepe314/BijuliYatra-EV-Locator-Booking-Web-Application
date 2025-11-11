@@ -17,6 +17,7 @@ import ChargingOperatorSignUp from './components/Auth/ChargingOperatorSignUp.js'
 import EVUserDashboard from './components/User/UserDashboard.js';
 import OperatorDashboard from './components/ChargeOperators/OperatorDashboard.js';
 import AddStationPage from './components/ChargeOperators/AddStation.js';
+import EditUserPage from './components/Admin/EditUsers.js';
 
 
 
@@ -46,6 +47,7 @@ function App() {
          <Route path="/ev-owner/dashboard" element={<EVUserDashboard/>} />
             <Route path="/operator/dashboard" element={<OperatorDashboard/>} />
             <Route path="/operator/addstation" element={<AddStationPage/>} />
+      <Route path="/admin/editUser" element={<EditUserPage/>} />
         
 
         {/* You can add more routes later, e.g. a home/dashboard route */}
