@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Mail, Phone, Edit, Trash2, Ban, Loader } from 'lucide-react';
+import { Search, Mail, Phone, Edit, Trash2, Ban, Loader, CheckCircle } from 'lucide-react';
 import { userService } from '../../Services/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +11,8 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const navigate = useNavigate();
   const [activeActionMenu, setActiveActionMenu] = useState(null);
 
@@ -18,6 +20,14 @@ export default function UserManagement() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const fetchUsers = async () => {
     try {
@@ -39,6 +49,7 @@ export default function UserManagement() {
           email: user.email,
           phone: user.phoneNumber,
           status: user.status === 'ACTIVE' ? 'Active' : 'Inactive',
+          rawStatus: user.status, // Keep raw status from DB
           joinDate: new Date(user.joinDate).toLocaleDateString('en-US', { 
             year: 'numeric', 
             month: '2-digit', 
@@ -64,6 +75,34 @@ export default function UserManagement() {
     }
   };
 
+  const changeUserStatus = async (userId, currentStatus) => {
+    const newStatus = currentStatus === 'Active' ? 'INACTIVE' : 'ACTIVE';
+    const newStatusDisplay = newStatus === 'ACTIVE' ? 'Active' : 'Inactive';
+    
+    setUpdatingStatus(userId);
+    try {
+      // Call the API to update status
+      await userService.changeUserStatus(userId, newStatus);
+      
+      // Update local state
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === userId 
+            ? { ...user, status: newStatusDisplay, rawStatus: newStatus }
+            : user
+        )
+      );
+      
+      setSuccessMessage(`User status changed to ${newStatusDisplay}`);
+      console.log(`User ${userId} status updated to ${newStatus}`);
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      setError(`Failed to update user status: ${error.message}`);
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   const deleteUser = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
 
@@ -72,11 +111,11 @@ export default function UserManagement() {
       await userService.deleteUser(userId);
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
       setActiveActionMenu(null);
+      setSuccessMessage('User deleted successfully');
       console.log('User deleted successfully');
     } catch (error) {
       console.error('Error deleting user:', error);
       setError('Failed to delete user');
-      // Optionally show error to user
       alert('Failed to delete user: ' + error.message);
     } finally {
       setDeleting(false);
@@ -122,6 +161,14 @@ export default function UserManagement() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <p className="text-green-800">{successMessage}</p>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm p-6">
@@ -246,12 +293,24 @@ export default function UserManagement() {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                              user.status === 'Active' ? 'bg-green-100 text-green-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {user.status}
-                            </span>
+                            <button
+                              onClick={() => changeUserStatus(user.id, user.status)}
+                              disabled={updatingStatus === user.id}
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                user.status === 'Active' 
+                                  ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              } ${updatingStatus === user.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                            >
+                              {updatingStatus === user.id ? (
+                                <>
+                                  <Loader className="w-3 h-3 mr-1 animate-spin" />
+                                  Updating...
+                                </>
+                              ) : (
+                                user.status
+                              )}
+                            </button>
                           </td>
                           <td className="px-6 py-4">
                             <p className="text-sm text-gray-600">{user.city}, {user.district}</p>
@@ -267,9 +326,6 @@ export default function UserManagement() {
                                 onClick={editUser}
                               >
                                 <Edit className="w-4 h-4 text-gray-600" />
-                              </button>
-                              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Suspend">
-                                <Ban className="w-4 h-4 text-orange-600" />
                               </button>
                               <button 
                                 onClick={() => deleteUser(user.id)}
