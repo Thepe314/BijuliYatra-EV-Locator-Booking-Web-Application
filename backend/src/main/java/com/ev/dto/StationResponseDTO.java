@@ -24,6 +24,7 @@ public class StationResponseDTO {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long operatorId;
     
     // Constructor
     public StationResponseDTO(ChargingStations station) {
@@ -45,6 +46,7 @@ public class StationResponseDTO {
         this.status = station.getStatus();
         this.createdAt = station.getCreatedAt();
         this.updatedAt = station.getUpdatedAt();
+        this.operatorId = station.getOperatorId();
     }
     
     // Getters and Setters
@@ -101,4 +103,7 @@ public class StationResponseDTO {
     
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    public Long getOperatorId() { return operatorId; }
+    public void setOperatorId(Long operatorId) { this.operatorId = operatorId; }
 }

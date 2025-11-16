@@ -20,6 +20,9 @@ public class ChargingStations {
     private Long id;
     
     @Column(nullable = false)
+    private Long operatorId;
+    
+    @Column(nullable = false)
     private String name;
     
     @Column(nullable = false)
@@ -129,4 +132,15 @@ public class ChargingStations {
     
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+	public Long getOperatorId() {
+		return operatorId;
+	}
+
+	public void setOperatorId(Long operatorId) {
+		this.operatorId = operatorId;
+	}
+    
+    
+    
 }

@@ -11,13 +11,18 @@ import com.ev.model.User;
 import com.ev.model.EvOwner;
 import com.ev.model.RoleType;
 import com.ev.model.ChargerOperator;
+import com.ev.model.ChargingStations;
 import com.ev.model.Admin;
+import com.ev.repository.ChargingStationRepository;
 import com.ev.repository.RefreshTokenRepo;
 import com.ev.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 
 import com.ev.dto.UserResponseDTO;
+import com.ev.dto.CreateStationRequestDTO;
+import com.ev.dto.StationResponseDTO;
 import com.ev.dto.UserCreateDTO;
 
 import org.slf4j.Logger;
@@ -39,6 +44,9 @@ public class AdminController {
     private UserRepository userRepository;
     
     @Autowired
+    private ChargingStationRepository chargingStationRepository;
+    
+    @Autowired
     private RefreshTokenRepo refreshTokenRepo;
 
     @Autowired
@@ -46,7 +54,63 @@ public class AdminController {
 
     private static final Logger log = LoggerFactory.getLogger(com.ev.controller.AdminController.class);
 
-   
+  //List of all stations
+    @GetMapping("/stations")
+    public ResponseEntity<List<StationResponseDTO>> getAllStations() {
+        try {
+            List<ChargingStations> stations = chargingStationRepository.findAll();
+            List<StationResponseDTO> stationDTOs = stations.stream()
+                    .map(station -> new StationResponseDTO(station))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(stationDTOs);
+        } catch (Exception e) {
+            log.error("Error fetching stations", e);
+            return ResponseEntity.status(500).build();
+        }
+    }
+    
+    @PostMapping("/stations")
+    public ResponseEntity<StationResponseDTO> createStation(@Valid @RequestBody CreateStationRequestDTO request) {
+        ChargingStations station = new ChargingStations();
+        station.setName(request.getName());
+        station.setLocation(request.getLocation());
+        station.setAddress(request.getAddress());
+        station.setCity(request.getCity());
+        station.setState(request.getState());
+        station.setZipCode(request.getZipCode());
+        station.setLevel2Chargers(request.getLevel2Chargers());
+        station.setDcFastChargers(request.getDcFastChargers());
+        station.setLevel2Rate(request.getLevel2Rate());
+        station.setDcFastRate(request.getDcFastRate());
+        station.setPeakPricing(request.getPeakPricing());
+        station.setPeakMultiplier(request.getPeakMultiplier() != null ? request.getPeakMultiplier() : 1.25);
+        station.setNotes(request.getNotes());
+        station.setStatus("operational");
+        
+        ChargingStations saved = chargingStationRepository.save(station);
+        return new ResponseEntity<>(new StationResponseDTO(saved), HttpStatus.CREATED);
+    }
+    @DeleteMapping("/stations/{stationId}")
+    public ResponseEntity<?> deleteStation(@PathVariable Long stationId) {
+        try {
+            boolean exists = chargingStationRepository.existsById(stationId);
+            
+            if (!exists) {
+                log.warn("Station with id {} not found", stationId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Station not found with id: " + stationId));
+            }
+            
+            chargingStationRepository.deleteById(stationId);
+            log.info("Station {} deleted by admin", stationId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("Error deleting station", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to delete station: " + e.getMessage()));
+        }
+    }
+    
      //List of all users
      
     @GetMapping("/users")
@@ -61,13 +125,13 @@ public class AdminController {
             return ResponseEntity.status(500).build();
         }
     }
-
+    
     /**
      * Get user by ID
      * @param userId User ID
      * @return User details
      */
-    @GetMapping("/{userId}")
+    @GetMapping("/users/{userId}") 
     public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long userId) {
         try {
             Optional<User> userOpt = userRepository.findById(userId);
@@ -80,6 +144,7 @@ public class AdminController {
             return ResponseEntity.status(500).build();
         }
     }
+
 
     /**
      * Get users by role type

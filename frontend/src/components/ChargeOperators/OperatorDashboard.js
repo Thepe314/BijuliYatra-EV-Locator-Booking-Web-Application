@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Zap, TrendingUp, AlertCircle, DollarSign, Activity, MapPin, Settings, Users, Calendar, Download, Loader } from 'lucide-react';
+import { Zap, TrendingUp, AlertCircle, DollarSign, Activity, MapPin, Settings, Users, Calendar, Download, Loader, RefreshCw, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { stationService } from '../../Services/api';
 
@@ -10,6 +10,7 @@ export default function OperatorDashboard() {
   const [selectedStation, setSelectedStation] = useState(null);
   const [stationData, setStationData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   // Mock data for analytics (replace with API calls as needed)
@@ -32,9 +33,9 @@ export default function OperatorDashboard() {
   ];
 
   const alerts = [
-    { id: 1, type: 'maintenance', station: 'Airport Station', message: 'Charger 3 requires maintenance', time: '2 hours ago' },
-    { id: 2, type: 'warning', station: 'Downtown Hub', message: 'High demand detected', time: '4 hours ago' },
-    { id: 3, type: 'info', station: 'Mall Plaza', message: 'Peak hours approaching', time: '1 day ago' },
+    { id: 1, type: 'maintenance', station: 'Charger requires maintenance', message: 'Regular maintenance check needed', time: '2 hours ago' },
+    { id: 2, type: 'warning', station: 'High demand detected', message: 'Consider adding more chargers', time: '4 hours ago' },
+    { id: 3, type: 'info', station: 'Peak hours approaching', message: 'Prepare for increased usage', time: '1 day ago' },
   ];
 
   // Fetch stations on component mount
@@ -42,53 +43,97 @@ export default function OperatorDashboard() {
     fetchStations();
   }, []);
 
-  const fetchStations = async () => {
+  const fetchStations = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
-      const data = await stationService.listStation();
+      
+      const data = await stationService.listStationOperator();
+      console.log('Fetched stations:', data);
       
       // Transform API data to match UI format
-      const transformedStations = (Array.isArray(data) ? data : data.data || []).map(station => ({
-        id: station.station_id || station.id,
-        name: station.name,
-        location: station.location || station.address,
-        chargers: station.totalChargers || 0,
-        active: station.activeChargers || 0,
-        revenue: station.monthlyRevenue || 0,
-        utilization: station.utilizationPercentage || calculateUtilization(station),
-        status: station.status?.toLowerCase() === 'active' ? 'operational' : 'maintenance',
-        level2Chargers: station.level2Chargers || 0,
-        dcFastChargers: station.dcFastChargers || 0,
-        level2Rate: station.level2Rate || 0,
-        dcFastRate: station.dcFastRate || 0,
-        city: station.city,
-        state: station.state,
-        address: station.address,
-        zipCode: station.zipCode,
-      }));
+      const transformedStations = (Array.isArray(data) ? data : []).map(station => {
+        const level2 = station.level2Chargers || 0;
+        const dcFast = station.dcFastChargers || 0;
+        const totalChargers = level2 + dcFast;
+        
+        // Mock: 30% utilization (replace with actual booking data)
+        const activeChargers = Math.floor(totalChargers * 0.3);
+        const utilization = totalChargers > 0 ? Math.round((activeChargers / totalChargers) * 100) : 0;
+        
+        // Normalize status
+        const normalizedStatus = station.status?.toLowerCase() === 'operational' || 
+                                 station.status?.toLowerCase() === 'active' 
+                                 ? 'operational' 
+                                 : 'maintenance';
+
+        return {
+          id: station.id,
+          name: station.name,
+          location: station.location || station.address,
+          chargers: totalChargers,
+          active: activeChargers,
+          revenue: 0, // TODO: Calculate from bookings API
+          utilization: utilization,
+          status: normalizedStatus,
+          level2Chargers: level2,
+          dcFastChargers: dcFast,
+          level2Rate: station.level2Rate || 0,
+          dcFastRate: station.dcFastRate || 0,
+          city: station.city,
+          state: station.state,
+          address: station.address,
+          zipCode: station.zipCode,
+          peakPricing: station.peakPricing,
+          notes: station.notes,
+          createdAt: station.createdAt,
+        };
+      });
       
       setStationData(transformedStations);
     } catch (err) {
       console.error('Error fetching stations:', err);
-      setError('Failed to load stations. Using demo data.');
-      // Fallback to demo data
-      setStationData([
-        { id: 1, name: 'Downtown Hub', location: 'Main St', chargers: 8, active: 6, revenue: 2340, utilization: 75, status: 'operational' },
-        { id: 2, name: 'Mall Plaza', location: 'Shopping District', chargers: 12, active: 10, revenue: 3120, utilization: 83, status: 'operational' },
-      ]);
+      
+      if (err.response?.status === 404) {
+        setError('Stations endpoint not found. Please check backend.');
+      } else if (err.response?.status === 401 || err.response?.status === 403) {
+        setError('Authentication failed. Please log in again.');
+      } else if (!err.response) {
+        setError('Cannot connect to server. Please check your connection.');
+      } else {
+        setError(err.response?.data?.message || 'Failed to load stations.');
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
-
-  const calculateUtilization = (station) => {
-    if (station.totalChargers === 0) return 0;
-    return Math.round((station.activeChargers / station.totalChargers) * 100);
   };
 
   const handleAddStation = () => {
     navigate('/operator/addstation');
+  };
+
+  const handleEditStation = (stationId) => {
+    navigate(`/operator/editstation/${stationId}`);
+  };
+
+  const handleDeleteStation = async (stationId) => {
+    if (!window.confirm('Are you sure you want to delete this station?')) {
+      return;
+    }
+
+    try {
+      await stationService.deleteStation(stationId);
+      alert('Station deleted successfully!');
+      fetchStations();
+    } catch (err) {
+      console.error('Error deleting station:', err);
+      alert(err.response?.data?.message || 'Failed to delete station.');
+    }
   };
 
   // Calculate totals from real data
@@ -96,6 +141,7 @@ export default function OperatorDashboard() {
   const totalSessions = revenueData.reduce((sum, item) => sum + item.sessions, 0);
   const activeChargers = stationData.reduce((sum, station) => sum + (station.active || 0), 0);
   const totalChargers = stationData.reduce((sum, station) => sum + (station.chargers || 0), 0);
+  const operationalStations = stationData.filter(s => s.status === 'operational').length;
   
   // Calculate charger type distribution
   const totalLevel2 = stationData.reduce((sum, station) => sum + (station.level2Chargers || 0), 0);
@@ -112,15 +158,12 @@ export default function OperatorDashboard() {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Revenue</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">${(totalRevenue / 1000).toFixed(1)}k</p>
-              <p className="text-sm text-green-600 mt-2 flex items-center">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                +12.5% from last month
-              </p>
+              <p className="text-sm text-gray-600">Total Stations</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{stationData.length}</p>
+              <p className="text-sm text-green-600 mt-2">{operationalStations} operational</p>
             </div>
             <div className="bg-blue-100 p-3 rounded-full">
-              <DollarSign className="w-8 h-8 text-blue-600" />
+              <MapPin className="w-8 h-8 text-blue-600" />
             </div>
           </div>
         </div>
@@ -130,7 +173,7 @@ export default function OperatorDashboard() {
             <div>
               <p className="text-sm text-gray-600">Active Chargers</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">{activeChargers}/{totalChargers}</p>
-              <p className="text-sm text-gray-600 mt-2">{totalChargers > 0 ? ((activeChargers/totalChargers)*100).toFixed(0) : 0}% utilization</p>
+              <p className="text-sm text-gray-600 mt-2">{totalChargers > 0 ? Math.round((activeChargers/totalChargers)*100) : 0}% utilization</p>
             </div>
             <div className="bg-green-100 p-3 rounded-full">
               <Zap className="w-8 h-8 text-green-600" />
@@ -224,109 +267,151 @@ export default function OperatorDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Station Management</h2>
-        <button 
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center" 
-          onClick={handleAddStation}
-        >
-          <MapPin className="w-4 h-4 mr-2" />
-          Add New Station
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => fetchStations(true)}
+            disabled={refreshing}
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button 
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center" 
+            onClick={handleAddStation}
+          >
+            <MapPin className="w-4 h-4 mr-2" />
+            Add New Station
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-red-800 text-sm">{error}</p>
+          </div>
+          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800">×</button>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader className="w-6 h-6 animate-spin text-blue-600" />
-          <p className="ml-2 text-gray-600">Loading stations...</p>
+          <Loader className="w-8 h-8 animate-spin text-blue-600 mr-3" />
+          <p className="text-gray-600">Loading stations...</p>
         </div>
-      ) : error ? (
-        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-yellow-800">{error}</p>
+      ) : stationData.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <MapPin className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Stations Found</h3>
+          <p className="text-gray-600 mb-4">Get started by adding your first charging station</p>
+          <button 
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 inline-flex items-center gap-2"
+            onClick={handleAddStation}
+          >
+            <MapPin className="w-4 h-4" />
+            Create First Station
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {stationData.map(station => (
-            <div key={station.id} className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{station.name}</h3>
-                  <p className="text-sm text-gray-600 flex items-center mt-1">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    {station.location}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {station.city}, {station.state} {station.zipCode}
-                  </p>
+            <div key={station.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900">{station.name}</h3>
+                    <p className="text-sm text-gray-600 flex items-center mt-1">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      {station.location}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {station.city}, {station.state} {station.zipCode}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      station.status === 'operational' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
+                    }`}>
+                      {station.status}
+                    </span>
+                  </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  station.status === 'operational' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
-                }`}>
-                  {station.status}
-                </span>
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Chargers</p>
+                    <p className="text-2xl font-bold text-gray-900">{station.active}/{station.chargers}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      L2: {station.level2Chargers} | DC: {station.dcFastChargers}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Utilization</p>
+                    <p className="text-2xl font-bold text-gray-900">{station.utilization}%</p>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all ${
+                        station.utilization > 80 ? 'bg-red-500' :
+                        station.utilization > 60 ? 'bg-orange-500' :
+                        'bg-green-500'
+                      }`}
+                      style={{ width: `${station.utilization}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs mb-4">
+                  <div className="bg-blue-50 p-2 rounded">
+                    <p className="text-gray-600">L2 Rate</p>
+                    <p className="font-semibold text-gray-900">${station.level2Rate}/kWh</p>
+                  </div>
+                  <div className="bg-green-50 p-2 rounded">
+                    <p className="text-gray-600">DC Rate</p>
+                    <p className="font-semibold text-gray-900">${station.dcFastRate}/kWh</p>
+                  </div>
+                </div>
+
+                {station.peakPricing && (
+                  <div className="mb-4">
+                    <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
+                      Peak Pricing Enabled
+                    </span>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <p className="text-sm text-gray-600">Chargers</p>
-                  <p className="text-2xl font-bold text-gray-900">{station.active}/{station.chargers}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    L2: {station.level2Chargers} | DC: {station.dcFastChargers}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Utilization</p>
-                  <p className="text-2xl font-bold text-gray-900">{station.utilization}%</p>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Monthly Revenue</span>
-                  <span className="font-medium text-gray-900">${station.revenue.toFixed(2)}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full" 
-                    style={{ width: `${station.utilization}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs mb-4">
-                <div className="bg-blue-50 p-2 rounded">
-                  <p className="text-gray-600">L2 Rate</p>
-                  <p className="font-semibold text-gray-900">${station.level2Rate}/kWh</p>
-                </div>
-                <div className="bg-green-50 p-2 rounded">
-                  <p className="text-gray-600">DC Rate</p>
-                  <p className="font-semibold text-gray-900">${station.dcFastRate}/kWh</p>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
+              <div className="bg-gray-50 px-6 py-3 flex justify-between items-center border-t border-gray-200">
                 <button 
                   onClick={() => setSelectedStation(station)}
-                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm"
+                  className="text-sm text-blue-600 font-medium hover:text-blue-800"
                 >
                   View Details
                 </button>
-                <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                  <Settings className="w-4 h-4 text-gray-600" />
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleEditStation(station.id)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Edit className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteStation(station.id)}
+                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {stationData.length === 0 && !loading && !error && (
-        <div className="text-center py-12">
-          <p className="text-gray-600 mb-4">No stations found</p>
-          <button 
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            onClick={handleAddStation}
-          >
-            Create First Station
-          </button>
         </div>
       )}
     </div>
@@ -402,16 +487,20 @@ export default function OperatorDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Average Session Duration</p>
-            <p className="text-2xl font-bold text-gray-900">42 min</p>
+            <p className="text-sm text-gray-600 mb-2">Total Stations</p>
+            <p className="text-2xl font-bold text-gray-900">{stationData.length}</p>
           </div>
           <div className="p-4 border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Average Energy Delivered</p>
-            <p className="text-2xl font-bold text-gray-900">28.5 kWh</p>
+            <p className="text-sm text-gray-600 mb-2">Total Chargers</p>
+            <p className="text-2xl font-bold text-gray-900">{totalChargers}</p>
           </div>
           <div className="p-4 border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Average Revenue/Session</p>
-            <p className="text-2xl font-bold text-gray-900">$8.45</p>
+            <p className="text-sm text-gray-600 mb-2">Average Utilization</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {stationData.length > 0 
+                ? Math.round(stationData.reduce((sum, s) => sum + s.utilization, 0) / stationData.length)
+                : 0}%
+            </p>
           </div>
         </div>
       </div>
@@ -423,7 +512,7 @@ export default function OperatorDashboard() {
       <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
 
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Pricing Configuration</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Default Pricing Configuration</h3>
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -437,8 +526,11 @@ export default function OperatorDashboard() {
           </div>
           <div className="flex items-center">
             <input type="checkbox" id="peak" className="mr-2" />
-            <label htmlFor="peak" className="text-sm text-gray-700">Enable peak hour pricing</label>
+            <label htmlFor="peak" className="text-sm text-gray-700">Enable peak hour pricing by default</label>
           </div>
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+            Save Settings
+          </button>
         </div>
       </div>
 
@@ -482,15 +574,16 @@ export default function OperatorDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Zap className="w-8 h-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">CPO Dashboard</span>
+              <span className="text-xl font-bold text-gray-900">Operator Dashboard</span>
             </div>
             <div className="flex items-center space-x-4">
               <button 
-                onClick={fetchStations}
-                className="p-2 rounded-lg hover:bg-gray-100"
+                onClick={() => fetchStations(true)}
+                disabled={refreshing}
+                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50"
                 title="Refresh stations"
               >
-                <Zap className="w-5 h-5 text-gray-600" />
+                <RefreshCw className={`w-5 h-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
               <button className="p-2 rounded-lg hover:bg-gray-100">
                 <Users className="w-5 h-5 text-gray-600" />

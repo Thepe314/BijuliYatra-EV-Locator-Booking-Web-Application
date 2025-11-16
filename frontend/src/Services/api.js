@@ -202,14 +202,25 @@ export const userService = {
   },
 };
 
-// Station Management Services
 export const stationService = {
-  listStation: async (filters = {}) => {
+  // Operator endpoints
+  listStationOperator: async (filters = {}) => {
     try {
       const response = await api.get("/operator/stations", { params: filters });
       return response.data;
     } catch (error) {
-      console.error("Error fetching stations:", error);
+      console.error("Error fetching operator stations:", error);
+      throw error;
+    }
+  },
+
+  // Admin endpoints
+  listStationAdmin: async (filters = {}) => {
+    try {
+      const response = await api.get("/admin/stations", { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching admin stations:", error);
       throw error;
     }
   },
@@ -244,12 +255,24 @@ export const stationService = {
     }
   },
 
+  // Delete for operators - only their own stations
   deleteStation: async (stationId) => {
     try {
       const response = await api.delete(`/operator/stations/${stationId}`);
       return response.data;
     } catch (error) {
       console.error("Error deleting station:", error);
+      throw error;
+    }
+  },
+
+  // Delete for admin - any station
+  deleteStationAdmin: async (stationId) => {
+    try {
+      const response = await api.delete(`/admin/stations/${stationId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting station (admin):", error);
       throw error;
     }
   },
@@ -264,6 +287,7 @@ export const stationService = {
     }
   },
 };
+
 
 // Booking Management Services
 export const bookingService = {

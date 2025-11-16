@@ -18,6 +18,7 @@ import EVUserDashboard from './components/User/UserDashboard.js';
 import OperatorDashboard from './components/ChargeOperators/OperatorDashboard.js';
 import AddStationPage from './components/ChargeOperators/AddStation.js';
 import EditUserPage from './components/Admin/EditUsers.js';
+import AddStationAdmin from './components/Admin/AddStationAdmin';
 
 
 
@@ -35,7 +36,6 @@ function App() {
         <Route path="/signup/ev-owner" element={<SignUpPage />} />
         <Route path="/signup/operator" element={<ChargingOperatorSignUp />} />
         <Route path="/home" element={<HomePage />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/map" element={<ChargingStationsMap />} />
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/profile" element={<UserProfile />} />
@@ -44,11 +44,23 @@ function App() {
         <Route path="/usermanagement" element={<UserManagement/>} />
         <Route path="/stationmangement" element={<StationManagement/>} />
         <Route path="/analytics" element={<AdminAnalytics/>} />
-         <Route path="/ev-owner/dashboard" element={<EVUserDashboard/>} />
-            <Route path="/operator/dashboard" element={<OperatorDashboard/>} />
-            <Route path="/operator/addstation" element={<AddStationPage/>} />
-      <Route path="/admin/editUser" element={<EditUserPage/>} />
-        
+  
+          
+     
+
+       {/* Admin route */}
+       <Route path="/admin/dashboard" element={<AdminDashboard />} />
+       <Route path="/admin/editUser" element={<EditUserPage/>} />
+       <Route path="/admin/addstation" element={<AddStationAdmin/>} />
+  
+         {/* Operator route */}
+         <Route path="/operator/dashboard" element={<OperatorDashboard/>} />
+         <Route path="/operator/addstation" element={<AddStationPage/>} />
+
+
+        {/* Ev-Owner route */}
+      <Route path="/ev-owner/dashboard" element={<EVUserDashboard/>} />
+      
 
         {/* You can add more routes later, e.g. a home/dashboard route */}
         {/* <Route path="/home" element={<Home />} /> */}

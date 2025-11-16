@@ -24,7 +24,6 @@ export default function EVOwnerSignUp() {
     city: "",
     district: "",
     address: "",
-  
     
     // Step 3: Vehicle Details
     vehicleBrand: "",
@@ -119,18 +118,23 @@ export default function EVOwnerSignUp() {
     setApiError("");
 
     try {
+      // Match backend DTO fields exactly
       const userData = {
         fullname: formData.fullName,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
         password: formData.password,
         role: "EV_OWNER",
-        address: `${formData.region}, ${formData.city}, ${formData.district}, ${formData.address}}`,
+        region: formData.region,
+        city: formData.city,
+        district: formData.district,
+        address: formData.address,
         vehicleBrand: formData.vehicleBrand,
         vehicleModel: formData.vehicleModel,
         vehicleYear: formData.vehicleYear,
         vehicleRegistrationNumber: formData.registrationNumber,
-        chargingType: formData.chargingType
+        chargingType: formData.chargingType,
+        batteryCapacity: formData.batteryCapacity || null
       };
 
       const response = await authService.signupEvOwner(userData);
@@ -257,7 +261,7 @@ export default function EVOwnerSignUp() {
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
                     className={`w-full pl-12 pr-4 py-3 border-2 ${errors.phoneNumber ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-emerald-500 focus:outline-none transition-colors`}
-                    placeholder="+1 234 567 8900"
+                    placeholder="+977 1234567890"
                   />
                 </div>
                 {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>}
@@ -358,21 +362,17 @@ export default function EVOwnerSignUp() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Address</label>
-                  <input
-                    type="text"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 ${errors.address ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-emerald-500 focus:outline-none transition-colors`}
-                    placeholder="House no./building/street/area"
-                  />
-                  {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
-                </div>
-
-                
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Street Address</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border-2 ${errors.address ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-emerald-500 focus:outline-none transition-colors`}
+                  placeholder="House no./building/street/area"
+                />
+                {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
               </div>
             </>
           )}
@@ -504,13 +504,13 @@ export default function EVOwnerSignUp() {
           </div>
 
           <p className="text-center text-sm text-slate-600 mt-6">
-            Already have an account?{''}
+            Already have an account?{' '}
             <Link to="/login" className="text-emerald-600 hover:text-emerald-700 font-semibold">
               Sign In
             </Link>
           </p>
-          <p className="text-center text-sm text-slate-600 mt-6">
-            Signup as an Charging Operator?{''}
+          <p className="text-center text-sm text-slate-600">
+            Signup as Charging Operator?{' '}
             <Link to="/signup/operator" className="text-emerald-600 hover:text-emerald-700 font-semibold">
               Sign Up
             </Link>

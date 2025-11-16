@@ -11,7 +11,6 @@ export default function ChargingOperatorSignUp() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
 
-
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -23,9 +22,10 @@ export default function ChargingOperatorSignUp() {
     companyRegistrationNo: "",
     companyPan: "",
     companyLicenseNo: "",
-    address: "",
+    region: "",
     city: "",
     district: "",
+    address: "",
     stationCount: "",
     chargingType: [],
     openingHours: "",
@@ -99,8 +99,10 @@ export default function ChargingOperatorSignUp() {
     }
     
     if (step === 3) {
-      if (!formData.address.trim()) newErrors.address = "Address is required";
+      if (!formData.region.trim()) newErrors.region = "Region is required";
       if (!formData.city.trim()) newErrors.city = "City is required";
+      if (!formData.district.trim()) newErrors.district = "District is required";
+      if (!formData.address.trim()) newErrors.address = "Address is required";
       if (!formData.stationCount.trim()) newErrors.stationCount = "Number of stations is required";
     }
     
@@ -134,24 +136,27 @@ export default function ChargingOperatorSignUp() {
     setApiError("");
 
     try {
+      // Match backend OperatorSignupRequest DTO fields exactly
       const userData = {
         fullname: formData.fullName,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
         password: formData.password,
         role: "CHARGING_OPERATOR",
+        region: formData.region,
+        city: formData.city,
+        district: formData.district,
+        address: formData.address,
         companyName: formData.companyName,
         companyType: formData.companyType,
         companyRegistrationNo: formData.companyRegistrationNo,
         companyPan: formData.companyPan,
         companyLicenseNo: formData.companyLicenseNo,
-        address: formData.address,
-        city: formData.city,
         stationCount: formData.stationCount,
         chargingType: formData.chargingType.join(", "),
         openingHours: formData.openingHours,
         closingHours: formData.closingHours,
-        chargePerKwh: formData.chargePerKwh
+        chargePerKwh: parseFloat(formData.chargePerKwh)
       };
 
      const response = await authService.signupOperator(userData);
@@ -420,19 +425,19 @@ export default function ChargingOperatorSignUp() {
           {currentStep === 3 && (
             <>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Address</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Region</label>
                 <div className="relative">
                   <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="text"
-                    name="address"
-                    value={formData.address}
+                    name="region"
+                    value={formData.region}
                     onChange={handleInputChange}
-                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.address ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
-                    placeholder="123 Charging Avenue, Industrial Zone"
+                    className={`w-full pl-12 pr-4 py-3 border-2 ${errors.region ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                    placeholder="Bagmati"
                   />
                 </div>
-                {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+                {errors.region && <p className="text-red-500 text-xs mt-1">{errors.region}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -461,6 +466,19 @@ export default function ChargingOperatorSignUp() {
                   />
                   {errors.district && <p className="text-red-500 text-xs mt-1">{errors.district}</p>}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Street Address</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border-2 ${errors.address ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:border-amber-500 focus:outline-none transition-colors`}
+                  placeholder="123 Charging Avenue, Industrial Zone"
+                />
+                {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
               </div>
 
               <div>
@@ -590,7 +608,7 @@ export default function ChargingOperatorSignUp() {
           </div>
 
           <p className="text-center text-sm text-slate-600 mt-6">
-            Already have an account? <a href="#login" className="text-amber-600 hover:text-amber-700 font-semibold">Sign In</a>
+            Already have an account? <Link to="/login" className="text-amber-600 hover:text-amber-700 font-semibold">Sign In</Link>
           </p>
         </div>
       </div>
