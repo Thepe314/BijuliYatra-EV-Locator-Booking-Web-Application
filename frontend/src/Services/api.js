@@ -200,6 +200,12 @@ export const userService = {
       throw error;
     }
   },
+
+  getOperators: async () => {
+  const response = await api.get("/admin/role/CHARGER_OPERATOR");
+  return response.data;
+  
+},
 };
 
 export const stationService = {
@@ -238,6 +244,16 @@ export const stationService = {
   createStation: async (stationData) => {
     try {
       const response = await api.post("/operator/stations", stationData);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating station:", error);
+      throw error;
+    }
+  },
+
+   createStationAdmin: async (stationData) => {
+    try {
+      const response = await api.post("/admin/stations", stationData);
       return response.data;
     } catch (error) {
       console.error("Error creating station:", error);
@@ -287,6 +303,8 @@ export const stationService = {
     }
   },
 };
+
+
 
 
 // Booking Management Services

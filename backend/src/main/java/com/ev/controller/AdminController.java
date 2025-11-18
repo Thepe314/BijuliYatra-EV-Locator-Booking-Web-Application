@@ -57,16 +57,28 @@ public class AdminController {
   //List of all stations
     @GetMapping("/stations")
     public ResponseEntity<List<StationResponseDTO>> getAllStations() {
-        try {
-            List<ChargingStations> stations = chargingStationRepository.findAll();
-            List<StationResponseDTO> stationDTOs = stations.stream()
-                    .map(station -> new StationResponseDTO(station))
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(stationDTOs);
-        } catch (Exception e) {
-            log.error("Error fetching stations", e);
-            return ResponseEntity.status(500).build();
+        List<ChargingStations> stations = chargingStationRepository.findAllWithOperator(); 
+        List<StationResponseDTO> dtos = stations.stream()
+            .map(StationResponseDTO::new)
+            .toList();
+        return ResponseEntity.ok(dtos);
+    }
+    
+    @GetMapping("/fix-operators")
+    public String fixAllOperators() {
+        List<ChargingStations> stations = chargingStationRepository.findAll();
+        int fixed = 0;
+        for (ChargingStations s : stations) {
+            if (s.getOperator() == null && s.getOperatorId() != null) {
+                User user = userRepository.findById(s.getOperatorId()).orElse(null);
+                if (user != null) {
+                    s.setOperator(user);
+                    chargingStationRepository.save(s);
+                    fixed++;
+                }
+            }
         }
+        return "Fixed " + fixed + " stations. Now refresh frontend!";
     }
     
     @PostMapping("/stations")
@@ -86,7 +98,14 @@ public class AdminController {
         station.setPeakMultiplier(request.getPeakMultiplier() != null ? request.getPeakMultiplier() : 1.25);
         station.setNotes(request.getNotes());
         station.setStatus("operational");
+
         
+        User operator = userRepository.findById(request.getOperatorId())
+            .orElseThrow(() -> new RuntimeException("Operator not found"));
+        
+        station.setOperator(operator);       
+        station.setOperatorId(operator.getUser_id());
+
         ChargingStations saved = chargingStationRepository.save(station);
         return new ResponseEntity<>(new StationResponseDTO(saved), HttpStatus.CREATED);
     }

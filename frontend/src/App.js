@@ -18,7 +18,7 @@ import EVUserDashboard from './components/User/UserDashboard.js';
 import OperatorDashboard from './components/ChargeOperators/OperatorDashboard.js';
 import AddStationPage from './components/ChargeOperators/AddStation.js';
 import EditUserPage from './components/Admin/EditUsers.js';
-import AddStationAdmin from './components/Admin/AddStationAdmin';
+import AddStationAdmin from './components/Admin/AddStationAdmin.js';
 
 
 
@@ -42,7 +42,7 @@ function App() {
         <Route path="/stationdetails" element={<StationDetailsPage />} />
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/usermanagement" element={<UserManagement/>} />
-        <Route path="/stationmangement" element={<StationManagement/>} />
+        <Route path="/stationmanagement" element={<StationManagement/>} />
         <Route path="/analytics" element={<AdminAnalytics/>} />
   
           
