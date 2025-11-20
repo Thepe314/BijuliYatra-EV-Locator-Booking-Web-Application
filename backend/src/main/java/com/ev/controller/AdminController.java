@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,32 +58,24 @@ public class AdminController {
   //List of all stations
     @GetMapping("/stations")
     public ResponseEntity<List<StationResponseDTO>> getAllStations() {
-        List<ChargingStations> stations = chargingStationRepository.findAllWithOperator(); 
+       
+        List<ChargingStations> stations = chargingStationRepository.findAll();
+
         List<StationResponseDTO> dtos = stations.stream()
-            .map(StationResponseDTO::new)
-            .toList();
+                .map(StationResponseDTO::new)
+                .toList();
+
         return ResponseEntity.ok(dtos);
     }
     
-    @GetMapping("/fix-operators")
-    public String fixAllOperators() {
-        List<ChargingStations> stations = chargingStationRepository.findAll();
-        int fixed = 0;
-        for (ChargingStations s : stations) {
-            if (s.getOperator() == null && s.getOperatorId() != null) {
-                User user = userRepository.findById(s.getOperatorId()).orElse(null);
-                if (user != null) {
-                    s.setOperator(user);
-                    chargingStationRepository.save(s);
-                    fixed++;
-                }
-            }
-        }
-        return "Fixed " + fixed + " stations. Now refresh frontend!";
-    }
     
     @PostMapping("/stations")
     public ResponseEntity<StationResponseDTO> createStation(@Valid @RequestBody CreateStationRequestDTO request) {
+
+        // Admin MUST send operatorId
+        User operator = userRepository.findById(request.getOperatorId())
+                .orElseThrow(() -> new RuntimeException("Operator not found"));
+
         ChargingStations station = new ChargingStations();
         station.setName(request.getName());
         station.setLocation(request.getLocation());
@@ -98,17 +91,12 @@ public class AdminController {
         station.setPeakMultiplier(request.getPeakMultiplier() != null ? request.getPeakMultiplier() : 1.25);
         station.setNotes(request.getNotes());
         station.setStatus("operational");
-
-        
-        User operator = userRepository.findById(request.getOperatorId())
-            .orElseThrow(() -> new RuntimeException("Operator not found"));
-        
-        station.setOperator(operator);       
-        station.setOperatorId(operator.getUser_id());
+        station.setOperator(operator);                    
 
         ChargingStations saved = chargingStationRepository.save(station);
         return new ResponseEntity<>(new StationResponseDTO(saved), HttpStatus.CREATED);
     }
+    
     @DeleteMapping("/stations/{stationId}")
     public ResponseEntity<?> deleteStation(@PathVariable Long stationId) {
         try {

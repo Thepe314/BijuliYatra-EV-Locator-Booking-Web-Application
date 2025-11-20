@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.ev.model.ChargingStations;
+import com.ev.model.User;
 
 @Repository
 public interface ChargingStationRepository extends JpaRepository<ChargingStations, Long> {
-	@Query("SELECT s FROM ChargingStations s LEFT JOIN FETCH s.operator o LEFT JOIN FETCH o.chargerOperatorDetails")
-	List<ChargingStations> findAllWithOperator();
+	List<ChargingStations> findByOperator(User operator);
 }

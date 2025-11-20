@@ -1,5 +1,4 @@
 package com.ev.configuration;
-
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -11,24 +10,23 @@ import com.ev.model.RoleType;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-
 @Component
 public class jwtUtil {
-    
+
     @Value("${jwt.secret}")
     private String base64Key;
-    
+
     private final long EXPIRATION_TIME = 1000 * 60 * 60 * 10; // 10 hours
-    
+
     private Key getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(base64Key);
         return Keys.hmacShaKeyFor(keyBytes);
     }
-    
+
     // Generate token with comma-separated roles (accepts String now)
     public String generateToken(String email, String roleString, Long userId) {
         String jti = UUID.randomUUID().toString();
-        
+
         return Jwts.builder()
             .setSubject(email)
             .claim("role", roleString)
@@ -39,7 +37,7 @@ public class jwtUtil {
             .signWith(getSigningKey(), SignatureAlgorithm.HS256)
             .compact();
     }
-    
+
     // Extract roles from token and return as comma-separated String
     public String getRolesFromToken(String token) {
         return Jwts.parser()
@@ -49,12 +47,12 @@ public class jwtUtil {
             .getBody()
             .get("role", String.class);
     }
-    
+
     // Extract roles as Set<RoleType> if needed
     public Set<RoleType> getRolesAsSetFromToken(String token) {
         String rolesClaim = getRolesFromToken(token);
         Set<RoleType> roleTypes = new HashSet<>();
-        
+
         if (rolesClaim != null && !rolesClaim.isEmpty()) {
             String[] roles = rolesClaim.split(",");
             for (String role : roles) {
@@ -67,7 +65,7 @@ public class jwtUtil {
         }
         return roleTypes;
     }
-    
+
     public String getJti(String token) {
         return Jwts.parser()
             .setSigningKey(getSigningKey())
@@ -76,7 +74,7 @@ public class jwtUtil {
             .getBody()
             .getId();
     }
-    
+
     public Long getUserIdFromToken(String token) {
         return Jwts.parser()
             .setSigningKey(getSigningKey())
@@ -85,7 +83,7 @@ public class jwtUtil {
             .getBody()
             .get("userId", Long.class);
     }
-    
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
@@ -98,7 +96,7 @@ public class jwtUtil {
             return false;
         }
     }
-    
+
     public String getEmailFromToken(String token) {
         return Jwts.parser()
             .setSigningKey(getSigningKey())

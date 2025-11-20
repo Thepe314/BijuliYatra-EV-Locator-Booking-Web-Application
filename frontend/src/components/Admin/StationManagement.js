@@ -138,12 +138,11 @@ export default function StationManagement() {
   }
 
   const navigationItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-    { name: 'Station Management', icon: Building2, path: '/stationmanagement', current: true },
-    { name: 'User Management', icon: Users, path: '/usermanagement' },
-    { name: 'Settings', icon: Settings, path: '/admin/settings' },
-  ];
-
+  { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
+  { name: 'Station Management', icon: Building2, path: '/stationmanagement' },
+  { name: 'User Management', icon: Users, path: '/usermanagement' },
+  { name: 'Settings', icon: Settings, path: '/admin/settings' },
+];
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -195,7 +194,7 @@ export default function StationManagement() {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 transition-all ${!sidebarOpen && 'justify-center'}`}
             >
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-bold">
-                A
+                
               </div>
               {sidebarOpen && (
                 <>

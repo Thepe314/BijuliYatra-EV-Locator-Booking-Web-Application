@@ -118,7 +118,7 @@ export default function AdminDashboard() {
   ];
 
   const handleRefresh = () => fetchDashboardData(true);
-  const handleManage = () => navigate('/stationmangement');
+  const handleManage = () => navigate('/stationmanagement');
   const handleUsers = () => navigate('/usermanagement');
 
   const handleLogout = async () => {

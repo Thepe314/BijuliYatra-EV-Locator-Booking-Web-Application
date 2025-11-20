@@ -328,9 +328,13 @@ export default function OperatorDashboard() {
                       <MapPin className="w-4 h-4 mr-1" />
                       {station.location}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {station.city}, {station.state} {station.zipCode}
-                    </p>
+                    <p className="text-xs text-gray-500 mt-1 flex items-center">
+                    <Users className="w-3.5 h-3.5 mr-1 text-gray-400" />
+                    Managed by: 
+                    <span className="font-medium text-gray-700 ml-1">
+                      {station.operatorName || station.operatorCompany || 'You'}
+                    </span>
+                  </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${

@@ -5,7 +5,7 @@ import jakarta.validation.constraints.*;
 
 public class CreateStationRequestDTO {
 
-    @NotNull(message = "Please select an operator for this station")
+
     @JsonProperty("operatorId")
     private Long operatorId;
 

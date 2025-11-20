@@ -21,9 +21,7 @@ public class ChargingStations {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @Column(nullable = false)
-    private Long operatorId;
+   
     
     @Column(nullable = false)
     private String name;
@@ -73,8 +71,9 @@ public class ChargingStations {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
     
+    // ✅ Keep only this - it handles both the relationship AND the foreign key
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "operatorId")
+    @JoinColumn(name = "operator_id", nullable = false)
     private User operator;
     
     @PrePersist
@@ -140,22 +139,11 @@ public class ChargingStations {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-	public Long getOperatorId() {
-		return operatorId;
-	}
-
-	public void setOperatorId(Long operatorId) {
-		this.operatorId = operatorId;
-	}
-
-	public User getOperator() {
-		return operator;
-	}
-
-	public void setOperator(User operator) {
-		this.operator = operator;
-	}
+    public User getOperator() { return operator; }
+    public void setOperator(User operator) { this.operator = operator; }
     
-    
-    
+    // ✅ Convenience method to get operator ID from the relationship
+    public Long getOperatorId() {
+        return operator != null ? operator.getUser_id() : null;
+    }
 }
