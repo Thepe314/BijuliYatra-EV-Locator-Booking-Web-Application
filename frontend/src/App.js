@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './components/Auth/login';
 import SignUpPage from './components/Auth/signup';
-import HomePage from './components/General/HomePage.js';
+import HomePage from './components/User/StationFinderPage.js';
 import AdminDashboard from './components/Admin/Dashboard.js';
 import ChargingStationsMap from './components/General/ChargingStationsMap.js';
 import BookingPage from './components/Booking/BookingPage.js';
@@ -19,6 +19,7 @@ import OperatorDashboard from './components/ChargeOperators/OperatorDashboard.js
 import AddStationPage from './components/ChargeOperators/AddStation.js';
 import EditUserPage from './components/Admin/EditUsers.js';
 import AddStationAdmin from './components/Admin/AddStationAdmin.js';
+import StationFinderPage from './components/User/StationFinderPage.js';
 
 
 
@@ -33,11 +34,10 @@ function App() {
         {/* Default route: redirect to login or you can choose */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup/ev-owner" element={<SignUpPage />} />
         <Route path="/signup/operator" element={<ChargingOperatorSignUp />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/map" element={<ChargingStationsMap />} />
-        <Route path="/booking" element={<BookingPage />} />
+        <Route path="/book/station/:stationId" element={<BookingPage />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/stationdetails" element={<StationDetailsPage />} />
         <Route path="/payment" element={<PaymentPage />} />
@@ -60,7 +60,8 @@ function App() {
 
         {/* Ev-Owner route */}
       <Route path="/ev-owner/dashboard" element={<EVUserDashboard/>} />
-      
+      <Route path="/signup/ev-owner" element={<SignUpPage />} />
+       <Route path="/ev-owner/station" element={<StationFinderPage/>} />
 
         {/* You can add more routes later, e.g. a home/dashboard route */}
         {/* <Route path="/home" element={<Home />} /> */}

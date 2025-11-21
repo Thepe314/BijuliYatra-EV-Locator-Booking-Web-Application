@@ -302,6 +302,17 @@ export const stationService = {
       throw error;
     }
   },
+
+listStationsForOwner: async (filters = {}) => {
+  try {
+    const response = await api.get("/evowner/station", { params: filters });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching EV owner stations:", error);
+    throw error;
+  }
+},
+
 };
 
 
@@ -411,6 +422,15 @@ export const analyticsService = {
       throw error;
     }
   },
+};
+// services/vehicleService.js
+export const vehicleService = {
+  getMyVehicles: () => api.get('/evowner/vehicles')
+};
+
+// services/favoriteService.js
+export const favoriteService = {
+  getMyFavorites: () => api.get('/evowner/favorites')
 };
 
 export { api };

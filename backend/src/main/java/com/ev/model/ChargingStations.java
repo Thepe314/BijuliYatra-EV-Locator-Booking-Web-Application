@@ -13,6 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "charging_stations")
@@ -87,6 +88,12 @@ public class ChargingStations {
         updatedAt = LocalDateTime.now();
     }
     
+    @Column(name = "total_slots", nullable = false)
+    private Integer totalSlots = 4;
+
+    @Column(name = "available_slots", nullable = false)
+    private Integer availableSlots = 4;
+    
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -146,4 +153,14 @@ public class ChargingStations {
     public Long getOperatorId() {
         return operator != null ? operator.getUser_id() : null;
     }
+
+    public Integer getTotalSlots() { return totalSlots; }
+    public void setTotalSlots(Integer totalSlots) { this.totalSlots = totalSlots; }
+
+    public Integer getAvailableSlots() { return availableSlots; }
+    public void setAvailableSlots(Integer availableSlots) { this.availableSlots = availableSlots; }
+    
+    
+    
+    
 }

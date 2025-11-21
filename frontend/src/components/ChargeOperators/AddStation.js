@@ -143,7 +143,9 @@ export default function AddStation() {
         dcFastRate: parseFloat(formData.dcFastRate),
         peakPricing: formData.peakPricing,
         peakMultiplier: parseFloat(formData.peakMultiplier),
-        notes: formData.notes.trim()
+        notes: formData.notes.trim(),
+        totalSlots: (parseInt(formData.level2Chargers) || 0) + (parseInt(formData.dcFastChargers) || 0),
+        availableSlots: (parseInt(formData.level2Chargers) || 0) + (parseInt(formData.dcFastChargers) || 0)
       };
 
       console.log('Submitting station data:', stationData);

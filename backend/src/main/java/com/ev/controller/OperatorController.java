@@ -64,7 +64,9 @@ public class OperatorController {
         station.setPeakMultiplier(request.getPeakMultiplier() != null ? request.getPeakMultiplier() : 1.25);
         station.setNotes(request.getNotes());
         station.setStatus("operational");
-        station.setOperator(operator);                    
+        station.setOperator(operator);       
+        station.setTotalSlots(request.getLevel2Chargers() + request.getDcFastChargers());
+        station.setAvailableSlots(station.getTotalSlots());
 
         ChargingStations saved = repository.save(station);
         return new ResponseEntity<>(new StationResponseDTO(saved), HttpStatus.CREATED);
