@@ -41,7 +41,7 @@ public class Booking {
     @Column(nullable = false)
     private Double estimatedKwh;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Double actualKwh;
 
     @Column(nullable = false)

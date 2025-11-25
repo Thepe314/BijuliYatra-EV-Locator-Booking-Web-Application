@@ -16,6 +16,10 @@ public class BookingResponseDTO {
     private Double totalAmount;
     private String status;
     private String vehicleName;
+    
+    private String evOwnerName;
+    private String evOwnerPhone;
+    private String evOwnerEmail;
 
     // Constructors
     public BookingResponseDTO() {}
@@ -31,6 +35,9 @@ public class BookingResponseDTO {
         this.totalAmount = booking.getTotalAmount();
         this.status = booking.getStatus().name();
         // Optional: get vehicle name from user if needed
+        this.evOwnerName = booking.getEvOwner().getFullname();
+        this.evOwnerPhone = booking.getEvOwner().getPhoneNumber();
+        this.evOwnerEmail = booking.getEvOwner().getEmail();
         
     }
 
@@ -113,4 +120,32 @@ public class BookingResponseDTO {
 	public void setVehicleName(String vehicleName) {
 		this.vehicleName = vehicleName;
 	}
+
+	public String getEvOwnerName() {
+		return evOwnerName;
+	}
+
+	public void setEvOwnerName(String evOwnerName) {
+		this.evOwnerName = evOwnerName;
+	}
+
+	public String getEvOwnerPhone() {
+		return evOwnerPhone;
+	}
+
+	public void setEvOwnerPhone(String evOwnerPhone) {
+		this.evOwnerPhone = evOwnerPhone;
+	}
+
+	public String getEvOwnerEmail() {
+		return evOwnerEmail;
+	}
+
+	public void setEvOwnerEmail(String evOwnerEmail) {
+		this.evOwnerEmail = evOwnerEmail;
+	}
+
+	
+	
+	
 }

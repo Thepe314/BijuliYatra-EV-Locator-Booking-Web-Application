@@ -84,18 +84,25 @@ export default function StationFinderPage() {
     setFilteredStations(filtered);
   }, [searchQuery, stations]);
 
-  const handleBookNow = (station) => {
-  // Check if station has available slots
-  const available = station.availableSlots ?? 0;
+  const handleBookNow = (e, station) => {
+    // Prevent card click event from firing
+    e.stopPropagation();
+    
+    console.log("=== BOOKING DEBUG ===");
+    console.log("Station data:", station);
+    console.log("Station ID:", station.id);
+    console.log("Available slots:", station.availableSlots);
+    console.log("====================");
 
-  if (available <= 0) {
-    toast.error("Fully booked ho hai aaja! Try another station try garam na");
-    return;
-  }
+    if (station.availableSlots <= 0) {
+      toast.error("No slots available right now!");
+      return;
+    }
 
-  // This is the correct one — takes user to your real booking page
-  navigate(`/book/station/${station.id}`);
-};
+    const bookingPath = `/book/station/${station.id}`;
+    console.log("Navigating to:", bookingPath);
+    navigate(bookingPath);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -114,7 +121,13 @@ export default function StationFinderPage() {
 
             <nav className="hidden md:flex items-center gap-10">
               <a href="/ev-owner/dashboard" className="text-slate-700 hover:text-emerald-600 font-medium transition">Dashboard</a>
-              <a href="/stations" className="text-emerald-600 font-bold text-lg">Find Stations</a>
+              <a 
+                onClick={(e) => { e.preventDefault(); navigate('/ev-owner/station'); }} 
+                href="/ev-owner/station"
+                className="text-emerald-600 font-bold text-lg hover:underline transition cursor-pointer"
+              >
+                Find Stations
+              </a>
               <a href="/bookings" className="text-slate-700 hover:text-emerald-600 font-medium transition">My Bookings</a>
             </nav>
 
@@ -242,14 +255,11 @@ export default function StationFinderPage() {
                     </div>
 
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBookNow(station);
-                      }}
+                      onClick={(e) => handleBookNow(e, station)}
                       disabled={station.availableSlots === 0}
                       className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
                         station.availableSlots > 0
-                          ? 'bg-gradient-to-r from-emerald-500 to-cyan-600 text-white hover:from-emerald-600 hover:to-cyan-700 shadow-lg'
+                          ? 'bg-gradient-to-r from-emerald-500 to-cyan-600 text-white hover:from-emerald-600 hover:to-cyan-700 shadow-lg transform hover:scale-105'
                           : 'bg-slate-200 text-slate-500 cursor-not-allowed'
                       }`}
                     >

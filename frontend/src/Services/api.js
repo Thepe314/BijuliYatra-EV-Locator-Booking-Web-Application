@@ -220,6 +220,17 @@ export const stationService = {
     }
   },
 
+   // Owner endpoints
+  listStationsForOwner: async (filters = {}) => {
+    try {
+      const response = await api.get("/evowner/stations", { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching operator stations:", error);
+      throw error;
+    }
+  },
+
   // Admin endpoints
   listStationAdmin: async (filters = {}) => {
     try {
@@ -231,15 +242,17 @@ export const stationService = {
     }
   },
 
-  getStationById: async (stationId) => {
-    try {
-      const response = await api.get(`/operator/stations/${stationId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching station:", error);
-      throw error;
-    }
-  },
+  // getStationById: async (stationId) => {
+  //   try {
+  //     const response = await api.get(`/stations/${stationId}`);
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error("Error fetching station:", error);
+  //     throw error;
+  //   }
+  // },
+
+  
 
   createStation: async (stationData) => {
     try {
@@ -372,7 +385,7 @@ export const bookingService = {
 
   cancelBooking: async (bookingId) => {
     try {
-      const response = await api.patch(`/bookings/${bookingId}/cancel`);
+      const response = await api.patch(`/bookings/${bookingId}`);
       return response.data;
     } catch (error) {
       console.error("Error cancelling booking:", error);

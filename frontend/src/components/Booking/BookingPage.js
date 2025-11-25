@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { stationService } from '../../Services/api';
-import { bookingService } from '../../Services/api'; // Make sure this is imported
+import { bookingService } from '../../Services/api';
 
 export default function BookingPage() {
   const { stationId } = useParams(); // Get from URL: /book/station/1
@@ -26,20 +26,37 @@ export default function BookingPage() {
 
   // Fetch station details
   useEffect(() => {
-    const loadStation = async () => {
-      try {
-        const response = await stationService.getStationById(stationId);
-        setStation(response.data || response);
-      } catch (err) {
-        toast.error("Failed to load station details");
-        navigate('/stations');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadStation = async () => {
+    if (!stationId) return;
 
-    if (stationId) loadStation();
-  }, [stationId, navigate]);
+    try {
+      setLoading(true);
+
+      // THIS IS THE WINNING STRATEGY — NEVER USE /stations/{id}
+      const response = await stationService.listStationsForOwner();
+      const stations = response?.data || response || [];
+
+      const foundStation = stations.find(s => s.id === parseInt(stationId));
+
+      if (!foundStation) {
+        toast.error("Station not found");
+        navigate('/ev-owner/stations');
+        return;
+      }
+
+      setStation(foundStation);
+      toast.success(`Welcome to ${foundStation.name}`);
+    } catch (err) {
+      console.error("Failed to load station:", err);
+      toast.error("Could not load station");
+      navigate('/ev-owner/stations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadStation();
+}, [stationId, navigate]);
 
   const timeSlots = [
     '08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
@@ -47,40 +64,50 @@ export default function BookingPage() {
   ];
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!formData.date || !formData.timeSlot) {
-      toast.error("Please select date and time");
-      return;
-    }
+  if (!formData.date || !formData.timeSlot) {
+    toast.error("Please select date and time");
+    return;
+  }
 
-    setSubmitting(true);
+  setSubmitting(true);
 
-    const [hours, minutes] = formData.timeSlot.split(':');
-    const startTime = new Date(formData.date);
-    startTime.setHours(parseInt(hours), parseInt(minutes));
+  const [hours, minutes] = formData.timeSlot.split(':');
+  const startTime = new Date(formData.date);
+  startTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-    const endTime = new Date(startTime);
-    endTime.setHours(startTime.getHours() + parseInt(formData.duration));
+  const endTime = new Date(startTime);
+  endTime.setHours(startTime.getHours() + parseInt(formData.duration));
 
-    const bookingPayload = {
-      stationId: parseInt(stationId),
-      startTime: startTime.toISOString(),
-      endTime: endTime.toISOString(),
-      connectorType: formData.connectorType,
-    };
-
-    try {
-      const result = await bookingService.createBooking(bookingPayload);
-      toast.success("Booking confirmed! Check your email.");
-      navigate(`/bookings/${result.data.id}`); // or to success page
-    } catch (err) {
-      const msg = err.response?.data || "Slot no longer available";
-      toast.error(msg);
-    } finally {
-      setSubmitting(false);
-    }
+  // Helper to format correctly
+  const formatDateTime = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const h = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${d}T${h}:${min}:00`;
   };
+
+  const bookingPayload = {
+    stationId: parseInt(stationId),
+    startTime: formatDateTime(startTime),
+    endTime: formatDateTime(endTime),
+    connectorType: formData.connectorType,
+  };
+
+  try {
+    const result = await bookingService.createBooking(bookingPayload);
+    toast.success("Booking confirmed!");
+    navigate(`/bookings/${result.data.id}`);
+  } catch (err) {
+    const msg = err.response?.data || "Booking failed. Slot may be taken.";
+    toast.error(msg);
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   if (loading) {
     return (

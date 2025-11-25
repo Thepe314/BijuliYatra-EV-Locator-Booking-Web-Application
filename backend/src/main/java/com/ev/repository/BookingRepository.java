@@ -24,6 +24,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         BookingStatus status
     );
 
+    
+ // For Operator: bookings where the station belongs to them
+    @Query("SELECT b FROM Booking b WHERE b.station.operator = :operator ORDER BY b.startTime DESC")
+    List<Booking> findByOperatorStations(@Param("operator") User operator);
+
+    // For Admin: all bookings (you can add pagination later)
+    List<Booking> findAllByOrderByStartTimeDesc();
     // Count current active bookings at a station
     @Query("SELECT COUNT(b) FROM Booking b " +
            "WHERE b.station = :station " +

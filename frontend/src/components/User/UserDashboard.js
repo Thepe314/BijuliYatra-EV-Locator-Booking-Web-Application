@@ -9,8 +9,8 @@ import { toast } from 'react-toastify';
 
 // Import your services
 import { bookingService } from '../../Services/api';
-import { vehicleService } from '../../Services/api';
-import { favoriteService } from '../../Services/api';
+// import { vehicleService } from '../../Services/api';
+// import { favoriteService } from '../../Services/api';
 
 export default function EVUserDashboard() {
   const [activeTab, setActiveTab] = useState('upcoming');
@@ -29,70 +29,64 @@ export default function EVUserDashboard() {
     favorites: 0
   });
 
-    const handleFinder = () => navigate('/ev-owner/stations');
+
  
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
 
-        // Load all data in parallel
-        const [bookingsRes, vehiclesRes, favoritesRes, statsRes] = await Promise.all([
-          bookingService.getMyBookings(),
-          vehicleService.getMyVehicles(),
-          favoriteService.getMyFavorites(),
-          bookingService.getMyStats?.() || Promise.resolve({}) // fallback if no stats endpoint
-        ]);
+      // Only load bookings — the rest are optional
+      const bookingsRes = await bookingService.listBookings();
 
-        // Bookings
-        const allBookings = bookingsRes.data || bookingsRes || [];
-        const now = new Date();
+      const allBookings = bookingsRes.data || bookingsRes || [];
+      const now = new Date();
 
-        const upcoming = allBookings.filter(b => 
-          new Date(b.endTime) > now && b.status !== 'cancelled'
-        );
-        const past = allBookings.filter(b => 
-          new Date(b.endTime) <= now || b.status === 'completed'
-        );
+      const upcoming = allBookings.filter(b => 
+        new Date(b.endTime) > now && b.status !== 'cancelled' && b.status !== 'completed'
+      );
+      const past = allBookings.filter(b => 
+        new Date(b.endTime) <= now || b.status === 'completed'
+      );
 
-        setUpcomingBookings(upcoming);
-        setPastBookings(past);
+      setUpcomingBookings(upcoming);
+      setPastBookings(past);
 
-        // Vehicles
-        setVehicles(vehiclesRes.data || vehiclesRes || []);
+      // Mock empty data for vehicles & favorites (prevents 404 crash)
+      setVehicles([]);
+      setFavoriteStations([]);
 
-        // Favorites
-        setFavoriteStations(favoritesRes.data || favoritesRes || []);
+      // Calculate stats from bookings only
+      const totalHours = allBookings.reduce((sum, b) => {
+        const mins = (new Date(b.endTime) - new Date(b.startTime)) / 60000;
+        return sum + (mins / 60);
+      }, 0);
 
-        // Stats
-        const totalHours = allBookings.reduce((sum, b) => {
-          const mins = (new Date(b.endTime) - new Date(b.startTime)) / 60000;
-          return sum + (mins / 60);
-        }, 0);
+      const totalSpent = allBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
-        const totalSpent = allBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+      setStats({
+        totalBookings: allBookings.length,
+        totalHours: totalHours.toFixed(1),
+        amountSpent: totalSpent,
+        favorites: 0
+      });
 
-        setStats({
-          totalBookings: allBookings.length,
-          totalHours: totalHours.toFixed(1),
-          amountSpent: totalSpent,
-          favorites: favoriteStations.length
-        });
+      toast.success("Dashboard loaded");
+    } catch (err) {
+      console.error("Failed to load dashboard:", err);
+      toast.error("Could not load bookings. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        toast.success("Dashboard updated");
-      } catch (err) {
-        console.error("Failed to load dashboard:", err);
-        toast.error("Failed to load your data");
-      } finally {
-        setLoading(false);
-      }
-    };
+  loadDashboardData();
+}, []);
 
-    loadDashboardData();
-  }, []);
+  
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-NP', {

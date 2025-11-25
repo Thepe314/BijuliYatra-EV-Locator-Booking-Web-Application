@@ -35,36 +35,31 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
-                    // Allow OPTIONS for CORS preflight
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Allow CORS preflight
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                    // Public endpoints - Authentication
-                    .requestMatchers("/auth/login").permitAll()
-                    .requestMatchers("/auth/signup/ev-owner").permitAll()
-                    .requestMatchers("/auth/signup/operators").permitAll()
-                    .requestMatchers("/auth/**").permitAll()
+                // Public auth endpoints
+                .requestMatchers("/auth/**").permitAll()
 
-                    // Operator endpoints - Allow all
-                    .requestMatchers("/operator/**").permitAll()
+                // EV Owner endpoints
+                .requestMatchers("/bookings", "/bookings/**").hasRole("EV_OWNER")
+                .requestMatchers("/evowner/**").hasRole("EV_OWNER")
 
-                    // Admin endpoints - IMPORTANT: permitAll() FIRST, then hasRole
-                    .requestMatchers(HttpMethod.DELETE, "/admin/delete/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/admin/**").hasRole("ADMIN")
-                    .requestMatchers(HttpMethod.POST, "/admin/**").hasRole("ADMIN")
-                    .requestMatchers(HttpMethod.PUT, "/admin/**").hasRole("ADMIN")
+                // Operator endpoints
+                .requestMatchers("/operator/**").hasRole("CHARGER_OPERATOR")
 
-                    // All other requests require authentication
-                    .anyRequest().authenticated()
+                // Admin endpoints
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+
+                // Everything else requires authentication
+                .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .sessionFixation(fixation -> fixation.migrateSession())
                 .maximumSessions(1)
-                .maxSessionsPreventsLogin(false)
-                .expiredUrl("/login?expired=true")
             )
             .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
-        
+
         return http.build();
     }
 
