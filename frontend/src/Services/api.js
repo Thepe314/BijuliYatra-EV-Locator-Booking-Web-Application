@@ -392,6 +392,12 @@ export const bookingService = {
       throw error;
     }
   },
+  getStationBookings: async (stationId, date) => {
+  const response = await api.get(`/stations/${stationId}/bookings`, {
+    params: { date }
+  });
+  return response;
+},
 };
 
 // Dashboard/Analytics Services

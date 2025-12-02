@@ -38,4 +38,32 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
            "AND b.endTime >= :now " +
            "AND b.status IN ('CONFIRMED', 'IN_PROGRESS')")
     long countActiveBookingsAtStation(@Param("station") ChargingStations station, @Param("now") LocalDateTime now);
+    
+    //Returns true if there is any CONFIRMED or IN_PROGRESS booking 
+    //that overlaps with the requested time window (including 15-min cleanup buffer after)
+    @Query("""
+            SELECT COUNT(b) > 0 FROM Booking b 
+            WHERE b.station.id = :stationId 
+              AND b.status IN :statuses
+              AND b.startTime < :endTime
+              AND b.endTime > :startTime
+            """)
+        boolean hasOverlappingBooking(
+            @Param("stationId") Long stationId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime")   LocalDateTime endTime,
+            @Param("statuses")  List<BookingStatus> statuses
+        );
+    
+    @Query("SELECT b FROM Booking b " +
+            "WHERE b.station.id = :stationId " +
+            "AND b.startTime >= :start " +
+            "AND b.startTime < :end " +
+            "AND b.status IN ('CONFIRMED', 'IN_PROGRESS')")
+     List<Booking> findByStationIdAndStartTimeBetween(
+         @Param("stationId") Long stationId,
+         @Param("start") LocalDateTime start,
+         @Param("end") LocalDateTime end
+     );
+    
 }

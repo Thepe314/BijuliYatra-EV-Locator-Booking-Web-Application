@@ -14,6 +14,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -60,12 +61,62 @@ public class BookingController {
                 .map(BookingResponseDTO::new)
                 .toList());
     }
+    
+    @GetMapping("/stations/{id}/bookings")
+    public ResponseEntity<List<BookingResponseDTO>> getBookingsByStationAndDate(
+        @PathVariable Long id,
+        @RequestParam String date,
+        Authentication auth
+    ) {
+        try {
+            // Validate station exists
+            ChargingStations station = stationRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Station not found"));
+
+            // Only allow EV Owners or Admins to see bookings
+            String email = (String) auth.getPrincipal();
+            User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+            String role = auth.getAuthorities().stream()
+                .findFirst()
+                .map(GrantedAuthority::getAuthority)
+                .orElse("");
+
+            // Restrict access: Admins or station operator can see bookings
+            if (!"ROLE_ADMIN".equals(role) && 
+                !"ROLE_EV_OWNER".equals(role) && 
+                !station.getOperator().getUser_id().equals(user.getUser_id())) {
+                return ResponseEntity.status(403).body(null);
+            }
+
+            // Parse date
+            LocalDateTime start;
+            try {
+                start = LocalDate.parse(date).atStartOfDay();
+            } catch (DateTimeParseException e) {
+                return ResponseEntity.badRequest().body(null);
+            }
+            LocalDateTime end = start.plusDays(1);
+
+            // Fetch bookings
+            List<Booking> bookings = bookingRepo.findByStationIdAndStartTimeBetween(id, start, end);
+
+            return ResponseEntity.ok(
+                bookings.stream()
+                    .map(BookingResponseDTO::new)
+                    .toList()
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(null);
+        }
+    }
 
     // ===================== CREATE BOOKING (Only EV Owner) =====================\
     @PostMapping
     public ResponseEntity<?> createBooking(Authentication auth, @RequestBody Map<String, Object> req) {
         try {
-            // 1. Get user & role
+            // 1. Get authenticated EV Owner
             String email = (String) auth.getPrincipal();
             User evOwner = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found"));
@@ -85,70 +136,66 @@ public class BookingController {
             String endTimeStr = (String) req.get("endTime");
             String connectorType = (String) req.get("connectorType");
 
-            // 3. Validate station
+            LocalDateTime start = LocalDateTime.parse(startTimeStr);
+            LocalDateTime end = LocalDateTime.parse(endTimeStr);
+            LocalDateTime now = LocalDateTime.now();
+
+            // 3. Basic validations
+            if (start.isBefore(now.plusMinutes(15))) {
+                return ResponseEntity.badRequest().body("Booking must be at least 15 minutes from now");
+            }
+
+            long minutes = Duration.between(start, end).toMinutes();
+            if (minutes < 30 || minutes > 240) {
+                return ResponseEntity.badRequest().body("Duration must be 30 minutes to 4 hours");
+            }
+
+            // 4. Station exists and operational
             ChargingStations station = stationRepo.findById(stationId)
                     .orElse(null);
             if (station == null || !"operational".equalsIgnoreCase(station.getStatus())) {
                 return ResponseEntity.badRequest().body("Station is not available");
             }
 
-            // 4. Parse times
-            LocalDateTime start = LocalDateTime.parse(startTimeStr);
-            LocalDateTime end = LocalDateTime.parse(endTimeStr);
-            LocalDateTime now = LocalDateTime.now();
+            // 5. RECOMMENDED CONFLICT CHECK (Best Practice)
+            // → Allow back-to-back bookings (end at 11:00 → next starts 11:00)
+            // → Only add 15-min buffer AFTER booking ends (for cleanup)
+            LocalDateTime conflictStart = start;
+            LocalDateTime conflictEnd = end.plusMinutes(15);  // Only post-buffer
 
-            // BLOCK PAST BOOKINGS
-            if (start.isBefore(now.plusMinutes(2))) {
-                return ResponseEntity.badRequest().body("Cannot book in the past or too soon");
+            boolean hasConflict = bookingRepo.hasOverlappingBooking(
+                    stationId,
+                    conflictStart,
+                    conflictEnd,
+                    List.of(BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS)
+            );
+
+            if (hasConflict) {
+                return ResponseEntity.badRequest()
+                        .body("This time slot is too close to another booking (15-min gap required after previous booking ends)");
             }
 
-            // Duration: 30 min – 4 hours
-            long minutes = Duration.between(start, end).toMinutes();
-            if (minutes < 30 || minutes > 240) {
-                return ResponseEntity.badRequest().body("Duration must be 30 minutes to 4 hours");
-            }
-
-            // REAL OVERLAP CHECK WITH 15-MIN BUFFER
-            LocalDateTime bufferStart = start.minusMinutes(15);
-            LocalDateTime bufferEnd = end.plusMinutes(15);
-
-            boolean conflict = bookingRepo.findAll().stream()
-                    .anyMatch(b ->
-                            b.getStation().getId().equals(stationId) &&
-                            (b.getStatus() == BookingStatus.CONFIRMED || b.getStatus() == BookingStatus.IN_PROGRESS) &&
-                            bufferStart.isBefore(b.getEndTime()) &&
-                            bufferEnd.isAfter(b.getStartTime())
-                    );
-
-            if (conflict) {
-                return ResponseEntity.badRequest().body("This time slot is not available (15-min buffer required)");
-            }
-
-            // SLOT AVAILABILITY
+            // 6. Slot availability (optional: if you track per-port slots)
             int totalSlots = station.getTotalSlots() != null && station.getTotalSlots() > 0
                     ? station.getTotalSlots()
                     : (station.getLevel2Chargers() + station.getDcFastChargers());
 
-            long occupied = bookingRepo.findAll().stream()
-                    .filter(b -> b.getStation().getId().equals(stationId))
-                    .filter(b -> b.getStatus() == BookingStatus.CONFIRMED || b.getStatus() == BookingStatus.IN_PROGRESS)
-                    .filter(b -> now.isBefore(b.getEndTime()))
-                    .count();
+            long currentlyOccupied = bookingRepo.countActiveBookingsAtStation(station, now);
 
-            if (occupied >= totalSlots) {
+            if (currentlyOccupied >= totalSlots) {
                 return ResponseEntity.badRequest().body("No charging ports available at this time");
             }
 
-            // PRICING
+            // 7. Pricing
             double hours = minutes / 60.0;
             double rate = "DC Fast".equalsIgnoreCase(connectorType)
                     ? (station.getDcFastRate() != null ? station.getDcFastRate() : 60.0)
                     : (station.getLevel2Rate() != null ? station.getLevel2Rate() : 40.0);
 
-            double estimatedKwh = hours * 50;
+            double estimatedKwh = hours * 50;  // rough estimate
             double totalAmount = Math.round(rate * estimatedKwh);
 
-            // CREATE BOOKING — FIX actual_kwh NULL ERROR
+            // 8. Create booking
             Booking booking = new Booking();
             booking.setEvOwner(evOwner);
             booking.setStation(station);
@@ -156,10 +203,9 @@ public class BookingController {
             booking.setEndTime(end);
             booking.setConnectorType(connectorType);
             booking.setEstimatedKwh(estimatedKwh);
-            booking.setActualKwh(0.0);           // FIX #1: actual_kwh = 0 when created
+            booking.setActualKwh(0.0);
             booking.setTotalAmount(totalAmount);
             booking.setStatus(BookingStatus.CONFIRMED);
-            booking.setCompletedAt(LocalDateTime.now());  // or use @CreationTimestamp if you have it
 
             Booking saved = bookingRepo.save(booking);
 
