@@ -3,6 +3,8 @@ package com.ev.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -66,4 +68,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
          @Param("end") LocalDateTime end
      );
     
+    //Admin List
+    Page<Booking> findAllByOrderByBookedAtDesc(Pageable pageable);
+    
+    @Query("""
+    	    SELECT COUNT(b) FROM Booking b
+    	    WHERE b.station.id = :stationId
+    	      AND b.status IN ('CONFIRMED', 'IN_PROGRESS')
+    	      AND b.startTime < :endTime
+    	      AND b.endTime > :startTime
+    	    """)
+    	long countBookingsDuringPeriod(
+    	    @Param("stationId") Long stationId,
+    	    @Param("startTime") LocalDateTime startTime,
+    	    @Param("endTime") LocalDateTime endTime
+    	);
 }

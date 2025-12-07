@@ -13,6 +13,8 @@ import com.ev.model.RoleType;
 import com.ev.model.ChargerOperator;
 import com.ev.model.ChargingStations;
 import com.ev.model.Admin;
+import com.ev.model.Booking;
+import com.ev.repository.BookingRepository;
 import com.ev.repository.ChargingStationRepository;
 import com.ev.repository.RefreshTokenRepo;
 import com.ev.repository.UserRepository;
@@ -21,6 +23,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
 import com.ev.dto.UserResponseDTO;
+import com.ev.dto.BookingResponseDTO;
 import com.ev.dto.CreateStationRequestDTO;
 import com.ev.dto.StationResponseDTO;
 import com.ev.dto.UserCreateDTO;
@@ -29,11 +32,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 
 
 @RestController
@@ -48,12 +54,73 @@ public class AdminController {
     private ChargingStationRepository chargingStationRepository;
     
     @Autowired
+    private BookingRepository bookingRepository;
+    
+    @Autowired
     private RefreshTokenRepo refreshTokenRepo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     private static final Logger log = LoggerFactory.getLogger(com.ev.controller.AdminController.class);
+    
+    //list of booking
+    
+    @GetMapping("/bookings")
+    public ResponseEntity<?> getAllBookings(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "bookedAt,desc") String sort) {
+
+        try {
+            // Parse sort parameter: "createdAt,desc" → Sort.Direction.DESC, "createdAt"
+            String[] sortParts = sort.split(",");
+            String sortBy = sortParts[0];
+            Sort.Direction direction = sortParts.length > 1 && "asc".equalsIgnoreCase(sortParts[1])
+                    ? Sort.Direction.ASC : Sort.Direction.DESC;
+
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+            Page<Booking> bookingPage = bookingRepository.findAll(pageable);
+
+            // Convert to DTOs (you must have BookingResponseDTO)
+            List<BookingResponseDTO> dtos = bookingPage.getContent().stream()
+                    .map(BookingResponseDTO::new)
+                    .toList();
+
+            Map<String, Object> response = Map.of(
+                    "content", dtos,
+                    "totalItems", bookingPage.getTotalElements(),
+                    "totalPages", bookingPage.getTotalPages(),
+                    "currentPage", bookingPage.getNumber(),
+                    "pageSize", bookingPage.getSize()
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Failed to fetch bookings: " + e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/bookings/active-counts")
+    public ResponseEntity<Map<Long, Long>> getActiveBookingsCount(@RequestBody List<Long> stationIds) {
+        LocalDateTime now = LocalDateTime.now();
+        
+        Map<Long, Long> counts = stationIds.stream()
+            .collect(Collectors.toMap(
+                id -> id,
+                id -> {
+                    ChargingStations station = new ChargingStations();
+                    station.setId(id);
+                    return bookingRepository.countActiveBookingsAtStation(station, now);
+                }
+            ));
+        
+        return ResponseEntity.ok(counts);
+    }
+
 
   //List of all stations
     @GetMapping("/stations")

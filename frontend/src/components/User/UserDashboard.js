@@ -5,7 +5,7 @@ import {
   Calendar, Clock, MapPin, Zap, Star, Car, CreditCard, 
   Bell, User, ChevronRight, AlertCircle 
 } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer} from 'react-toastify';
 
 // Import your services
 import { bookingService } from '../../Services/api';
@@ -113,8 +113,37 @@ export default function EVUserDashboard() {
     );
   }
 
+  const handleCancelBooking = async (bookingId) => {
+    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+
+    try {
+      await bookingService.cancelBooking(bookingId);
+      
+      setUpcomingBookings(prev => prev.filter(b => b.id !== bookingId));
+
+      // SUCCESS TOAST
+      toast.success("Booking cancelled successfully!", {
+        icon: "Cancelled",
+      });
+    } catch (err) {
+      const msg = err.response?.data || "Cannot cancel this booking";
+      // ERROR TOAST
+      toast.error(msg);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <ToastContainer
+  position="top-right"
+  autoClose={3000}
+  hideProgressBar={false}
+  newestOnTop
+  closeOnClick
+  pauseOnHover
+  theme="colored"
+  style={{ zIndex: 9999 }}
+/>
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -290,9 +319,12 @@ export default function EVUserDashboard() {
                             Rs. {booking.totalAmount?.toLocaleString() || '0'}
                           </span>
                           {activeTab === 'upcoming' && (
-                            <button className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100">
-                              Cancel
-                            </button>
+                            <button
+                            onClick={() => handleCancelBooking(booking.id)}
+                            className="px-5 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-all flex items-center gap-2"
+                          >
+                            Cancel Booking
+                          </button>
                           )}
                         </div>
                       </div>

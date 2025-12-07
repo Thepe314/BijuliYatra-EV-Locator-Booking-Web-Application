@@ -5,7 +5,7 @@ import {
   Settings, LogOut, Menu, X, ChevronDown, Bell, Zap 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { userService, stationService, authService } from '../../Services/api';
+import { userService, stationService, authService, bookingService } from '../../Services/api';
 
 export default function AdminDashboard() {
   const [timeRange, setTimeRange] = useState('week');
@@ -34,6 +34,26 @@ export default function AdminDashboard() {
     { name: 'User Management', icon: Users, path: '/usermanagement' },
     { name: 'Settings', icon: Settings, path: '/admin/settings' },
   ];
+
+  // Helper: Format time ago
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return 'Unknown time';
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffInMinutes = Math.floor((now - past) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    if (diffInMinutes < 43200) return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  // Helper: Capitalize status
+  const formatStatus = (status) => {
+    if (!status) return 'Unknown';
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -76,29 +96,66 @@ export default function AdminDashboard() {
 
       setPreviousStats({ users: totalUsers, stations: activeStations, revenue: totalRevenue, energy: totalEnergy });
 
-      const enhancedStations = (stationsData || []).map(station => {
-        const level2 = station.level2Chargers || 0;
-        const dcFast = station.dcFastChargers || 0;
-        const total = level2 + dcFast;
-        const inUse = Math.floor(total * 0.35);
-        const available = total - inUse;
-        const usage = total > 0 ? Math.round((inUse / total) * 100) : 0;
+     const stationIds = stationsData.map(s => s.id);
+let activeCounts = {};
+try {
+  activeCounts = await bookingService.getActiveBookingsCount(stationIds);
+} catch (err) {
+  console.warn("Failed to load real-time availability", err);
+}
 
-        const status = ['active', 'operational'].includes(station.status?.toLowerCase()) ? 'Active' :
-                       station.status?.toLowerCase() === 'maintenance' ? 'Maintenance' : 'Inactive';
+const enhancedStations = (stationsData || []).map(station => {
+  const level2 = station.level2Chargers || 0;
+  const dcFast = station.dcFastChargers || 0;
+  const total = level2 + dcFast;
 
-        return {
-          id: station.id,
-          name: station.name,
-          location: station.location || `${station.city || ''}, ${station.state || ''}`,
-          chargers: { total, available, level2, bdcFast: dcFast },
-          usage,
-          status
-        };
-      });
+  const activeCount = activeCounts[station.id] || 0;
+  const available = Math.max(0, total - activeCount);
+  const usage = total > 0 ? Math.round((activeCount / total) * 100) : 0;
+
+  const status = ['active', 'operational'].includes(station.status?.toLowerCase()) 
+    ? 'Active' 
+    : station.status?.toLowerCase() === 'maintenance' 
+      ? 'Maintenance' 
+      : 'Inactive';
+
+  return {
+    id: station.id,
+    name: station.name,
+    location: station.location || `${station.city || ''}, ${station.state || ''}`,
+    chargers: { total, available, level2, dcFast },
+    usage,
+    status
+  };
+});
 
       setStations(enhancedStations);
-      setRecentBookings(getMockBookings());
+
+      // Fetch REAL Bookings
+      let bookingsData = [];
+      try {
+        const response = await bookingService.listBookingsAdmin({
+          limit: 10,
+          sort: 'bookedAt,desc'
+        });
+        bookingsData = Array.isArray(response) ? response : response.content || response.data || [];
+      } catch (err) {
+        console.warn("Failed to fetch recent bookings:", err);
+        bookingsData = [];
+      }
+
+      const transformedBookings = bookingsData.map(booking => ({
+        id: booking.id || '#N/A',
+        user: booking.evOwnerName || 'Unknown User',
+        station: booking.stationName || 'Unknown Station',
+        time: formatTimeAgo(booking.bookedAt || booking.startTime),
+        status: formatStatus(booking.status),
+        amount: booking.totalAmount != null 
+          ? `$${Number(booking.totalAmount).toFixed(2)}` 
+          : '$0.00'
+        }));
+
+      setRecentBookings(transformedBookings.length > 0 ? transformedBookings : []);
 
     } catch (err) {
       console.error('Dashboard fetch error:', err);
@@ -108,14 +165,6 @@ export default function AdminDashboard() {
       setRefreshing(false);
     }
   };
-
-  const getMockBookings = () => [
-    { id: 'BK001', user: 'Rajesh Kumar', station: 'Kathmandu Mall', time: '2h ago', status: 'Completed', amount: '$32' },
-    { id: 'BK002', user: 'Priya Sharma', station: 'Pokhara Lakeside', time: '3h ago', status: 'In Progress', amount: '$28' },
-    { id: 'BK003', user: 'Amit Thapa', station: 'Bharatpur Hub', time: '5h ago', status: 'Completed', amount: '$45' },
-    { id: 'BK004', user: 'Sita Gurung', station: 'Biratnagar Station', time: '6h ago', status: 'Completed', amount: '$19' },
-    { id: 'BK005', user: 'Nabin Rai', station: 'Lalitpur Center', time: '8h ago', status: 'Cancelled', amount: '$0' },
-  ];
 
   const handleRefresh = () => fetchDashboardData(true);
   const handleManage = () => navigate('/stationmanagement');
@@ -133,7 +182,7 @@ export default function AdminDashboard() {
           <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading dashboard...</p>
         </div>
-        </div>
+      </div>
     );
   }
 
@@ -296,32 +345,45 @@ export default function AdminDashboard() {
                 <div className="p-6 border-b border-gray-100">
                   <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold text-gray-900">Recent Bookings</h2>
-                    <button className="text-blue-600 font-medium hover:text-blue-700">View All →</button>
+                    <button 
+                      onClick={() => navigate('/admin/bookings')}
+                      className="text-blue-600 font-medium hover:text-blue-700"
+                    >
+                      View All →
+                    </button>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
-                  {recentBookings.map((booking) => (
-                    <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-900">{booking.user}</p>
-                          <span className="text-xs text-gray-500">• {booking.id}</span>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">{booking.station}</p>
-                        <p className="text-xs text-gray-500 mt-1">{booking.time}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg text-gray-900">{booking.amount}</p>
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-1 ${
-                          booking.status === 'Completed' ? 'bg-green-100 text-green-700' :
-                          booking.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {booking.status}
-                        </span>
-                      </div>
+                  {recentBookings.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">No recent bookings found</p>
                     </div>
-                  ))}
+                  ) : (
+                    recentBookings.map((booking) => (
+                      <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-gray-900">{booking.user}</p>
+                            <span className="text-xs text-gray-500">• {booking.id}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{booking.station}</p>
+                          <p className="text-xs text-gray-500 mt-1">{booking.time}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-lg text-gray-900">{booking.amount}</p>
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-1 ${
+                            booking.status === 'Completed' ? 'bg-green-100 text-green-700' :
+                            booking.status === 'In Progress' || booking.status === 'Active' ? 'bg-blue-100 text-blue-700' :
+                            booking.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {booking.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 

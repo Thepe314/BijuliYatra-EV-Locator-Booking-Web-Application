@@ -31,15 +31,14 @@ public class BookingController {
     // ===================== LIST BOOKINGS (All Roles) =====================
     @GetMapping
     public ResponseEntity<List<BookingResponseDTO>> getBookings(Authentication auth) {
-        // FIX 1: Principal is email string, NOT User object
+        
         String email = (String) auth.getPrincipal();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // FIX 2: Get role correctly (it comes as "ROLE_EV_OWNER", not just "EV_OWNER")
         String role = auth.getAuthorities().stream()
                 .findFirst()
-                .map(GrantedAuthority::getAuthority)  // ← This returns "ROLE_EV_OWNER"
+                .map(GrantedAuthority::getAuthority)  
                 .orElse("");
 
         List<Booking> bookings;
@@ -180,11 +179,16 @@ public class BookingController {
                     ? station.getTotalSlots()
                     : (station.getLevel2Chargers() + station.getDcFastChargers());
 
-            long currentlyOccupied = bookingRepo.countActiveBookingsAtStation(station, now);
+            long bookedDuringThisTime = bookingRepo.countBookingsDuringPeriod(
+            	    stationId,
+            	    start,           // start of new booking
+            	    end.plusMinutes(15)  // include cleanup buffer
+            	);
 
-            if (currentlyOccupied >= totalSlots) {
-                return ResponseEntity.badRequest().body("No charging ports available at this time");
-            }
+            	if (bookedDuringThisTime >= totalSlots) {
+            	    return ResponseEntity.badRequest()
+            	        .body("No charging ports available during this time slot");
+            	}
 
             // 7. Pricing
             double hours = minutes / 60.0;

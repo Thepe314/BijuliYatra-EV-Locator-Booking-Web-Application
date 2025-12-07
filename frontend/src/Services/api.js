@@ -343,6 +343,33 @@ export const bookingService = {
     }
   },
 
+  //Admin
+  listBookingsAdmin: async (filters = {}) => {
+  try {
+    const response = await api.get("/admin/bookings", { 
+      params: {
+        page: filters.page || 0,
+        size: filters.limit || 10,
+        sort: filters.sort || 'createdAt,desc'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching admin bookings:", error);
+    throw error;
+  }
+},
+
+getActiveBookingsCount: async (stationIds) => {
+  try {
+    const response = await api.post("/admin/bookings/active-counts", stationIds);
+    return response.data; // Returns: { "1": 1, "2": 0, "3": 2 }
+  } catch (error) {
+    console.error("Error fetching active bookings count:", error);
+    return {};
+  }
+},
+
   getRecentBookings: async (limit = 5, timeRange = 'week') => {
     try {
       const response = await api.get("/bookings/recent", { params: { limit, timeRange } });
