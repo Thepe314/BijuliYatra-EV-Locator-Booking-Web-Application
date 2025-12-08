@@ -181,15 +181,15 @@ export const userService = {
     }
   },
 
-  deleteUser: async (userId) => {
-    try {
-      const response = await api.delete(`/admin/users/delete/${userId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      throw error;
-    }
-  },
+ deleteUser: async (userId) => {
+  try {
+    const response = await api.delete(`/admin/delete/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    throw error;
+  }
+},
 
   changeUserStatus: async (userId, status) => {
     try {
@@ -412,7 +412,7 @@ getActiveBookingsCount: async (stationIds) => {
 
   cancelBooking: async (bookingId) => {
     try {
-      const response = await api.patch(`/bookings/${bookingId}`);
+      const response = await api.delete(`/bookings/${bookingId}`);
       return response.data;
     } catch (error) {
       console.error("Error cancelling booking:", error);

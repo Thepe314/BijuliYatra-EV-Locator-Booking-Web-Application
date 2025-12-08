@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import com.ev.model.Booking;
@@ -83,4 +84,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     	    @Param("startTime") LocalDateTime startTime,
     	    @Param("endTime") LocalDateTime endTime
     	);
+    
+    //User is abstract +Joined Inheritance thats why we need a query
+    @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.evOwner.user_id = :userId")
+    boolean existsByEvOwnerUserId(@Param("userId") Long userId);
+    
+    @Modifying
+    @Query("DELETE FROM Booking b WHERE b.evOwner.user_id = :userId")
+    void deleteByEvOwnerUser_id(@Param("userId") Long userId);
+
 }

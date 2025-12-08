@@ -30,8 +30,8 @@ export default function AdminDashboard() {
 
   const navigationItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', current: true },
-    { name: 'Station Management', icon: Building2, path: '/stationmanagement' },
-    { name: 'User Management', icon: Users, path: '/usermanagement' },
+    { name: 'Station Management', icon: Building2, path: '/admin/stationmanagement' },
+    { name: 'User Management', icon: Users, path: '/admin/usermanagement' },
     { name: 'Settings', icon: Settings, path: '/admin/settings' },
   ];
 

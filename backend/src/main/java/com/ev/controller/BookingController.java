@@ -7,10 +7,13 @@ import com.ev.repository.BookingRepository;
 import com.ev.repository.ChargingStationRepository;
 import com.ev.repository.UserRepository;
 
+import jakarta.persistence.EntityNotFoundException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -221,24 +224,35 @@ public class BookingController {
         }
     }
     // ===================== CANCEL BOOKING =====================
+    
     @DeleteMapping("/{id}")
     public ResponseEntity<String> cancelBooking(@PathVariable Long id, Authentication auth) {
-        User user = (User) auth.getPrincipal();
-        Booking booking = bookingRepo.findById(id).orElse(null);
-        if (booking == null) return ResponseEntity.notFound().build();
+        // Get the email/username from JWT
+        String email = auth.getName(); // or (String) auth.getPrincipal();
+
+        // Load full User entity
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        Booking booking = bookingRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
         if (!booking.getEvOwner().getUser_id().equals(user.getUser_id())) {
             return ResponseEntity.status(403).body("Not your booking");
         }
+
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             return ResponseEntity.badRequest().body("Already cancelled");
         }
+
         if (booking.getStartTime().isBefore(LocalDateTime.now().plusMinutes(30))) {
             return ResponseEntity.badRequest().body("Cannot cancel < 30 mins before");
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepo.save(booking);
-        return ResponseEntity.ok("Booking cancelled");
+
+        return ResponseEntity.ok("Booking cancelled successfully");
     }
+   
 }

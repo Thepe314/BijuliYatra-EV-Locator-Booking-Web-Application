@@ -41,8 +41,8 @@ function App() {
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/stationdetails" element={<StationDetailsPage />} />
         <Route path="/payment" element={<PaymentPage />} />
-        <Route path="/usermanagement" element={<UserManagement/>} />
-        <Route path="/stationmanagement" element={<StationManagement/>} />
+        <Route path="/admin/usermanagement" element={<UserManagement/>} />
+        <Route path="/admin/stationmanagement" element={<StationManagement/>} />
         <Route path="/analytics" element={<AdminAnalytics/>} />
   
           

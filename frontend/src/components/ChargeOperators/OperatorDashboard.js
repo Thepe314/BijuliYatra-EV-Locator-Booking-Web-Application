@@ -3,6 +3,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { Zap, TrendingUp, AlertCircle, DollarSign, Activity, MapPin, Settings, Users, Calendar, Download, Loader, RefreshCw, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { stationService } from '../../Services/api';
+import { toast, ToastContainer} from 'react-toastify';
 
 export default function OperatorDashboard() {
   const navigate = useNavigate();
@@ -121,18 +122,33 @@ export default function OperatorDashboard() {
     navigate(`/operator/editstation/${stationId}`);
   };
 
-  const handleDeleteStation = async (stationId) => {
-    if (!window.confirm('Are you sure you want to delete this station?')) {
+const handleDeleteStation = async (stationId) => {
+    if (!window.confirm('Are you sure you want to delete this station? This action cannot be undone.')) {
       return;
     }
 
     try {
       await stationService.deleteStation(stationId);
-      alert('Station deleted successfully!');
-      fetchStations();
+
+      // Remove from UI instantly
+      setStationData(prev => prev.filter(s => s.id !== stationId));
+
+      toast.success("Station deleted successfully!", {
+        icon: "Deleted",
+        style: { background: '#10b981', color: 'white' },
+      });
+
+      // Optional: refresh from server to stay in sync
+      // fetchStations();
     } catch (err) {
       console.error('Error deleting station:', err);
-      alert(err.response?.data?.message || 'Failed to delete station.');
+      const msg = err.response?.data?.message 
+        || err.response?.data 
+        || "Failed to delete station. Please try again.";
+
+      toast.error(msg, {
+        icon: "Failed",
+      });
     }
   };
 
@@ -573,6 +589,16 @@ export default function OperatorDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme="colored"
+        style={{ zIndex: 9999 }}
+      />
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">

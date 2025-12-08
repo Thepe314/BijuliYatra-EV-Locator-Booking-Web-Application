@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { userService, authService } from '../../Services/api';
 import { useNavigate } from 'react-router-dom';
+import { toast, ToastContainer} from 'react-toastify';
 
 export default function UserManagement() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -92,17 +93,36 @@ export default function UserManagement() {
   };
 
   const deleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user? This cannot be undone.')) return;
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return;
+    }
 
-    setDeleting(true);
     try {
-      await userService.deleteUser(userId);
+      await userService.deleteUser(userId); 
+
+      // Remove from UI
       setUsers(prev => prev.filter(u => u.id !== userId));
-      setSuccessMessage('User deleted successfully');
+
+      toast.success("Users deleted successfully!", {
+        icon: "Deleted",
+      });
+
+     
     } catch (err) {
-      alert('Failed to delete user');
-    } finally {
-      setDeleting(false);
+      console.error('Delete User failed:', err);
+      
+      let message = "Failed to delete User";
+      if (err.response?.status === 400) {
+        message = err.response?.data || "Cannot delete: User has bookings";
+      } else if (err.response?.status === 403) {
+        message = "Not authorized to delete this User";
+      } else if (err.response?.status === 404) {
+        message = "User not found";
+      }
+
+      toast.error(message, {
+        icon: "Failed",
+      });
     }
   };
 
@@ -134,6 +154,16 @@ export default function UserManagement() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar - Full Height */}
+        <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme="colored"
+        style={{ zIndex: 9999 }}
+      />
       <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col h-screen sticky top-0`}>
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
           {sidebarOpen ? (

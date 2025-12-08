@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
@@ -395,43 +396,31 @@ public class AdminController {
         }
     }
 
-    /**
-     * Delete user by ID
-     * @param userId User ID
-     * @return No content response
-     */
     @DeleteMapping("/delete/{userId}")
     @Transactional
-    public ResponseEntity<?> deleteUser(@PathVariable Long userId) {
-        log.info("Received DELETE request for userId: {}", userId);
+    public ResponseEntity<?> forceDeleteUser(@PathVariable Long userId) {
+        log.warn("ADMIN FORCE DELETING USER ID: {} — NUKING EVERYTHING", userId);
 
         try {
-            boolean exists = userRepository.existsById(userId);
-            log.info("User exists check result: {}", exists);
+            // 1. Delete refresh tokens FIRST (this was the missing step!)
+            refreshTokenRepo.deleteByUserUser_id(userId);
 
-            if (exists) {
-                // Delete related refresh tokens first (foreign key constraint)
-                log.info("Deleting refresh tokens for user: {}", userId);
-                refreshTokenRepo.deleteByUserUser_id(userId);
-                
-                // IMPORTANT: Flush to ensure the delete is executed immediately
-                userRepository.flush();
-                log.info("Flushed refresh token deletions");
+            // 2. Delete ALL bookings
+            bookingRepository.deleteByEvOwnerUser_id(userId);
 
-                // Now delete the user
-                userRepository.deleteById(userId);
-                userRepository.flush();
-                log.info("Successfully deleted user with id: {}", userId);
-                return ResponseEntity.noContent().build();
-            } else {
-                log.warn("User with id {} not found; cannot delete", userId);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "User not found with id: " + userId));
-            }
+            // 3. Delete ALL stations (if ChargerOperator)
+            chargingStationRepository.deleteByOperatorUserId(userId);
+
+            // 4. Finally delete the user itself
+            userRepository.deleteById(userId);
+
+            log.warn("USER {} AND ALL DATA SUCCESSFULLY NUKED", userId);
+            return ResponseEntity.noContent().build();
+
         } catch (Exception e) {
-            log.error("Exception when trying to delete user with id: {}", userId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to delete user: " + e.getMessage()));
+            log.error("Force delete failed for user {}", userId, e);
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Force delete failed: " + e.getMessage()));
         }
     }
     /**
