@@ -20,6 +20,8 @@ import AddStationPage from './components/ChargeOperators/AddStation.js';
 import EditUserPage from './components/Admin/EditUsers.js';
 import AddStationAdmin from './components/Admin/AddStationAdmin.js';
 import StationFinderPage from './components/User/StationFinderPage.js';
+import BookingManagement from './components/Admin/BookingManagement.js';
+import EditStationPage from './components/Admin/EditStationPage.js';
 
 
 
@@ -43,6 +45,9 @@ function App() {
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/admin/usermanagement" element={<UserManagement/>} />
         <Route path="/admin/stationmanagement" element={<StationManagement/>} />
+         <Route path="/admin/bookingmanagement" element={<BookingManagement/>} />
+         
+
         <Route path="/analytics" element={<AdminAnalytics/>} />
   
           
@@ -50,7 +55,8 @@ function App() {
 
        {/* Admin route */}
        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-       <Route path="/admin/editUser" element={<EditUserPage/>} />
+       <Route path="/admin/editUser/:userId" element={<EditUserPage />} />
+        <Route path="/admin/editStation/:id" element={<EditStationPage />} />
        <Route path="/admin/addstation" element={<AddStationAdmin/>} />
   
          {/* Operator route */}

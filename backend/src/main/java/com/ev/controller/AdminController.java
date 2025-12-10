@@ -136,6 +136,15 @@ public class AdminController {
         return ResponseEntity.ok(dtos);
     }
     
+    @GetMapping("/stations/{stationId}")
+    public ResponseEntity<StationResponseDTO> getStationById(@PathVariable Long stationId) {
+        Optional<ChargingStations> opt = chargingStationRepository.findById(stationId);
+        if (opt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(new StationResponseDTO(opt.get()));
+    }
+    
     
     @PostMapping("/stations")
     public ResponseEntity<StationResponseDTO> createStation(@Valid @RequestBody CreateStationRequestDTO request) {
@@ -187,7 +196,59 @@ public class AdminController {
                 .body(Map.of("error", "Failed to delete station: " + e.getMessage()));
         }
     }
-    
+    @PutMapping("/stations/edit/{stationId}")
+    public ResponseEntity<StationResponseDTO> updateStation(
+            @PathVariable Long stationId,
+            @Valid @RequestBody CreateStationRequestDTO request) {
+
+        Optional<ChargingStations> opt = chargingStationRepository.findById(stationId);
+        if (opt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        ChargingStations station = opt.get();
+
+        // operator
+        User operator = userRepository.findById(request.getOperatorId())
+                .orElseThrow(() -> new RuntimeException("Operator not found"));
+        station.setOperator(operator);
+
+        // basic fields
+        station.setName(request.getName());
+        station.setLocation(request.getLocation());
+        station.setAddress(request.getAddress());
+        station.setCity(request.getCity());
+        station.setState(request.getState());
+        station.setZipCode(request.getZipCode());
+
+        // chargers & rates
+        station.setLevel2Chargers(request.getLevel2Chargers());
+        station.setDcFastChargers(request.getDcFastChargers());
+        station.setLevel2Rate(request.getLevel2Rate());
+        station.setDcFastRate(request.getDcFastRate());
+
+        // peak pricing
+        station.setPeakPricing(request.getPeakPricing());
+        station.setPeakMultiplier(
+                request.getPeakMultiplier() != null
+                        ? request.getPeakMultiplier()
+                        : 1.25
+        );
+
+        // notes
+        station.setNotes(request.getNotes());
+
+        // total / available slots
+        int totalSlots = request.getLevel2Chargers() + request.getDcFastChargers();
+        station.setTotalSlots(totalSlots);
+        // simple rule: clamp availableSlots to totalSlots, keep existing if already lower
+        if (station.getAvailableSlots() == null || station.getAvailableSlots() > totalSlots) {
+            station.setAvailableSlots(totalSlots);
+        }
+
+        ChargingStations updated = chargingStationRepository.save(station);
+        return ResponseEntity.ok(new StationResponseDTO(updated));
+    }
      //List of all users
      
     @GetMapping("/users")

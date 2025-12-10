@@ -35,25 +35,28 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
-                // Allow CORS preflight
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            	    // Allow CORS preflight
+            	    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // Public auth endpoints
-                .requestMatchers("/auth/**").permitAll()
+            	    // Public auth endpoints
+            	    .requestMatchers("/auth/**").permitAll()
 
-                // EV Owner endpoints
-                .requestMatchers("/bookings", "/bookings/**").hasRole("EV_OWNER")
-                .requestMatchers("/evowner/**").hasRole("EV_OWNER")
+            	    // Bookings: allow all three roles
+            	    .requestMatchers("/bookings", "/bookings/**")
+            	        .hasAnyRole("EV_OWNER", "ADMIN", "CHARGER_OPERATOR")
 
-                // Operator endpoints
-                .requestMatchers("/operator/**").hasRole("CHARGER_OPERATOR")
+            	    // EV Owner endpoints
+            	    .requestMatchers("/evowner/**").hasRole("EV_OWNER")
 
-                // Admin endpoints
-                .requestMatchers("/admin/**").hasRole("ADMIN")
+            	    // Operator endpoints
+            	    .requestMatchers("/operator/**").hasRole("CHARGER_OPERATOR")
 
-                // Everything else requires authentication
-                .anyRequest().authenticated()
-            )
+            	    // Admin endpoints
+            	    .requestMatchers("/admin/**").hasRole("ADMIN")
+
+            	    // Everything else requires authentication
+            	    .anyRequest().authenticated()
+            	)
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 .maximumSessions(1)

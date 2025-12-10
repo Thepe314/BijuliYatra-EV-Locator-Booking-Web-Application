@@ -172,14 +172,14 @@ export const userService = {
   },
 
   updateUser: async (userId, userData) => {
-    try {
-      const response = await api.put(`/admin/users/edit/${userId}`, userData);
-      return response.data;
-    } catch (error) {
-      console.error("Error updating user:", error);
-      throw error;
-    }
-  },
+  try {
+    const response = await api.put(`/admin/edit/${userId}`, userData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating user:", error);
+    throw error;
+  }
+},
 
  deleteUser: async (userId) => {
   try {
@@ -242,16 +242,6 @@ export const stationService = {
     }
   },
 
-  // getStationById: async (stationId) => {
-  //   try {
-  //     const response = await api.get(`/stations/${stationId}`);
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error("Error fetching station:", error);
-  //     throw error;
-  //   }
-  // },
-
   
 
   createStation: async (stationData) => {
@@ -282,6 +272,15 @@ export const stationService = {
       console.error("Error updating station:", error);
       throw error;
     }
+  },
+  getStationById: async (id) => {
+  const res = await api.get(`/admin/stations/${id}`);
+  return res.data;
+},
+
+  updateStationAdmin: async (id, data) => {
+    const res = await api.put(`/admin/stations/edit/${id}`, data);
+    return res.data;
   },
 
   // Delete for operators - only their own stations

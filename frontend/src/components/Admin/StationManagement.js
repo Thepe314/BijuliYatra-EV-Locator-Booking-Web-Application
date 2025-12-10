@@ -139,10 +139,14 @@ export default function StationManagement() {
 
   const navigationItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-  { name: 'Station Management', icon: Building2, path: '/stationmanagement' },
-  { name: 'User Management', icon: Users, path: '/usermanagement' },
+  { name: 'Station Management', icon: Building2, path: '/admin/stationmanagement' },
+  { name: 'User Management', icon: Users, path: '/admin/usermanagement' },
   { name: 'Settings', icon: Settings, path: '/admin/settings' },
 ];
+
+const handleEdit = (stationId) => {
+  navigate(`/admin/editStation/${stationId}`);
+};
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -339,7 +343,10 @@ export default function StationManagement() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <button className="p-2 hover:bg-gray-100 rounded-lg">
+                          <button
+                            onClick={() => handleEdit(station.id)}  
+                            className="p-2 hover:bg-gray-100 rounded-lg"
+                          >
                             <Edit className="w-5 h-5 text-gray-600" />
                           </button>
                           <button

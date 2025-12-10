@@ -167,8 +167,8 @@ const enhancedStations = (stationsData || []).map(station => {
   };
 
   const handleRefresh = () => fetchDashboardData(true);
-  const handleManage = () => navigate('/stationmanagement');
-  const handleUsers = () => navigate('/usermanagement');
+  const handleManage = () => navigate('/admin/stationmanagement');
+  const handleUsers = () => navigate('/admin/usermanagement');
 
   const handleLogout = async () => {
     try { await authService.logout(); } catch (err) {}
@@ -346,7 +346,7 @@ const enhancedStations = (stationsData || []).map(station => {
                   <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold text-gray-900">Recent Bookings</h2>
                     <button 
-                      onClick={() => navigate('/admin/bookings')}
+                      onClick={() => navigate('/admin/bookingmanagement')}
                       className="text-blue-600 font-medium hover:text-blue-700"
                     >
                       View All →

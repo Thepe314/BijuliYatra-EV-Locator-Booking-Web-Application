@@ -1,115 +1,163 @@
-import React, { useState } from 'react';
-import { Search, Filter, Calendar, Clock, MapPin, Battery, User, DollarSign, Eye, XCircle, CheckCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Search, MapPin, Clock, Battery, Eye, XCircle } from 'lucide-react';
+import { bookingService } from '../../Services/api';
 
 export default function BookingManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('today');
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const bookings = [
-    { 
-      id: 'BK0001', 
-      user: 'John Doe', 
-      userEmail: 'john@example.com',
-      station: 'Downtown Hub', 
-      chargerType: 'Fast Charge',
-      startTime: '10:30 AM', 
-      endTime: '11:45 AM',
-      duration: '1h 15m',
-      status: 'Completed',
-      energyDelivered: '45 kWh',
-      amount: '$25.50',
-      date: '2024-10-13'
-    },
-    { 
-      id: 'BK0002', 
-      user: 'Sarah Smith', 
-      userEmail: 'sarah@example.com',
-      station: 'Mall Plaza', 
-      chargerType: 'Standard',
-      startTime: '2:15 PM', 
-      endTime: '4:30 PM',
-      duration: '2h 15m',
-      status: 'In Progress',
-      energyDelivered: '32 kWh',
-      amount: '$18.00',
-      date: '2024-10-13'
-    },
-    { 
-      id: 'BK0003', 
-      user: 'Mike Johnson', 
-      userEmail: 'mike@example.com',
-      station: 'Airport Station', 
-      chargerType: 'Fast Charge',
-      startTime: '8:00 AM', 
-      endTime: '9:30 AM',
-      duration: '1h 30m',
-      status: 'Completed',
-      energyDelivered: '58 kWh',
-      amount: '$42.00',
-      date: '2024-10-13'
-    },
-    { 
-      id: 'BK0004', 
-      user: 'Emma Wilson', 
-      userEmail: 'emma@example.com',
-      station: 'City Center', 
-      chargerType: 'Standard',
-      startTime: '3:00 PM', 
-      endTime: '-',
-      duration: '-',
-      status: 'Cancelled',
-      energyDelivered: '-',
-      amount: '$0.00',
-      date: '2024-10-13'
-    },
-    { 
-      id: 'BK0005', 
-      user: 'David Lee', 
-      userEmail: 'david@example.com',
-      station: 'Tech Park', 
-      chargerType: 'Fast Charge',
-      startTime: '11:00 AM', 
-      endTime: '12:20 PM',
-      duration: '1h 20m',
-      status: 'Completed',
-      energyDelivered: '42 kWh',
-      amount: '$31.00',
-      date: '2024-10-12'
-    },
-    { 
-      id: 'BK0006', 
-      user: 'Lisa Anderson', 
-      userEmail: 'lisa@example.com',
-      station: 'Downtown Hub', 
-      chargerType: 'Standard',
-      startTime: '4:45 PM', 
-      endTime: '-',
-      duration: '-',
-      status: 'Scheduled',
-      energyDelivered: '-',
-      amount: '$15.00',
-      date: '2024-10-14'
-    },
-  ];
+  // Load bookings from backend
+  useEffect(() => {
+    let mounted = true;
 
-  const filteredBookings = bookings.filter(booking => {
-    const matchesSearch = booking.user.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booking.station.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || booking.status.toLowerCase() === statusFilter.toLowerCase();
+    const loadBookings = async () => {
+      setLoading(true);
+      try {
+        const data = await bookingService.listBookings();
+
+        if (!mounted) return;
+
+        // Map BookingResponseDTO -> UI fields
+        const mapped = data.map((b) => ({
+          id: b.id || `BK-${b.bookingId || ''}`,
+          user: b.evOwnerName || b.userName || 'Unknown',
+          userEmail: b.evOwnerEmail || b.userEmail || '',
+          station: b.stationName || (b.station && b.station.name) || '—',
+          chargerType: b.connectorType || b.chargerType || '—',
+          startTime: b.startTime
+            ? new Date(b.startTime).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : '-',
+          endTime: b.endTime
+            ? new Date(b.endTime).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : '-',
+          duration: b.duration || '-', // or compute from start/end
+          status: b.status || 'UNKNOWN',
+          actualKwh: b.actualKwh ?? null,
+          totalAmount: b.totalAmount ?? null,
+          energyDelivered:
+            b.actualKwh != null ? `${b.actualKwh.toFixed(1)} kWh` : '-',
+          amount:
+            b.totalAmount != null ? `₹${b.totalAmount.toFixed(2)}` : '-',
+          date: b.startTime
+            ? new Date(b.startTime).toISOString().slice(0, 10)
+            : '',
+        }));
+
+        setBookings(mapped);
+      } catch (err) {
+        console.error('Failed to load bookings', err);
+        setError('Unable to load bookings');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadBookings();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Derived stats from bookings
+  const stats = useMemo(() => {
+    const total = bookings.length;
+    const completed = bookings.filter(
+      (b) => b.status === 'COMPLETED' || b.status === 'Completed'
+    ).length;
+    const inProgress = bookings.filter(
+      (b) =>
+        b.status === 'IN_PROGRESS' ||
+        b.status === 'In Progress' ||
+        b.status === 'CONFIRMED'
+    ).length;
+    const cancelled = bookings.filter(
+      (b) => b.status === 'CANCELLED' || b.status === 'Cancelled'
+    ).length;
+
+    const revenue = bookings.reduce((sum, b) => {
+      return sum + (typeof b.totalAmount === 'number' ? b.totalAmount : 0);
+    }, 0);
+
+    const completedPct = total ? ((completed / total) * 100).toFixed(1) : '0.0';
+    const inProgressPct = total
+      ? ((inProgress / total) * 100).toFixed(1)
+      : '0.0';
+    const cancelledPct = total
+      ? ((cancelled / total) * 100).toFixed(1)
+      : '0.0';
+
+    return {
+      total,
+      completed,
+      inProgress,
+      cancelled,
+      revenue,
+      completedPct,
+      inProgressPct,
+      cancelledPct,
+    };
+  }, [bookings]);
+
+  const filteredBookings = bookings.filter((booking) => {
+    const q = searchTerm.toLowerCase();
+    const matchesSearch =
+      booking.user.toLowerCase().includes(q) ||
+      booking.id.toLowerCase().includes(q) ||
+      booking.station.toLowerCase().includes(q);
+
+    const matchesStatus =
+      statusFilter === 'all' ||
+      booking.status.toLowerCase() === statusFilter.toLowerCase();
+
+    // Optionally apply dateFilter using booking.date here
     return matchesSearch && matchesStatus;
   });
 
   const getStatusColor = (status) => {
-    switch(status) {
-      case 'Completed': return 'bg-green-100 text-green-700';
-      case 'In Progress': return 'bg-blue-100 text-blue-700';
-      case 'Cancelled': return 'bg-red-100 text-red-700';
-      case 'Scheduled': return 'bg-purple-100 text-purple-700';
-      default: return 'bg-gray-100 text-gray-700';
+    switch (status) {
+      case 'COMPLETED':
+      case 'Completed':
+        return 'bg-green-100 text-green-700';
+      case 'IN_PROGRESS':
+      case 'In Progress':
+      case 'CONFIRMED':
+        return 'bg-blue-100 text-blue-700';
+      case 'CANCELLED':
+      case 'Cancelled':
+        return 'bg-red-100 text-red-700';
+      case 'SCHEDULED':
+      case 'Scheduled':
+        return 'bg-purple-100 text-purple-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-sm text-gray-600">Loading bookings...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -118,11 +166,15 @@ export default function BookingManagement() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Booking Management</h1>
-              <p className="text-sm text-gray-500 mt-1">Track and manage all charging bookings</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Booking Management
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Track and manage all charging bookings
+              </p>
             </div>
             <div className="flex gap-3">
-              <select 
+              <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -145,28 +197,42 @@ export default function BookingManagement() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm p-6">
             <p className="text-gray-500 text-sm mb-1">Total Bookings</p>
-            <p className="text-3xl font-bold text-gray-900">1,247</p>
-            <p className="text-green-600 text-sm mt-2">+15% today</p>
+            <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+            <p className="text-gray-600 text-sm mt-2">All time</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-6">
             <p className="text-gray-500 text-sm mb-1">Completed</p>
-            <p className="text-3xl font-bold text-green-600">892</p>
-            <p className="text-gray-600 text-sm mt-2">71.5%</p>
+            <p className="text-3xl font-bold text-green-600">
+              {stats.completed}
+            </p>
+            <p className="text-gray-600 text-sm mt-2">
+              {stats.completedPct}%
+            </p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-6">
             <p className="text-gray-500 text-sm mb-1">In Progress</p>
-            <p className="text-3xl font-bold text-blue-600">234</p>
-            <p className="text-gray-600 text-sm mt-2">18.8%</p>
+            <p className="text-3xl font-bold text-blue-600">
+              {stats.inProgress}
+            </p>
+            <p className="text-gray-600 text-sm mt-2">
+              {stats.inProgressPct}%
+            </p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-6">
             <p className="text-gray-500 text-sm mb-1">Cancelled</p>
-            <p className="text-3xl font-bold text-red-600">87</p>
-            <p className="text-gray-600 text-sm mt-2">7.0%</p>
+            <p className="text-3xl font-bold text-red-600">
+              {stats.cancelled}
+            </p>
+            <p className="text-gray-600 text-sm mt-2">
+              {stats.cancelledPct}%
+            </p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-6">
             <p className="text-gray-500 text-sm mb-1">Revenue</p>
-            <p className="text-3xl font-bold text-purple-600">$24.5K</p>
-            <p className="text-green-600 text-sm mt-2">+23%</p>
+            <p className="text-3xl font-bold text-purple-600">
+              ₹{stats.revenue.toFixed(2)}
+            </p>
+            <p className="text-gray-600 text-sm mt-2">All time</p>
           </div>
         </div>
 
@@ -203,32 +269,62 @@ export default function BookingManagement() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Booking ID</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Station</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Time</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Duration</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Energy</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Booking ID
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Station
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Time
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Energy
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredBookings.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={booking.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
                     <td className="px-6 py-4">
-                      <p className="font-semibold text-gray-900">{booking.id}</p>
+                      <p className="font-semibold text-gray-900">
+                        {booking.id}
+                      </p>
                       <p className="text-xs text-gray-500">{booking.date}</p>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold mr-3">
-                          {booking.user.split(' ').map(n => n[0]).join('')}
+                          {booking.user
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900">{booking.user}</p>
-                          <p className="text-xs text-gray-500">{booking.userEmail}</p>
+                          <p className="font-semibold text-gray-900">
+                            {booking.user}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {booking.userEmail}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -237,14 +333,20 @@ export default function BookingManagement() {
                         <MapPin className="w-4 h-4 mr-2 text-gray-400" />
                         <div>
                           <p className="font-medium">{booking.station}</p>
-                          <p className="text-xs text-gray-500">{booking.chargerType}</p>
+                          <p className="text-xs text-gray-500">
+                            {booking.chargerType}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm">
-                        <p className="text-gray-900 font-medium">{booking.startTime}</p>
-                        <p className="text-gray-500 text-xs">{booking.endTime}</p>
+                        <p className="text-gray-900 font-medium">
+                          {booking.startTime}
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          {booking.endTime}
+                        </p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -260,20 +362,32 @@ export default function BookingManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-gray-900">{booking.amount}</p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {booking.amount}
+                      </p>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                          booking.status
+                        )}`}
+                      >
                         {booking.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View Details">
+                        <button
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="View Details"
+                        >
                           <Eye className="w-4 h-4 text-gray-600" />
                         </button>
                         {booking.status === 'Scheduled' && (
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Cancel">
+                          <button
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Cancel"
+                          >
                             <XCircle className="w-4 h-4 text-red-600" />
                           </button>
                         )}
@@ -284,16 +398,28 @@ export default function BookingManagement() {
               </tbody>
             </table>
           </div>
-          
-          {/* Pagination */}
+
+          {/* Pagination (static for now) */}
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-            <p className="text-sm text-gray-600">Showing {filteredBookings.length} of {bookings.length} bookings</p>
+            <p className="text-sm text-gray-600">
+              Showing {filteredBookings.length} of {bookings.length} bookings
+            </p>
             <div className="flex gap-2">
-              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">Previous</button>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">1</button>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">2</button>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">3</button>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">Next</button>
+              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                Previous
+              </button>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                1
+              </button>
+              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                2
+              </button>
+              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                3
+              </button>
+              <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                Next
+              </button>
             </div>
           </div>
         </div>

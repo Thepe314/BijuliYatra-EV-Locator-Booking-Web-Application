@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Zap, TrendingUp, AlertCircle, DollarSign, Activity, MapPin, Settings, Users, Calendar, Download, Loader, RefreshCw, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { stationService } from '../../Services/api';
+import { stationService,authService } from '../../Services/api';
 import { toast, ToastContainer} from 'react-toastify';
 
 export default function OperatorDashboard() {
@@ -117,6 +117,13 @@ export default function OperatorDashboard() {
   const handleAddStation = () => {
     navigate('/operator/addstation');
   };
+
+   const handleLogout = async () => {
+        try { await authService.logout(); } catch (err) {}
+        navigate('/login');
+      };
+
+
 
   const handleEditStation = (stationId) => {
     navigate(`/operator/editstation/${stationId}`);
@@ -620,6 +627,7 @@ const handleDeleteStation = async (stationId) => {
               </button>
               <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
                 OP
+                
               </div>
             </div>
           </div>
@@ -660,6 +668,14 @@ const handleDeleteStation = async (stationId) => {
               }`}
             >
               Settings
+            </button>
+             <button
+              onClick={(handleLogout) => setActiveTab()}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'Logout' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Logout
             </button>
           </div>
         </div>

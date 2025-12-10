@@ -18,6 +18,7 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
@@ -126,6 +127,10 @@ export default function UserManagement() {
     }
   };
 
+const handleEdit = (userId) => {
+  navigate(`/admin/editUser/${userId}`);
+};
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -146,8 +151,8 @@ export default function UserManagement() {
 
   const navigationItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-    { name: 'Station Management', icon: Building2, path: '/stationmanagement' },
-    { name: 'User Management', icon: Users, path: '/usermanagement', current: true },
+    { name: 'Station Management', icon: Building2, path: '/admin/stationmanagement' },
+    { name: 'User Management', icon: Users, path: '/admin/usermanagement', current: true },
     { name: 'Settings', icon: Settings, path: '/admin/settings' },
   ];
 
@@ -428,7 +433,13 @@ export default function UserManagement() {
                           </td>
                           <td className="px-6 py-5">
                             <div className="flex items-center gap-2">
-                              <button className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
+                      
+                              <button
+                                onClick={() => handleEdit(user.id)}  // Changed from onClick={handleEdit}
+                                disabled={editing}
+                                className="p-2.5 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                title="Edit"
+                              >
                                 <Edit className="w-4.5 h-4.5 text-gray-600" />
                               </button>
                               <button

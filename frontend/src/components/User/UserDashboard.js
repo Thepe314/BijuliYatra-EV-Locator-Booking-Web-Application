@@ -6,6 +6,7 @@ import {
   Bell, User, ChevronRight, AlertCircle 
 } from 'lucide-react';
 import { toast, ToastContainer} from 'react-toastify';
+import { authService } from '../../Services/api';
 
 // Import your services
 import { bookingService } from '../../Services/api';
@@ -131,6 +132,12 @@ export default function EVUserDashboard() {
       toast.error(msg);
     }
   };
+
+    const handleLogout = async () => {
+      try { await authService.logout(); } catch (err) {}
+      navigate('/login');
+    };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -437,12 +444,22 @@ export default function EVUserDashboard() {
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </button>
                 <button 
-                  onClick={() => navigate('/profile')}
+                  onClick={() => navigate()}
                   className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   <div className="flex items-center space-x-3">
                     <User className="w-5 h-5 text-gray-600" />
                     <span className="font-medium text-gray-900">Profile Settings</span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </button>
+                 <button 
+                  onClick={(handleLogout)}
+                  className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <User className="w-5 h-5 text-gray-600" />
+                    <span className="font-medium text-gray-900">Log Out </span>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </button>
