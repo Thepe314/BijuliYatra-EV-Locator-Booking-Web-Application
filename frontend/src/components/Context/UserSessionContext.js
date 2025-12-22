@@ -1,14 +1,22 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+// UserSessionContext.js
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 
 const UserSessionContext = createContext();
 
-const TOKEN_STORAGE_KEY = "jwtToken";
+const TOKEN_STORAGE_KEY = "authToken";  // align with authService
 const USER_STORAGE_KEY = "user";
 
+// unchanged parseJwt, isTokenValid...
 
 function parseJwt(token) {
   try {
-    const base64Payload = token.split('.')[1];
+    const base64Payload = token.split(".")[1];
     const payload = atob(base64Payload);
     return JSON.parse(payload);
   } catch {
@@ -27,14 +35,9 @@ export const UserSessionProvider = ({ children }) => {
     return Date.now() < payload.exp * 1000;
   }, []);
 
+  // now “user” is just an object with userId/role/email…we don’t hard‑require email
   const isValidUserData = useCallback((data) => {
-    return (
-      data &&
-      (
-        (typeof data.email === "string" && data.email.length > 0) ||
-        (typeof data.username === "string" && data.username.length > 0)
-      )
-    );
+    return !!data && (data.userId != null || data.email || data.username);
   }, []);
 
   useEffect(() => {
@@ -59,7 +62,6 @@ export const UserSessionProvider = ({ children }) => {
     setLoading(false);
   }, [isTokenValid, isValidUserData]);
 
-  // Polling logout on token expiry every 60 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       const token = localStorage.getItem(TOKEN_STORAGE_KEY);
@@ -67,13 +69,27 @@ export const UserSessionProvider = ({ children }) => {
         logout();
       }
     }, 60000);
-
     return () => clearInterval(interval);
   }, [isTokenValid]);
 
-  const login = (userData, token) => {
-    if (!isValidUserData(userData)) throw new Error("Invalid user data");
-    if (!isTokenValid(token)) throw new Error("Invalid or expired token");
+  // UPDATED signature: pass a single object { token, userId, role, email? }
+  const login = ({ token, userId, role, email, username }) => {
+    if (!token || !isTokenValid(token)) {
+      console.error("UserSessionContext.login: invalid or expired token");
+      return;
+    }
+
+    const userData = {
+      userId: userId ?? null,
+      role: role ?? null,
+      email: email ?? null,
+      username: username ?? null,
+    };
+
+    if (!isValidUserData(userData)) {
+      console.error("UserSessionContext.login: invalid user data", userData);
+      return;
+    }
 
     localStorage.setItem(TOKEN_STORAGE_KEY, token);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
@@ -86,7 +102,6 @@ export const UserSessionProvider = ({ children }) => {
     setUser(null);
   };
 
-  // Synchronize logout/login across tabs
   useEffect(() => {
     const syncSession = (event) => {
       if (

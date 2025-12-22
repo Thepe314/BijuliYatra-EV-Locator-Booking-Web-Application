@@ -163,7 +163,7 @@ public class AuthController {
             System.out.println("====================");
 
             // Refresh token handling
-            refreshTokenRepo.deleteById(existingUser.getUser_id());
+            refreshTokenRepo.deleteByUserUser_id(existingUser.getUser_id());
 
             String sessionId = UUID.randomUUID().toString();
             String jti = jwtUtil.getJti(accessToken);

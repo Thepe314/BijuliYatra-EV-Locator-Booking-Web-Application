@@ -56,10 +56,23 @@ export const authService = {
     const data = response.data;
 
     if (data.token) {
-      localStorage.setItem('authToken', data.token);
-      const payload = JSON.parse(atob(data.token.split('.')[1]));
-      if (payload.userId) localStorage.setItem("userId", payload.userId.toString());
-      if (payload.role) localStorage.setItem("userRole", payload.role);
+      localStorage.setItem("authToken", data.token);
+
+      try {
+        const parts = data.token.split(".");
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload.userId) {
+            localStorage.setItem("userId", payload.userId.toString());
+          }
+          if (payload.role) {
+            localStorage.setItem("userRole", payload.role);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to decode JWT payload:", e);
+        // do not throw – let login continue
+      }
     }
 
     return data;
@@ -76,18 +89,19 @@ export const authService = {
   },
 
   logout: async () => {
-    localStorage.removeItem("authToken");
+    
+    localStorage.removeItem("jwtToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("userId");
     localStorage.removeItem("userRole");
 
     try {
+     
       await api.post("/auth/logout");
     } catch (error) {
       console.error("Logout error:", error);
+    
     }
-
-    window.location.href = "/login";
   },
 
   refresh: async () => {
