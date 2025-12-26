@@ -28,6 +28,8 @@ export default function AdminDashboard() {
   const [stations, setStations] = useState([]);
   const [previousStats, setPreviousStats] = useState({});
 
+  const [pendingOperators, setPendingOperators] = useState([]);
+
   const navigationItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', current: true },
     { name: 'Station Management', icon: Building2, path: '/admin/stationmanagement' },
@@ -96,38 +98,46 @@ export default function AdminDashboard() {
 
       setPreviousStats({ users: totalUsers, stations: activeStations, revenue: totalRevenue, energy: totalEnergy });
 
-     const stationIds = stationsData.map(s => s.id);
-let activeCounts = {};
-try {
-  activeCounts = await bookingService.getActiveBookingsCount(stationIds);
-} catch (err) {
-  console.warn("Failed to load real-time availability", err);
-}
+      // Pending operators: CHARGER_OPERATOR + status pending
+      const pending = (usersData || []).filter((u) => {
+        const userType = u.userType;
+        const status = (u.status || '').toString();
+        return userType === 'CHARGER_OPERATOR' && status.toLowerCase() === 'pending';
+      });
+      setPendingOperators(pending);
 
-const enhancedStations = (stationsData || []).map(station => {
-  const level2 = station.level2Chargers || 0;
-  const dcFast = station.dcFastChargers || 0;
-  const total = level2 + dcFast;
+      const stationIds = stationsData.map(s => s.id);
+      let activeCounts = {};
+      try {
+        activeCounts = await bookingService.getActiveBookingsCount(stationIds);
+      } catch (err) {
+        console.warn("Failed to load real-time availability", err);
+      }
 
-  const activeCount = activeCounts[station.id] || 0;
-  const available = Math.max(0, total - activeCount);
-  const usage = total > 0 ? Math.round((activeCount / total) * 100) : 0;
+      const enhancedStations = (stationsData || []).map(station => {
+        const level2 = station.level2Chargers || 0;
+        const dcFast = station.dcFastChargers || 0;
+        const total = level2 + dcFast;
 
-  const status = ['active', 'operational'].includes(station.status?.toLowerCase()) 
-    ? 'Active' 
-    : station.status?.toLowerCase() === 'maintenance' 
-      ? 'Maintenance' 
-      : 'Inactive';
+        const activeCount = activeCounts[station.id] || 0;
+        const available = Math.max(0, total - activeCount);
+        const usage = total > 0 ? Math.round((activeCount / total) * 100) : 0;
 
-  return {
-    id: station.id,
-    name: station.name,
-    location: station.location || `${station.city || ''}, ${station.state || ''}`,
-    chargers: { total, available, level2, dcFast },
-    usage,
-    status
-  };
-});
+        const status = ['active', 'operational'].includes(station.status?.toLowerCase()) 
+          ? 'Active' 
+          : station.status?.toLowerCase() === 'maintenance' 
+            ? 'Maintenance' 
+            : 'Inactive';
+
+        return {
+          id: station.id,
+          name: station.name,
+          location: station.location || `${station.city || ''}, ${station.state || ''}`,
+          chargers: { total, available, level2, dcFast },
+          usage,
+          status
+        };
+      });
 
       setStations(enhancedStations);
 
@@ -169,6 +179,12 @@ const enhancedStations = (stationsData || []).map(station => {
   const handleRefresh = () => fetchDashboardData(true);
   const handleManage = () => navigate('/admin/stationmanagement');
   const handleUsers = () => navigate('/admin/usermanagement');
+
+  const handleOperatorDecision = async (operatorId, decision) => {
+    const newStatus = decision === 'accept' ? 'active' : 'cancelled';
+    await userService.updateUserStatus(operatorId, newStatus);
+    setPendingOperators((prev) => prev.filter((op) => op.user_id !== operatorId));
+  };
 
   const handleLogout = async () => {
     try { await authService.logout(); } catch (err) {}
@@ -450,6 +466,60 @@ const enhancedStations = (stationsData || []).map(station => {
                 </div>
               </div>
             </div>
+
+            {/* Requests */}
+            <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100">
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold text-gray-900">Requests</h2>
+                  <p className="text-sm text-gray-500">
+                    Operator signup requests awaiting approval
+                  </p>
+                </div>
+              </div>
+              <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
+                {pendingOperators.length === 0 ? (
+                  <div className="text-center py-10">
+                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm">No pending operator requests</p>
+                  </div>
+                ) : (
+                  pendingOperators.map((op) => (
+                    <div
+                      key={op.user_id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                    >
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {op.fullname || 'Operator'}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {op.email || 'No email'} • {op.phoneNumber || 'No phone'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Status: <span className="font-medium text-yellow-600">Pending</span>
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleOperatorDecision(op.user_id, 'decline')}
+                          className="px-4 py-2 text-xs font-medium rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
+                        >
+                          Decline
+                        </button>
+                        <button
+                          onClick={() => handleOperatorDecision(op.user_id, 'accept')}
+                          className="px-4 py-2 text-xs font-medium rounded-lg bg-green-600 text-white hover:bg-green-700"
+                        >
+                          Accept
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
           </div>
         </main>
       </div>

@@ -40,6 +40,7 @@ public class AdminMaker {
 
                 String adminEmail = "admin@gmail.com";
                 String adminPassword = "admin123";
+                String adminStatus="active";
 
                 Optional<User> admin = uRepo.findByEmail(adminEmail);
                 if (admin.isEmpty()) {
@@ -48,6 +49,7 @@ public class AdminMaker {
                     newAdmin.setEmail(adminEmail);
                     newAdmin.setPassword(passwordEncoder.encode(adminPassword));
                     newAdmin.setFullname("admin");
+                    newAdmin.setStatus("active");
    
 
                     Role adminRole = roleRepo.findByName(RoleType.ROLE_ADMIN)

@@ -531,4 +531,24 @@ public class AdminController {
 
         return dto;
     }
+    
+    @PatchMapping("/users/{userId}/status")
+    public ResponseEntity<UserResponseDTO> updateUserStatus(
+            @PathVariable Long userId,
+            @RequestBody Map<String, String> body) {
+
+        String status = body.get("status");
+        if (status == null || status.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return userRepository.findById(userId)
+                .map(user -> {
+                    user.setStatus(status.toLowerCase()); // "active" / "cancelled"
+                    User saved = userRepository.save(user);
+                    return ResponseEntity.ok(convertToResponseDTO(saved));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
 }

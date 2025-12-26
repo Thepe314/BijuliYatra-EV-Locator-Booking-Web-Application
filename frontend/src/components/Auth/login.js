@@ -100,7 +100,6 @@ export default function LoginPage() {
   const isValid = validateForm();
 
   if (!isValid) {
-    // Field-level client-side errors
     if (errors.email) {
       notify.error(errors.email || "Please enter a valid email address.");
     } else if (errors.password) {
@@ -130,6 +129,46 @@ export default function LoginPage() {
       return;
     }
 
+    console.log("RAW login response:", data);
+  console.log("role from backend:", data.role);
+  console.log("status from backend:", data.status);
+
+    // Block operator login based on status
+  const role = (data.role || "").toString();
+const status = (data.status || "").toString();
+const normalizedRole = role.replace(/^ROLE_/, "").toLowerCase();
+const statusLower = status.toLowerCase();
+
+console.log("login role/status:", { role, status, normalizedRole, statusLower });
+
+if (normalizedRole === "charger_operator" && statusLower !== "active") {
+  console.log("Blocking operator login due to status:", statusLower);
+
+  let msg;
+
+  // handle common variations
+  if (statusLower.trim() === "pending") {
+    msg = "Your request is still in process.";
+    console.log("Showing pending toast");
+    setApiError(msg);
+    notify.info(msg);
+  } else if (["cancelled", "canceled", "rejected"].includes(statusLower.trim())) {
+    msg = "Your account failed to meet the requirements.";
+    console.log("Showing cancelled toast");
+    setApiError(msg);
+    notify.error(msg);
+  } else {
+    msg = "Your account is not active yet.";
+    console.log("Showing generic not-active toast");
+    setApiError(msg);
+    notify.error(msg);
+  }
+
+  setIsSubmitting(false);
+  return;
+}
+
+    // Normal login flow for active operators and all other roles
     if (data.userId) localStorage.setItem("userId", data.userId.toString());
     if (data.role) localStorage.setItem("userRole", data.role);
 
@@ -161,7 +200,6 @@ export default function LoginPage() {
       const backendMessage = error.response.data?.message || "";
 
       if (status === 401) {
-        // Unauthorized – distinguish common cases by backend message if available
         if (backendMessage.toLowerCase().includes("password")) {
           const msg = "Incorrect password. Please try again.";
           setApiError(msg);

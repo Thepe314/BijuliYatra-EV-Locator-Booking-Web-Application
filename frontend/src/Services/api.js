@@ -205,7 +205,7 @@ export const userService = {
   }
 },
 
-  changeUserStatus: async (userId, status) => {
+  updateUserStatus: async (userId, status) => {
     try {
       const response = await api.patch(`/admin/users/${userId}/status`, { status });
       return response.data;

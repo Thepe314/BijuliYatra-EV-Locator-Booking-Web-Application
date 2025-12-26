@@ -117,6 +117,7 @@ public class AuthController {
             "userId", savedUser.getUser_id(),
             "email", savedUser.getEmail(),
             "status", savedUser.getStatus()
+            
         ));
     }
 
@@ -175,6 +176,9 @@ public class AuthController {
             rt.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
             rt.setJti(jti);
             refreshTokenRepo.save(rt);
+            
+            System.out.println("LOGIN DEBUG user = " + existingUser.getEmail()
+            + ", status = " + existingUser.getStatus());
 
             // Return response
             return ResponseEntity.ok(Map.of(
@@ -185,7 +189,9 @@ public class AuthController {
                 "roles", roleString,
                 "sessionId", sessionId,
                 "redirect", redirectUrl,
-                "userId", existingUser.getUser_id()
+                "userId", existingUser.getUser_id(),
+                "status", existingUser.getStatus() 
+                
             ));
 
         } catch (RuntimeException e) {
