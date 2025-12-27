@@ -28,9 +28,9 @@ import {
   LogOut,
   Settings as SettingsIcon,
   User as UserIcon,
-} from "lucide-react"; 
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { stationService, authService } from "../../Services/api";
+import { stationService, authService, bookingService } from "../../Services/api";
 import { toast, ToastContainer } from "react-toastify";
 
 export default function OperatorDashboard() {
@@ -45,6 +45,11 @@ export default function OperatorDashboard() {
   // profile dropdown state
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
+
+  // bookings state
+  const [bookings, setBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingsError, setBookingsError] = useState(null);
 
   // Mock analytics data
   const revenueData = [
@@ -167,6 +172,10 @@ export default function OperatorDashboard() {
     }
   };
 
+  const handleViewDetails = (id) => {
+    navigate(`/stationdetails/${id}`);
+  };
+
   const handleAddStation = () => {
     navigate("/operator/addstation");
   };
@@ -284,6 +293,29 @@ export default function OperatorDashboard() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isProfileMenuOpen]);
+
+  // Fetch bookings when Bookings tab opened first time
+  const fetchBookings = async () => {
+    try {
+      setBookingsLoading(true);
+      setBookingsError(null);
+      const data = await bookingService.listBookings(); // /bookings, role-based
+      setBookings(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error fetching bookings:", err);
+      setBookingsError(
+        err.response?.data?.message || "Failed to load bookings."
+      );
+    } finally {
+      setBookingsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "bookings" && bookings.length === 0 && !bookingsLoading) {
+      fetchBookings();
+    }
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Render helpers
 
@@ -600,7 +632,7 @@ export default function OperatorDashboard() {
 
               <div className="bg-gray-50 px-6 py-3 flex justify-between items-center border-t border-gray-200">
                 <button
-                  onClick={() => setSelectedStation(station)}
+                  onClick={() => handleViewDetails(station.id)}
                   className="text-sm text-blue-600 font-medium hover:text-blue-800"
                 >
                   View Details
@@ -622,6 +654,144 @@ export default function OperatorDashboard() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderBookings = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900">Bookings</h2>
+        <button
+          onClick={fetchBookings}
+          disabled={bookingsLoading}
+          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+        >
+          <RefreshCw
+            className={`w-4 h-4 ${bookingsLoading ? "animate-spin" : ""}`}
+          />
+          {bookingsLoading ? "Refreshing..." : "Refresh"}
+        </button>
+      </div>
+
+      {bookingsError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-red-800 text-sm">{bookingsError}</p>
+          </div>
+          <button
+            onClick={() => setBookingsError(null)}
+            className="text-red-600 hover:text-red-800"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {bookingsLoading && bookings.length === 0 ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader className="w-8 h-8 animate-spin text-blue-600 mr-3" />
+          <p className="text-gray-600">Loading bookings...</p>
+        </div>
+      ) : bookings.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            No bookings found
+          </h3>
+          <p className="text-gray-600">
+            Bookings made by EV owners for your stations will appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Booking ID
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Station
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    EV Owner
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Time
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Connector
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    kWh (est)
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200 text-sm">
+                {bookings.map((b) => (
+                  <tr key={b.id}>
+                    <td className="px-4 py-3 text-gray-700">#{b.id}</td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {b.stationName || b.station?.name || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {b.evOwnerName || b.evOwnerEmail || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      <div className="flex flex-col">
+                        <span>
+                          {b.startTime
+                            ? b.startTime.replace("T", " ").slice(0, 16)
+                            : "—"}{" "}
+                          →{" "}
+                          {b.endTime
+                            ? b.endTime.replace("T", " ").slice(0, 16)
+                            : "—"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {b.connectorType}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {b.estimatedKwh?.toFixed
+                        ? b.estimatedKwh.toFixed(1)
+                        : b.estimatedKwh}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      $
+                      {b.totalAmount?.toFixed
+                        ? b.totalAmount.toFixed(2)
+                        : b.totalAmount}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          b.status === "CONFIRMED" ||
+                          b.status === "IN_PROGRESS"
+                            ? "bg-green-100 text-green-700"
+                            : b.status === "CANCELLED"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {b.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -965,6 +1135,16 @@ export default function OperatorDashboard() {
               Stations
             </button>
             <button
+              onClick={() => setActiveTab("bookings")}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                activeTab === "bookings"
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              Bookings
+            </button>
+            <button
               onClick={() => setActiveTab("analytics")}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                 activeTab === "analytics"
@@ -985,11 +1165,11 @@ export default function OperatorDashboard() {
               Settings
             </button>
           </div>
-          {/* old Logout button removed; profile dropdown handles logout */}
         </div>
 
         {activeTab === "overview" && renderOverview()}
         {activeTab === "stations" && renderStations()}
+        {activeTab === "bookings" && renderBookings()}
         {activeTab === "analytics" && renderAnalytics()}
         {activeTab === "settings" && renderSettings()}
       </div>

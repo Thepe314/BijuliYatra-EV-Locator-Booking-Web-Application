@@ -99,6 +99,9 @@ export default function StationManagement() {
     navigate("/admin/addstation");
   };
 
+ const handleViewDetails = (id) => {
+    navigate(`/stationdetails/${id}`);
+  };
   const handleLogout = async () => {
     try {
       await authService.logout();
@@ -407,7 +410,12 @@ const handleEdit = (stationId) => {
                     </div>
 
                     <div className="bg-gray-50 px-6 py-4 flex justify-between text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-700">View Details</button>
+                       <button
+                  onClick={() => handleViewDetails(station.id)}
+                  className="text-sm text-blue-600 font-medium hover:text-blue-800"
+                >
+                  View Details
+                </button>
                       <button className="text-gray-600 hover:text-gray-800">Edit Station</button>
                     </div>
                   </div>

@@ -107,7 +107,10 @@ public class AuthController {
         user.setFullname(request.getFullname());
         user.setAddress(request.getAddress());
         user.setJoinDate(LocalDateTime.now());
-        user.setStatus("pending"); // needs approval
+        user.setStatus("pending");
+        user.setDistrict(request.getDistrict());
+        user.setCity(request.getCity());
+        user.setRegion(request.getRegion());
 
         assignRole(user, RoleType.ROLE_CHARGER_OPERATOR);
 

@@ -90,12 +90,12 @@ public class OperatorController {
         return ResponseEntity.ok(dtos);
     }
     
-    @GetMapping("/stations/{id}")
-    public ResponseEntity<StationResponseDTO> getStationById(@PathVariable Long id) {
-        ChargingStations station = repository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Station not found with id: " + id));
-        return ResponseEntity.ok(new StationResponseDTO(station));
-    }
+//    @GetMapping("/stations/{id}")
+//    public ResponseEntity<StationResponseDTO> getStationById(@PathVariable Long id) {
+//        ChargingStations station = repository.findById(id)
+//            .orElseThrow(() -> new RuntimeException("Station not found with id: " + id));
+//        return ResponseEntity.ok(new StationResponseDTO(station));
+//    }
     
     @PutMapping("/stations/{id}")
     public ResponseEntity<StationResponseDTO> updateStation(
@@ -126,5 +126,13 @@ public class OperatorController {
     public ResponseEntity<Void> deleteStation(@PathVariable Long id) {
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+    
+    @GetMapping("/stations/{id}")
+    public ResponseEntity<StationResponseDTO> getOperatorStationById(@PathVariable Long id, Authentication auth) {
+        // optionally check that authenticated operator owns this station
+        return repository.findById(id)
+                .map(station -> ResponseEntity.ok(new StationResponseDTO(station)))
+                .orElse(ResponseEntity.notFound().build());
     }
 }

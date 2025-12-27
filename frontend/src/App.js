@@ -51,7 +51,7 @@ function App() {
           <Route path="/map" element={<ChargingStationsMap />} />
           <Route path="/book/station/:stationId" element={<BookingPage />} />
           <Route path="/profile" element={<UserProfile />} />
-          <Route path="/stationdetails" element={<StationDetailsPage />} />
+          <Route path="/stationdetails/:stationId" element={<StationDetailsPage />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/admin/usermanagement" element={<UserManagement />} />
           <Route path="/admin/stationmanagement" element={<StationManagement />} />

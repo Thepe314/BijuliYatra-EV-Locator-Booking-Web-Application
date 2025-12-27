@@ -20,53 +20,55 @@ export default function StationFinderPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loadStations = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const loadStations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const response = await stationService.listStationsForOwner();
-        const stationList = response?.data || response || [];
+      const response = await stationService.listStationsForOwner();
+      const stationList = response?.data || response || [];
 
-        // Ensure every station has totalSlots & availableSlots
-        const enrichedStations = stationList.map(station => {
-          const level2 = station.level2Chargers || 0;
-          const dcFast = station.dcFastChargers || 0;
-          const total = station.totalSlots || (level2 + dcFast);
-          const available = station.availableSlots !== undefined 
-            ? station.availableSlots 
-            : total; // default: fully available
+      const enrichedStations = stationList.map(station => {
+        const level2 = station.level2Chargers || 0;
+        const dcFast = station.dcFastChargers || 0;
+        const total = station.totalSlots || (level2 + dcFast);
+        const available = station.availableSlots !== undefined 
+          ? station.availableSlots 
+          : total;
 
-          return {
-            ...station,
-            totalSlots: total,
-            availableSlots: available,
-            pricePerKwh: station.dcFastRate || station.level2Rate || 40,
-            maxPower: dcFast > 0 ? '150 kW' : '22 kW',
-            rating: station.rating || '4.6'
-          };
-        });
+        return {
+          ...station,
+          totalSlots: total,
+          availableSlots: available,
+          pricePerKwh: station.dcFastRate || station.level2Rate || 40,
+          maxPower: dcFast > 0 ? '150 kW' : '22 kW',
+          rating: station.rating || '4.6'
+        };
+      });
 
-        setStations(enrichedStations);
-        setFilteredStations(enrichedStations);
-        toast.success(`Loaded ${enrichedStations.length} stations across Nepal`);
-      } catch (err) {
-        console.error("Failed to load stations:", err);
-        const msg = err.response?.status === 401 || err.response?.status === 403
-          ? "Please log in to continue"
-          : "No stations found or server error";
-        setError(msg);
-        toast.error(msg);
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          navigate('/login');
-        }
-      } finally {
-        setLoading(false);
+      setStations(enrichedStations);
+      setFilteredStations(enrichedStations);
+      toast.success(
+        `Loaded ${enrichedStations.length} stations across Nepal`,
+        { toastId: 'stations-loaded' }
+      );
+    } catch (err) {
+      console.error("Failed to load stations:", err);
+      const msg = err.response?.status === 401 || err.response?.status === 403
+        ? "Please log in to continue"
+        : "No stations found or server error";
+      setError(msg);
+      toast.error(msg, { toastId: 'stations-error' });
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        navigate('/login');
       }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    loadStations();
-  }, [navigate]);
+  loadStations();
+}, [navigate]);
 
   // Search filter
   useEffect(() => {

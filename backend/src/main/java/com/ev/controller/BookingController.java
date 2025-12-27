@@ -137,6 +137,9 @@ public class BookingController {
             String startTimeStr = (String) req.get("startTime");
             String endTimeStr = (String) req.get("endTime");
             String connectorType = (String) req.get("connectorType");
+            String paymentMethod = req.get("paymentMethod") != null
+                    ? req.get("paymentMethod").toString()   // e.g. CARD / ESEWA / KHALTI
+                    : "KHALTI";
 
             LocalDateTime start = LocalDateTime.parse(startTimeStr);
             LocalDateTime end = LocalDateTime.parse(endTimeStr);
@@ -159,11 +162,9 @@ public class BookingController {
                 return ResponseEntity.badRequest().body("Station is not available");
             }
 
-            // 5. RECOMMENDED CONFLICT CHECK (Best Practice)
-            // → Allow back-to-back bookings (end at 11:00 → next starts 11:00)
-            // → Only add 15-min buffer AFTER booking ends (for cleanup)
+            // 5. Conflict check
             LocalDateTime conflictStart = start;
-            LocalDateTime conflictEnd = end.plusMinutes(15);  // Only post-buffer
+            LocalDateTime conflictEnd = end.plusMinutes(15);
 
             boolean hasConflict = bookingRepo.hasOverlappingBooking(
                     stationId,
@@ -177,21 +178,21 @@ public class BookingController {
                         .body("This time slot is too close to another booking (15-min gap required after previous booking ends)");
             }
 
-            // 6. Slot availability (optional: if you track per-port slots)
+            // 6. Slot availability
             int totalSlots = station.getTotalSlots() != null && station.getTotalSlots() > 0
                     ? station.getTotalSlots()
                     : (station.getLevel2Chargers() + station.getDcFastChargers());
 
             long bookedDuringThisTime = bookingRepo.countBookingsDuringPeriod(
-            	    stationId,
-            	    start,           // start of new booking
-            	    end.plusMinutes(15)  // include cleanup buffer
-            	);
+                    stationId,
+                    start,
+                    end.plusMinutes(15)
+            );
 
-            	if (bookedDuringThisTime >= totalSlots) {
-            	    return ResponseEntity.badRequest()
-            	        .body("No charging ports available during this time slot");
-            	}
+            if (bookedDuringThisTime >= totalSlots) {
+                return ResponseEntity.badRequest()
+                        .body("No charging ports available during this time slot");
+            }
 
             // 7. Pricing
             double hours = minutes / 60.0;
@@ -199,10 +200,10 @@ public class BookingController {
                     ? (station.getDcFastRate() != null ? station.getDcFastRate() : 60.0)
                     : (station.getLevel2Rate() != null ? station.getLevel2Rate() : 40.0);
 
-            double estimatedKwh = hours * 50;  // rough estimate
+            double estimatedKwh = hours * 50;
             double totalAmount = Math.round(rate * estimatedKwh);
 
-            // 8. Create booking
+            // 8. Create booking as PENDING (not confirmed until payment success)
             Booking booking = new Booking();
             booking.setEvOwner(evOwner);
             booking.setStation(station);
@@ -212,15 +213,25 @@ public class BookingController {
             booking.setEstimatedKwh(estimatedKwh);
             booking.setActualKwh(0.0);
             booking.setTotalAmount(totalAmount);
-            booking.setStatus(BookingStatus.CONFIRMED);
-
+            booking.setStatus(BookingStatus.IN_PROGRESS);
             Booking saved = bookingRepo.save(booking);
 
-            return ResponseEntity.status(201).body(new BookingResponseDTO(saved));
+            // 9. INIT PAYMENT WITH GATEWAY (stub for now)
+            // TODO: based on paymentMethod, call Khalti/eSewa/card SDK and get a paymentUrl
+            // For now, just mock a URL so your frontend flow works:
+            String paymentUrl = "https://example.com/mock-payment?bookingId=" + saved.getId();
+
+            // 10. Return bookingId + paymentUrl for redirect
+            return ResponseEntity.ok(Map.of(
+                    "bookingId", saved.getId(),
+                    "paymentUrl", paymentUrl,
+                    "amount", totalAmount,
+                    "paymentMethod", paymentMethod
+            ));
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Booking failed: " + e.getMessage());
+            return ResponseEntity.status(500).body("Booking/payment init failed: " + e.getMessage());
         }
     }
     // ===================== CANCEL BOOKING =====================

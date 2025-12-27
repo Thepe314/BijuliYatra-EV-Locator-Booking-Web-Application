@@ -292,6 +292,11 @@ export const stationService = {
   return res.data;
 },
 
+ getStationByIdO: async (id) => {
+  const res = await api.get(`/operator/stations/${id}`);
+  return res.data;
+},
+
   updateStationAdmin: async (id, data) => {
     const res = await api.put(`/admin/stations/edit/${id}`, data);
     return res.data;

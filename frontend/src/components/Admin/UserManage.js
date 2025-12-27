@@ -6,13 +6,13 @@ import {
 } from 'lucide-react';
 import { userService, authService } from '../../Services/api';
 import { useNavigate } from 'react-router-dom';
-import { toast, ToastContainer} from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 
 export default function UserManagement() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');      // now uses ACTIVE/INACTIVE/all
   const [filterRole, setFilterRole] = useState('all');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,32 +40,35 @@ export default function UserManagement() {
       setLoading(true);
       setError(null);
       const data = await userService.listUsers();
+      console.log('API users:', data);
+      const userTypeMap = {
+        'EV_OWNER': 'EV Owner',
+        'CHARGER_OPERATOR': 'Charger Operator',
+        'ADMIN': 'Admin'
+      };
 
-      const mappedUsers = data.map(user => {
-        const userTypeMap = {
-          'EV_OWNER': 'EV Owner',
-          'CHARGER_OPERATOR': 'Charger Operator',
-          'ADMIN': 'Admin'
-        };
+     const mappedUsers = data.map(user => {
+  const apiStatus = (user.status || '').toString().toUpperCase(); // "ACTIVE"
 
-        return {
-          id: user.user_id,
-          name: user.fullname || 'Unknown User',
-          email: user.email,
-          phone: user.phoneNumber || 'N/A',
-          status: user.status === 'ACTIVE' ? 'Active' : 'Inactive',
-          rawStatus: user.status,
-          joinDate: new Date(user.joinDate).toLocaleDateString('en-US', { 
-            year: 'numeric', month: 'short', day: 'numeric' 
-          }),
-          userType: userTypeMap[user.userType] || user.userType,
-          role: user.userType,
-          city: user.city || '—',
-          district: user.district || '',
-          address: user.address || '',
-        };
-      });
-
+  return {
+    id: user.user_id,
+    name: user.fullname || 'Unknown User',
+    email: user.email,
+    phone: user.phoneNumber || 'N/A',
+    rawStatus: apiStatus,
+    status: apiStatus === 'ACTIVE' ? 'Active' : 'Inactive',
+    joinDate: user.joinDate
+      ? new Date(user.joinDate).toLocaleDateString('en-US', { 
+          year: 'numeric', month: 'short', day: 'numeric' 
+        })
+      : '—',
+    userType: userTypeMap[user.userType] || user.userType,
+    role: user.userType,
+    city: user.city || '—',
+    district: user.district || '',
+    address: user.address || '',
+  };
+});
       setUsers(mappedUsers);
     } catch (err) {
       console.error('Error fetching users:', err);
@@ -75,18 +78,22 @@ export default function UserManagement() {
     }
   };
 
-  const changeUserStatus = async (userId, currentStatus) => {
-    const newStatus = currentStatus === 'Active' ? 'INACTIVE' : 'ACTIVE';
+  const changeUserStatus = async (userId, currentRawStatus) => {
+    // use raw status for toggling
+    const newStatus = currentRawStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     const newDisplay = newStatus === 'ACTIVE' ? 'Active' : 'Inactive';
 
     setUpdatingStatus(userId);
     try {
       await userService.changeUserStatus(userId, newStatus);
       setUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, status: newDisplay, rawStatus: newStatus } : u
+        u.id === userId 
+          ? { ...u, status: newDisplay, rawStatus: newStatus }
+          : u
       ));
       setSuccessMessage(`User status updated to ${newDisplay}`);
     } catch (err) {
+      console.error('Failed to update status', err);
       setError('Failed to update status');
     } finally {
       setUpdatingStatus(null);
@@ -99,16 +106,14 @@ export default function UserManagement() {
     }
 
     try {
+      setDeleting(true);
       await userService.deleteUser(userId); 
 
-      // Remove from UI
       setUsers(prev => prev.filter(u => u.id !== userId));
 
       toast.success("Users deleted successfully!", {
         icon: "Deleted",
       });
-
-     
     } catch (err) {
       console.error('Delete User failed:', err);
       
@@ -124,28 +129,36 @@ export default function UserManagement() {
       toast.error(message, {
         icon: "Failed",
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
-const handleEdit = (userId) => {
-  navigate(`/admin/editUser/${userId}`);
-};
+  const handleEdit = (userId) => {
+    navigate(`/admin/editUser/${userId}`);
+  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || user.status.toLowerCase() === filterStatus;
+    // use rawStatus for filtering
+    const matchesStatus = 
+      filterStatus === 'all' || user.rawStatus === filterStatus;
     const matchesRole = filterRole === 'all' || user.role === filterRole;
     return matchesSearch && matchesStatus && matchesRole;
   });
 
-  const activeUsers = users.filter(u => u.status === 'Active').length;
+  const activeUsers = users.filter(u => u.rawStatus === 'ACTIVE').length;
   const evOwners = users.filter(u => u.role === 'EV_OWNER').length;
   const chargerOps = users.filter(u => u.role === 'CHARGER_OPERATOR').length;
 
   const handleLogout = async () => {
-    try { await authService.logout(); } catch (err) {}
+    try { 
+      await authService.logout(); 
+    } catch (err) {
+      console.error(err);
+    }
     navigate('/login');
   };
 
@@ -158,8 +171,7 @@ const handleEdit = (userId) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar - Full Height */}
-        <ToastContainer
+      <ToastContainer
         position="top-right"
         autoClose={3000}
         hideProgressBar={false}
@@ -169,6 +181,8 @@ const handleEdit = (userId) => {
         theme="colored"
         style={{ zIndex: 9999 }}
       />
+
+      {/* Sidebar */}
       <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col h-screen sticky top-0`}>
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
           {sidebarOpen ? (
@@ -330,8 +344,8 @@ const handleEdit = (userId) => {
                   className="px-5 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
                 </select>
                 <select
                   value={filterRole}
@@ -410,7 +424,7 @@ const handleEdit = (userId) => {
                           </td>
                           <td className="px-6 py-5">
                             <button
-                              onClick={() => changeUserStatus(user.id, user.status)}
+                              onClick={() => changeUserStatus(user.id, user.rawStatus)}
                               disabled={updatingStatus === user.id}
                               className={`inline-flex items-center px-4 py-2 rounded-full text-xs font-medium transition-all ${
                                 user.status === 'Active'
@@ -433,9 +447,8 @@ const handleEdit = (userId) => {
                           </td>
                           <td className="px-6 py-5">
                             <div className="flex items-center gap-2">
-                      
                               <button
-                                onClick={() => handleEdit(user.id)}  // Changed from onClick={handleEdit}
+                                onClick={() => handleEdit(user.id)}
                                 disabled={editing}
                                 className="p-2.5 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                 title="Edit"
