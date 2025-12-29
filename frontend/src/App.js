@@ -25,6 +25,7 @@ import AddStationAdmin from "./components/Admin/AddStationAdmin.js";
 import StationFinderPage from "./components/User/StationFinderPage.js";
 import BookingManagement from "./components/Admin/BookingManagement.js";
 import EditStationPage from "./components/Admin/EditStationPage.js";
+import ForgotPasswordPage from "./components/Auth/ForgetPassword.js";
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
           <Route path="/admin/stationmanagement" element={<StationManagement />} />
           <Route path="/admin/bookingmanagement" element={<BookingManagement />} />
           <Route path="/analytics" element={<AdminAnalytics />} />
+           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           {/* Admin */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />

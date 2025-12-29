@@ -30,6 +30,12 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
 
+  // OTP state
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpEmail, setOtpEmail] = useState("");
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -94,162 +100,273 @@ export default function LoginPage() {
   };
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setTouched({ email: true, password: true });
+    e.preventDefault();
+    setTouched({ email: true, password: true });
 
-  const isValid = validateForm();
-
-  if (!isValid) {
-    if (errors.email) {
-      notify.error(errors.email || "Please enter a valid email address.");
-    } else if (errors.password) {
-      notify.error(errors.password || "Please enter a valid password.");
-    } else {
-      notify.error("Please fix the highlighted fields before continuing.");
-    }
-    return;
-  }
-
-  setIsSubmitting(true);
-  setApiError("");
-
-  try {
-    const data = await authService.login({
-      email: formData.email,
-      password: formData.password,
-    });
-
-    console.log("Login successful (component):", data);
-
-    if (!data.token) {
-      const msg = "Login failed: missing token.";
-      setApiError(msg);
-      notify.error(msg);
-      setIsSubmitting(false);
+    const isValid = validateForm();
+    if (!isValid) {
+      if (errors.email) {
+        notify.error(errors.email || "Please enter a valid email address.");
+      } else if (errors.password) {
+        notify.error(errors.password || "Please enter a valid password.");
+      } else {
+        notify.error("Please fix the highlighted fields before continuing.");
+      }
       return;
     }
 
-    console.log("RAW login response:", data);
-  console.log("role from backend:", data.role);
-  console.log("status from backend:", data.status);
+    setIsSubmitting(true);
+    setApiError("");
 
-    // Block operator login based on status
-  const role = (data.role || "").toString();
-const status = (data.status || "").toString();
-const normalizedRole = role.replace(/^ROLE_/, "").toLowerCase();
-const statusLower = status.toLowerCase();
-
-console.log("login role/status:", { role, status, normalizedRole, statusLower });
-
-if (normalizedRole === "charger_operator" && statusLower !== "active") {
-  console.log("Blocking operator login due to status:", statusLower);
-
-  let msg;
-
-  // handle common variations
-  if (statusLower.trim() === "pending") {
-    msg = "Your request is still in process.";
-    console.log("Showing pending toast");
-    setApiError(msg);
-    notify.info(msg);
-  } else if (["cancelled", "canceled", "rejected"].includes(statusLower.trim())) {
-    msg = "Your account failed to meet the requirements.";
-    console.log("Showing cancelled toast");
-    setApiError(msg);
-    notify.error(msg);
-  } else {
-    msg = "Your account is not active yet.";
-    console.log("Showing generic not-active toast");
-    setApiError(msg);
-    notify.error(msg);
-  }
-
-  setIsSubmitting(false);
-  return;
-}
-
-    // Normal login flow for active operators and all other roles
-    if (data.userId) localStorage.setItem("userId", data.userId.toString());
-    if (data.role) localStorage.setItem("userRole", data.role);
-
-    if (login) {
-      login({
-        token: data.token,
-        userId: data.userId,
-        role: data.role,
+    try {
+      const data = await authService.login({
+        email: formData.email,
+        password: formData.password,
       });
-    }
 
-    let redirectPath;
-    if (location.state?.from) {
-      redirectPath = location.state.from;
-    } else if (data.redirect) {
-      redirectPath = data.redirect;
-    } else {
-      redirectPath = "/";
-    }
+      console.log("RAW login response:", data);
 
-    notify.success("Logged in successfully. Welcome back!");
-    navigate(redirectPath, { replace: true });
-  } catch (error) {
-    console.error("Login failed (component):", error);
-    console.log("error.response:", error?.response);
+      // CASE 1: Backend still returns token directly (no OTP)
+      if (data.token) {
+        const role = (data.role || "").toString();
+        const status = (data.status || "").toString();
+        const normalizedRole = role.replace(/^ROLE_/, "").toLowerCase();
+        const statusLower = status.toLowerCase();
 
-    if (error.response) {
-      const status = error.response.status;
-      const backendMessage = error.response.data?.message || "";
+        console.log("login role/status:", {
+          role,
+          status,
+          normalizedRole,
+          statusLower,
+        });
 
-      if (status === 401) {
-        if (backendMessage.toLowerCase().includes("password")) {
-          const msg = "Incorrect password. Please try again.";
-          setApiError(msg);
-          notify.error(msg);
-        } else if (
-          backendMessage.toLowerCase().includes("user") ||
-          backendMessage.toLowerCase().includes("email")
-        ) {
-          const msg = "No account found with this email address.";
-          setApiError(msg);
-          notify.error(msg);
-        } else if (backendMessage.toLowerCase().includes("locked")) {
-          const msg =
-            "Your account is locked. Please contact support for assistance.";
-          setApiError(msg);
-          notify.error(msg);
-        } else {
-          const msg = "Invalid email or password. Please try again.";
-          setApiError(msg);
-          notify.error(msg);
+        if (normalizedRole === "charger_operator" && statusLower !== "active") {
+          console.log("Blocking operator login due to status:", statusLower);
+
+          let msg;
+
+          if (statusLower.trim() === "pending") {
+            msg = "Your request is still in process.";
+            console.log("Showing pending toast");
+            setApiError(msg);
+            notify.info(msg);
+          } else if (
+            ["cancelled", "canceled", "rejected"].includes(statusLower.trim())
+          ) {
+            msg = "Your account failed to meet the requirements.";
+            console.log("Showing cancelled toast");
+            setApiError(msg);
+            notify.error(msg);
+          } else {
+            msg = "Your account is not active yet.";
+            console.log("Showing generic not-active toast");
+            setApiError(msg);
+            notify.error(msg);
+          }
+
+          setIsSubmitting(false);
+          return;
         }
-      } else if (status === 429) {
-        const msg =
-          "Too many login attempts. Please wait a moment and try again.";
-        setApiError(msg);
-        notify.error(msg);
-      } else if (status === 403) {
-        const msg =
-          "You do not have permission to access this application with this account.";
-        setApiError(msg);
-        notify.error(msg);
-      } else if (backendMessage) {
-        const msg = backendMessage;
-        setApiError(msg);
-        notify.error(msg);
+
+        if (data.userId)
+          localStorage.setItem("userId", data.userId.toString());
+        if (data.role) localStorage.setItem("userRole", data.role);
+
+        if (login) {
+          login({
+            token: data.token,
+            userId: data.userId,
+            role: data.role,
+          });
+        }
+
+        let redirectPath;
+        if (location.state?.from) {
+          redirectPath = location.state.from;
+        } else if (data.redirect) {
+          redirectPath = data.redirect;
+        } else {
+          redirectPath = "/";
+        }
+
+        notify.success("Logged in successfully. Welcome back!");
+        navigate(redirectPath, { replace: true });
+        return;
+      }
+
+      // CASE 2: OTP flow – backend responded with "OTP sent" and no token
+      if (data.message && data.message.toLowerCase().includes("otp")) {
+        setOtp("");
+        setOtpEmail(formData.email);
+        setShowOtpModal(true);
+        notify.info(
+          "An OTP has been sent to your email. Please enter it to continue."
+        );
       } else {
-        const msg = "Login failed due to a server error. Please try again.";
+        const msg = data.message || "Unexpected response from server.";
         setApiError(msg);
         notify.error(msg);
       }
-    } else {
-      const msg =
-        "Unable to connect to the server. Please check your connection and try again.";
-      setApiError(msg);
-      notify.error(msg);
+    } catch (error) {
+      console.error("Login failed (component):", error);
+      console.log("error.response:", error?.response);
+
+      if (error.response) {
+        const status = error.response.status;
+        const backendMessage = error.response.data?.message || "";
+
+        if (status === 401) {
+          if (backendMessage.toLowerCase().includes("password")) {
+            const msg = "Incorrect password. Please try again.";
+            setApiError(msg);
+            notify.error(msg);
+          } else if (
+            backendMessage.toLowerCase().includes("user") ||
+            backendMessage.toLowerCase().includes("email")
+          ) {
+            const msg = "No account found with this email address.";
+            setApiError(msg);
+            notify.error(msg);
+          } else if (backendMessage.toLowerCase().includes("locked")) {
+            const msg =
+              "Your account is locked. Please contact support for assistance.";
+            setApiError(msg);
+            notify.error(msg);
+          } else {
+            const msg = "Invalid email or password. Please try again.";
+            setApiError(msg);
+            notify.error(msg);
+          }
+        } else if (status === 429) {
+          const msg =
+            "Too many login attempts. Please wait a moment and try again.";
+          setApiError(msg);
+          notify.error(msg);
+        } else if (status === 403) {
+          const msg =
+            "You do not have permission to access this application with this account.";
+          setApiError(msg);
+          notify.error(msg);
+        } else if (backendMessage) {
+          const msg = backendMessage;
+          setApiError(msg);
+          notify.error(msg);
+        } else {
+          const msg =
+            "Login failed due to a server error. Please try again.";
+          setApiError(msg);
+          notify.error(msg);
+        }
+      } else {
+        const msg =
+          "Unable to connect to the server. Please check your connection and try again.";
+        setApiError(msg);
+        notify.error(msg);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!otp || otp.trim().length === 0) {
+      notify.error("Please enter the OTP sent to your email.");
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      const data = await authService.verifyLoginOtp({
+        email: otpEmail,
+          otpCode: otp.trim(),
+      });
+
+      console.log("OTP verification response:", data);
+
+      if (!data.token) {
+        const msg = "Verification failed: missing token.";
+        setApiError(msg);
+        notify.error(msg);
+        return;
+      }
+
+      const role = (data.role || "").toString();
+      const status = (data.status || "").toString();
+      const normalizedRole = role.replace(/^ROLE_/, "").toLowerCase();
+      const statusLower = status.toLowerCase();
+
+      console.log("verify-otp role/status:", {
+        role,
+        status,
+        normalizedRole,
+        statusLower,
+      });
+
+      if (normalizedRole === "charger_operator" && statusLower !== "active") {
+        let msg;
+
+        if (statusLower.trim() === "pending") {
+          msg = "Your request is still in process.";
+          setApiError(msg);
+          notify.info(msg);
+        } else if (
+          ["cancelled", "canceled", "rejected"].includes(statusLower.trim())
+        ) {
+          msg = "Your account failed to meet the requirements.";
+          setApiError(msg);
+          notify.error(msg);
+        } else {
+          msg = "Your account is not active yet.";
+          setApiError(msg);
+          notify.error(msg);
+        }
+        return;
+      }
+
+      if (data.userId)
+        localStorage.setItem("userId", data.userId.toString());
+      if (data.role) localStorage.setItem("userRole", data.role);
+
+      if (login) {
+        login({
+          token: data.token,
+          userId: data.userId,
+          role: data.role,
+        });
+      }
+
+      let redirectPath;
+      if (location.state?.from) {
+        redirectPath = location.state.from;
+      } else if (data.redirect) {
+        redirectPath = data.redirect;
+      } else {
+        redirectPath = "/";
+      }
+
+      notify.success("Login verified. Welcome back!");
+      setShowOtpModal(false);
+      navigate(redirectPath, { replace: true });
+    } catch (error) {
+      console.error("OTP verification failed:", error);
+      if (error.response) {
+        const backendMessage = error.response.data?.message || "";
+        const msg =
+          backendMessage ||
+          "OTP verification failed. Please check the code and try again.";
+        setApiError(msg);
+        notify.error(msg);
+      } else {
+        const msg =
+          "Unable to connect to the server. Please check your connection and try again.";
+        setApiError(msg);
+        notify.error(msg);
+      }
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
 
   const handleForgotPassword = (e) => {
     e.preventDefault();
@@ -392,6 +509,75 @@ if (normalizedRole === "charger_operator" && statusLower !== "active") {
           </p>
         </form>
       </div>
+
+      {/* OTP Modal */}
+      {showOtpModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative">
+            <h2 className="text-xl font-semibold text-slate-900 mb-2 text-center">
+              Verify your login
+            </h2>
+            <p className="text-sm text-slate-600 mb-4 text-center">
+              Enter the 6-digit code sent to{" "}
+              <span className="font-medium">{otpEmail}</span>.
+            </p>
+
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <div className="flex justify-center">
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "");
+                    setOtp(value);
+                  }}
+                  className="tracking-[0.5em] text-center text-lg font-semibold px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:outline-none w-40"
+                  placeholder="••••••"
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span>Didn’t receive the code?</span>
+                <button
+                  type="button"
+                  className="text-emerald-600 hover:text-emerald-700 font-medium"
+                  onClick={() => {
+                    notify.info(
+                      "Please wait a moment and check your inbox again."
+                    );
+                    // you can call a "resend OTP" endpoint here later
+                  }}
+                >
+                  Resend
+                </button>
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowOtpModal(false)}
+                  className="w-1/2 py-2 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition"
+                  disabled={isVerifyingOtp}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isVerifyingOtp}
+                  className={`w-1/2 py-2 rounded-xl font-semibold text-white transition ${
+                    isVerifyingOtp
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700"
+                  }`}
+                >
+                  {isVerifyingOtp ? "Verifying..." : "Verify"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

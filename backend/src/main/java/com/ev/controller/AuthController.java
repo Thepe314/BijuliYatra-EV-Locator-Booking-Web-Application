@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ev.dto.EvOwnerSignupRequest;
 import com.ev.dto.LoginRequest;
 import com.ev.dto.OperatorSignupRequest;
+import com.ev.dto.OtpVerifyRequest;
+import com.ev.dto.ResetPasswordRequestDTO;
 import com.ev.model.Admin;
 import com.ev.model.ChargerOperator;
 import com.ev.model.EvOwner;
@@ -33,7 +35,7 @@ import com.ev.repository.RefreshTokenRepo;
 import com.ev.repository.RoleRepository;
 import com.ev.repository.UserRepository;
 import com.ev.configuration.jwtUtil;
-
+import com.ev.service.EmailService;
 
 @RestController
 @RequestMapping("/auth") 
@@ -51,6 +53,10 @@ public class AuthController {
 	
 	@Autowired
 	 private UserRepository uRepo;
+	
+	
+	@Autowired
+	 private EmailService emailService;
 	
 	@Autowired
 	 private RoleRepository roleRepo;
@@ -133,86 +139,86 @@ public class AuthController {
     }
 
 	//Login
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody @Validated LoginRequest loginRequest) {
-        try {
-            // Find user by email
-            User existingUser = uRepo.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-            // Validate password
-            if (!passwordEncoder.matches(loginRequest.getPassword(), existingUser.getPassword())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Invalid email or password"));
-            }
-
-            // Extract roles
-            String roleString = existingUser.getRoleString(); // e.g., "ROLE_ADMIN,ROLE_USER"
-            String primaryRole = existingUser.getPrimaryRole(); // e.g., "ROLE_ADMIN"
-
-            // Generate JWT access token
-            String accessToken = jwtUtil.generateToken(
-                existingUser.getEmail(),
-                roleString,
-                existingUser.getUser_id()
-            );
-
-            // Determine redirect URL based on primary role
-            String redirectUrl = getRedirectUrl(primaryRole);
-            
-            System.out.println("=== LOGIN SUCCESS ===");
-            System.out.println("Email: " + existingUser.getEmail());
-            System.out.println("Primary Role: " + primaryRole);
-            System.out.println("Redirect URL: " + redirectUrl);
-            System.out.println("====================");
-
-            // Refresh token handling
-            refreshTokenRepo.deleteByUserUser_id(existingUser.getUser_id());
-
-            String sessionId = UUID.randomUUID().toString();
-            String jti = jwtUtil.getJti(accessToken);
-
-            RefreshToken rt = new RefreshToken();
-            rt.setUser(existingUser);
-            rt.setToken(UUID.randomUUID().toString());
-            rt.setSessionId(sessionId);
-            rt.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
-            rt.setJti(jti);
-            refreshTokenRepo.save(rt);
-            
-            System.out.println("LOGIN DEBUG user = " + existingUser.getEmail()
-            + ", status = " + existingUser.getStatus());
-
-            // Return response
-            return ResponseEntity.ok(Map.of(
-                "message", "Login successful",
-                "token", accessToken,
-                "refreshToken", rt.getToken(),
-                "role", primaryRole,
-                "roles", roleString,
-                "sessionId", sessionId,
-                "redirect", redirectUrl,
-                "userId", existingUser.getUser_id(),
-                "status", existingUser.getStatus() 
-                
-            ));
-
-        } catch (RuntimeException e) {
-            System.out.println("=== LOGIN FAILED ===");
-            System.out.println("Error: " + e.getMessage());
-            System.out.println("====================");
-            
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            System.out.println("=== LOGIN ERROR ===");
-            e.printStackTrace();
-            System.out.println("====================");
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "Login failed: " + e.getMessage()));
-        }
-    }
+//    @PostMapping("/login")
+//    public ResponseEntity<?> login(@RequestBody @Validated LoginRequest loginRequest) {
+//        try {
+//            // Find user by email
+//            User existingUser = uRepo.findByEmail(loginRequest.getEmail())
+//                .orElseThrow(() -> new RuntimeException("User not found"));
+//
+//            // Validate password
+//            if (!passwordEncoder.matches(loginRequest.getPassword(), existingUser.getPassword())) {
+//                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                    .body(Map.of("message", "Invalid email or password"));
+//            }
+//
+//            // Extract roles
+//            String roleString = existingUser.getRoleString(); // e.g., "ROLE_ADMIN,ROLE_USER"
+//            String primaryRole = existingUser.getPrimaryRole(); // e.g., "ROLE_ADMIN"
+//
+//            // Generate JWT access token
+//            String accessToken = jwtUtil.generateToken(
+//                existingUser.getEmail(),
+//                roleString,
+//                existingUser.getUser_id()
+//            );
+//
+//            // Determine redirect URL based on primary role
+//            String redirectUrl = getRedirectUrl(primaryRole);
+//            
+//            System.out.println("=== LOGIN SUCCESS ===");
+//            System.out.println("Email: " + existingUser.getEmail());
+//            System.out.println("Primary Role: " + primaryRole);
+//            System.out.println("Redirect URL: " + redirectUrl);
+//            System.out.println("====================");
+//
+//            // Refresh token handling
+//            refreshTokenRepo.deleteByUserUser_id(existingUser.getUser_id());
+//
+//            String sessionId = UUID.randomUUID().toString();
+//            String jti = jwtUtil.getJti(accessToken);
+//
+//            RefreshToken rt = new RefreshToken();
+//            rt.setUser(existingUser);
+//            rt.setToken(UUID.randomUUID().toString());
+//            rt.setSessionId(sessionId);
+//            rt.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
+//            rt.setJti(jti);
+//            refreshTokenRepo.save(rt);
+//            
+//            System.out.println("LOGIN DEBUG user = " + existingUser.getEmail()
+//            + ", status = " + existingUser.getStatus());
+//
+//            // Return response
+//            return ResponseEntity.ok(Map.of(
+//                "message", "Login successful",
+//                "token", accessToken,
+//                "refreshToken", rt.getToken(),
+//                "role", primaryRole,
+//                "roles", roleString,
+//                "sessionId", sessionId,
+//                "redirect", redirectUrl,
+//                "userId", existingUser.getUser_id(),
+//                "status", existingUser.getStatus() 
+//                
+//            ));
+//
+//        } catch (RuntimeException e) {
+//            System.out.println("=== LOGIN FAILED ===");
+//            System.out.println("Error: " + e.getMessage());
+//            System.out.println("====================");
+//            
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+//                .body(Map.of("message", e.getMessage()));
+//        } catch (Exception e) {
+//            System.out.println("=== LOGIN ERROR ===");
+//            e.printStackTrace();
+//            System.out.println("====================");
+//            
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                .body(Map.of("message", "Login failed: " + e.getMessage()));
+//        }
+//    }
 
     /**
      * Helper method to determine redirect URL based on role
@@ -238,4 +244,187 @@ public class AuthController {
             }
         };
     }
+    
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody @Validated LoginRequest loginRequest) {
+        try {
+            User existingUser = uRepo.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (!passwordEncoder.matches(loginRequest.getPassword(), existingUser.getPassword())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Invalid email or password"));
+            }
+
+            // 1) Generate OTP (6 digits)
+            String otp = String.valueOf((int)(Math.random() * 900000) + 100000);
+
+            // 2) Store OTP on User entity
+            existingUser.setOtpCode(otp);
+            existingUser.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+            uRepo.save(existingUser);
+
+            // 3) Send OTP email (goes to Mailtrap inbox)
+            emailService.sendSimpleMail(
+                existingUser.getEmail(),
+                "Login OTP Code",
+                "Your OTP is: " + otp + " (valid for 5 minutes)"
+            );
+
+            // 4) Tell frontend to ask for OTP
+            return ResponseEntity.ok(Map.of(
+                "message", "OTP sent to email",
+                "email", existingUser.getEmail()
+            ));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("message", "Login failed: " + e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/login/verify-otp")
+    public ResponseEntity<?> verifyLoginOtp(@RequestBody @Validated OtpVerifyRequest request) {
+
+        User existingUser = uRepo.findByEmail(request.getEmail())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (existingUser.getOtpCode() == null || existingUser.getOtpExpiry() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", "No OTP requested"));
+        }
+
+        if (existingUser.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", "OTP expired"));
+        }
+
+        if (!existingUser.getOtpCode().equals(request.getOtpCode())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", "Invalid OTP"));
+        }
+
+        // Clear OTP after successful use
+        existingUser.setOtpCode(null);
+        existingUser.setOtpExpiry(null);
+        uRepo.save(existingUser);
+
+        // === your existing token + refresh logic ===
+        String roleString = existingUser.getRoleString();
+        String primaryRole = existingUser.getPrimaryRole();
+        String accessToken = jwtUtil.generateToken(
+            existingUser.getEmail(),
+            roleString,
+            existingUser.getUser_id()
+        );
+        String redirectUrl = getRedirectUrl(primaryRole);
+
+        refreshTokenRepo.deleteByUserUser_id(existingUser.getUser_id());
+
+        String sessionId = UUID.randomUUID().toString();
+        String jti = jwtUtil.getJti(accessToken);
+
+        RefreshToken rt = new RefreshToken();
+        rt.setUser(existingUser);
+        rt.setToken(UUID.randomUUID().toString());
+        rt.setSessionId(sessionId);
+        rt.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
+        rt.setJti(jti);
+        refreshTokenRepo.save(rt);
+
+        return ResponseEntity.ok(Map.of(
+            "message", "Login successful",
+            "token", accessToken,
+            "refreshToken", rt.getToken(),
+            "role", primaryRole,
+            "roles", roleString,
+            "sessionId", sessionId,
+            "redirect", redirectUrl,
+            "userId", existingUser.getUser_id(),
+            "status", existingUser.getStatus()
+        ));
+    }
+    
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is required"));
+        }
+
+        User user = uRepo.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Generate 6-digit OTP
+        String otp = String.valueOf((int)(Math.random() * 900000) + 100000);
+
+        user.setOtpCode(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
+        uRepo.save(user);
+
+        emailService.sendSimpleMail(
+            user.getEmail(),
+            "Password Reset Code",
+            "Your password reset code is: " + otp + " (valid for 10 minutes)"
+        );
+
+        return ResponseEntity.ok(Map.of(
+            "message", "Password reset code sent to email",
+            "email", user.getEmail()
+        ));
+    }
+    
+    @PostMapping("/forgot-password/verify-otp")
+    public ResponseEntity<?> verifyForgotPasswordOtp(@RequestBody @Validated OtpVerifyRequest request) {
+
+        User user = uRepo.findByEmail(request.getEmail())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getOtpCode() == null || user.getOtpExpiry() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", "No OTP requested"));
+        }
+
+        if (user.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", "OTP expired"));
+        }
+
+        if (!user.getOtpCode().equals(request.getOtpCode())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", "Invalid OTP"));
+        }
+
+        // Option 1: keep OTP until password is changed
+        // Option 2: clear here and rely on an immediate reset
+        // For safety, clear now and require a fresh OTP if user delays
+        user.setOtpCode(null);
+        user.setOtpExpiry(null);
+        uRepo.save(user);
+
+        return ResponseEntity.ok(Map.of(
+            "message", "OTP verified. You can now reset your password."
+        ));
+    }
+    
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody @Validated ResetPasswordRequestDTO request) {
+        User user = uRepo.findByEmail(request.getEmail())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // At this point you already verified OTP in /forgot-password/verify-otp
+        // so just update password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setOtpCode(null);
+        user.setOtpExpiry(null);
+        uRepo.save(user);
+
+        return ResponseEntity.ok(Map.of(
+            "message", "Password reset successful"
+        ));
+    }
+
 }

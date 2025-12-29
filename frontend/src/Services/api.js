@@ -120,17 +120,55 @@ export const authService = {
     return null;
   },
 
-  requestPasswordReset: async (email) => {
+   requestPasswordReset: async (email) => {
     const response = await api.post("/auth/forgot-password", { email });
     return response.data;
   },
 
-  resetPassword: async (email, otpCode, password) => {
-    const response = await api.post("/auth/reset-password", { email, otpCode, password });
+  verifyForgotOtp: async ({ email, otpCode }) => {
+    const response = await api.post("/auth/forgot-password/verify-otp", {
+      email,
+      otpCode,
+    });
+    return response.data;
+  },
+
+  resetPassword: async (email, newPassword) => {
+    const response = await api.post("/auth/reset-password", {
+      email,
+      newPassword,
+    });
     return response.data;
   },
 
   isAuthenticated: () => !!localStorage.getItem("authToken"),
+
+
+ verifyLoginOtp: async ({ email, otpCode }) => {
+  const response = await api.post("/auth/login/verify-otp", { email, otpCode });
+  const data = response.data;
+
+  if (data.token) {
+    localStorage.setItem("authToken", data.token);
+    try {
+      const parts = data.token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload.userId) {
+          localStorage.setItem("userId", payload.userId.toString());
+        }
+        if (payload.role) {
+          localStorage.setItem("userRole", payload.role);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to decode JWT payload (verify-otp):", e);
+    }
+  }
+
+  return data;
+},
+
 };
 
 // User Management Services
@@ -409,14 +447,15 @@ getActiveBookingsCount: async (stationIds) => {
   },
 
   createBooking: async (bookingData) => {
-    try {
-      const response = await api.post("/bookings", bookingData);
-      return response.data;
-    } catch (error) {
-      console.error("Error creating booking:", error);
-      throw error;
-    }
-  },
+  try {
+    const response = await api.post("/payments/initialize", bookingData);
+    // expected: { bookingId, paymentUrl }
+    return response.data;
+  } catch (error) {
+    console.error("Error initializing booking payment:", error);
+    throw error;
+  }
+},
 
   updateBooking: async (bookingId, bookingData) => {
     try {
