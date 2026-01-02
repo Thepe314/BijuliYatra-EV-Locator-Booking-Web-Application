@@ -1,7 +1,9 @@
+// src/pages/AddStation.jsx
 import React, { useState } from 'react';
 import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import { stationService } from '../../Services/api';
 import { useNavigate } from 'react-router-dom';
+import StationLocationPicker from '../../Services/StationLocationPicker';
 
 export default function AddStation() {
   const navigate = useNavigate();
@@ -23,14 +25,14 @@ export default function AddStation() {
     dcFastRate: 0.50,
     peakPricing: false,
     peakMultiplier: 1.25,
-    notes: ''
+    notes: '',
+    latitude: null,
+    longitude: null,
   });
 
-  // Validation rules
   const validateForm = () => {
     const errors = {};
 
-    // Name validation: 2-100 characters
     if (!formData.name.trim()) {
       errors.name = 'Station name is required';
     } else if (formData.name.trim().length < 2) {
@@ -39,36 +41,30 @@ export default function AddStation() {
       errors.name = 'Station name must not exceed 100 characters';
     }
 
-    // Location validation
     if (!formData.location.trim()) {
       errors.location = 'Location is required';
     }
 
-    // Address validation
     if (!formData.address.trim()) {
       errors.address = 'Address is required';
     }
 
-    // City validation
     if (!formData.city.trim()) {
       errors.city = 'City is required';
     }
 
-    // State validation
     if (!formData.state.trim()) {
       errors.state = 'State is required';
     }
 
-    // Zip code validation
     if (!formData.zipCode) {
       errors.zipCode = 'Zip code is required';
     } else if (!/^\d{5}$/.test(formData.zipCode)) {
       errors.zipCode = 'Zip code must be 5 digits';
     }
 
-    // Chargers validation
-    const level2 = parseInt(formData.level2Chargers) || 0;
-    const dcFast = parseInt(formData.dcFastChargers) || 0;
+    const level2 = parseInt(formData.level2Chargers, 10) || 0;
+    const dcFast = parseInt(formData.dcFastChargers, 10) || 0;
 
     if (level2 < 0) {
       errors.level2Chargers = 'Level 2 chargers cannot be negative';
@@ -80,7 +76,6 @@ export default function AddStation() {
       errors.chargers = 'At least one charger is required';
     }
 
-    // Rate validation
     const level2Rate = parseFloat(formData.level2Rate) || 0;
     const dcFastRate = parseFloat(formData.dcFastRate) || 0;
 
@@ -91,10 +86,13 @@ export default function AddStation() {
       errors.dcFastRate = 'DC Fast rate must be greater than 0';
     }
 
-    // Peak multiplier validation
     const peakMultiplier = parseFloat(formData.peakMultiplier) || 0;
     if (formData.peakPricing && peakMultiplier <= 1) {
       errors.peakMultiplier = 'Peak multiplier must be greater than 1';
+    }
+
+    if (!formData.latitude || !formData.longitude) {
+      errors.mapLocation = 'Please click on the map to set station coordinates';
     }
 
     return errors;
@@ -102,16 +100,65 @@ export default function AddStation() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
-    // Clear validation error for this field when user starts typing
     if (validationErrors[name]) {
-      setValidationErrors(prev => ({
+      setValidationErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: '',
       }));
+    }
+  };
+
+  // Map click: set coords and reverse geocode address
+  const handleMapLocationChange = async ({ lat, lng }) => {
+    // set coordinates immediately
+    setFormData((prev) => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+      location: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+    }));
+    if (validationErrors.mapLocation) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        mapLocation: '',
+      }));
+    }
+
+    try {
+      // Nominatim reverse geocoding (OpenStreetMap)
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`
+      );
+      const data = await res.json(); // returns address object etc.[web:111]
+
+      const addr = data.address || {};
+      const city =
+        addr.city || addr.town || addr.village || addr.hamlet || '';
+      const state = addr.state || '';
+      const postcode = addr.postcode || '';
+      const road = addr.road || '';
+      const suburb = addr.suburb || '';
+      const displayAddress =
+        data.display_name ||
+        [road, suburb, city, state].filter(Boolean).join(', ');
+
+      setFormData((prev) => ({
+        ...prev,
+        latitude: lat,
+        longitude: lng,
+        location: displayAddress || prev.location,
+        address: road || suburb || prev.address,
+        city: city || prev.city,
+        state: state || prev.state,
+        zipCode: postcode || prev.zipCode,
+      }));
+    } catch (e) {
+      console.error('Reverse geocoding failed', e);
+      // keep lat/lng; user can still type manually
     }
   };
 
@@ -120,7 +167,6 @@ export default function AddStation() {
     setError(null);
     setSuccess(null);
 
-    // Validate form
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -129,7 +175,6 @@ export default function AddStation() {
 
     setLoading(true);
     try {
-      // Prepare data for backend
       const stationData = {
         name: formData.name.trim(),
         location: formData.location.trim(),
@@ -137,21 +182,27 @@ export default function AddStation() {
         city: formData.city.trim(),
         state: formData.state.trim(),
         zipCode: formData.zipCode,
-        level2Chargers: parseInt(formData.level2Chargers) || 0,
-        dcFastChargers: parseInt(formData.dcFastChargers) || 0,
+        level2Chargers: parseInt(formData.level2Chargers, 10) || 0,
+        dcFastChargers: parseInt(formData.dcFastChargers, 10) || 0,
         level2Rate: parseFloat(formData.level2Rate),
         dcFastRate: parseFloat(formData.dcFastRate),
         peakPricing: formData.peakPricing,
         peakMultiplier: parseFloat(formData.peakMultiplier),
         notes: formData.notes.trim(),
-        totalSlots: (parseInt(formData.level2Chargers) || 0) + (parseInt(formData.dcFastChargers) || 0),
-        availableSlots: (parseInt(formData.level2Chargers) || 0) + (parseInt(formData.dcFastChargers) || 0)
+        totalSlots:
+          (parseInt(formData.level2Chargers, 10) || 0) +
+          (parseInt(formData.dcFastChargers, 10) || 0),
+        availableSlots:
+          (parseInt(formData.level2Chargers, 10) || 0) +
+          (parseInt(formData.dcFastChargers, 10) || 0),
+        latitude: formData.latitude,
+        longitude: formData.longitude,
       };
 
       console.log('Submitting station data:', stationData);
 
-      const response = await stationService.createStation(stationData);
-      
+      await stationService.createStation(stationData);
+
       setSuccess('Station created successfully!');
       setFormData({
         name: '',
@@ -166,16 +217,21 @@ export default function AddStation() {
         dcFastRate: 0.50,
         peakPricing: false,
         peakMultiplier: 1.25,
-        notes: ''
+        notes: '',
+        latitude: null,
+        longitude: null,
       });
 
-      // Navigate to stations page after 2 seconds
       setTimeout(() => {
         navigate('/operator/dashboard');
       }, 2000);
     } catch (err) {
       console.error('Error creating station:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to create station');
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to create station'
+      );
     } finally {
       setLoading(false);
     }
@@ -183,16 +239,16 @@ export default function AddStation() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <h1 className="text-2xl font-bold text-gray-900">Add New Station</h1>
-          <p className="text-sm text-gray-500 mt-1">Create a new charging station</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Create a new charging station
+          </p>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Success Message */}
         {success && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
             <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -200,7 +256,6 @@ export default function AddStation() {
           </div>
         )}
 
-        {/* Error Message */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -208,12 +263,12 @@ export default function AddStation() {
           </div>
         )}
 
-        {/* Form */}
         <div className="bg-white rounded-xl shadow-sm p-8">
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Basic Information */}
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Basic Information
+              </h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -232,9 +287,13 @@ export default function AddStation() {
                     }`}
                   />
                   {validationErrors.name && (
-                    <p className="text-red-600 text-sm mt-1">{validationErrors.name}</p>
+                    <p className="text-red-600 text-sm mt-1">
+                      {validationErrors.name}
+                    </p>
                   )}
-                  <p className="text-gray-500 text-xs mt-1">{formData.name.length}/100 characters</p>
+                  <p className="text-gray-500 text-xs mt-1">
+                    {formData.name.length}/100 characters
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -255,7 +314,9 @@ export default function AddStation() {
                       }`}
                     />
                     {validationErrors.location && (
-                      <p className="text-red-600 text-sm mt-1">{validationErrors.location}</p>
+                      <p className="text-red-600 text-sm mt-1">
+                        {validationErrors.location}
+                      </p>
                     )}
                   </div>
 
@@ -276,7 +337,9 @@ export default function AddStation() {
                       }`}
                     />
                     {validationErrors.address && (
-                      <p className="text-red-600 text-sm mt-1">{validationErrors.address}</p>
+                      <p className="text-red-600 text-sm mt-1">
+                        {validationErrors.address}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -299,7 +362,9 @@ export default function AddStation() {
                       }`}
                     />
                     {validationErrors.city && (
-                      <p className="text-red-600 text-sm mt-1">{validationErrors.city}</p>
+                      <p className="text-red-600 text-sm mt-1">
+                        {validationErrors.city}
+                      </p>
                     )}
                   </div>
 
@@ -320,7 +385,9 @@ export default function AddStation() {
                       }`}
                     />
                     {validationErrors.state && (
-                      <p className="text-red-600 text-sm mt-1">{validationErrors.state}</p>
+                      <p className="text-red-600 text-sm mt-1">
+                        {validationErrors.state}
+                      </p>
                     )}
                   </div>
 
@@ -341,18 +408,55 @@ export default function AddStation() {
                       }`}
                     />
                     {validationErrors.zipCode && (
-                      <p className="text-red-600 text-sm mt-1">{validationErrors.zipCode}</p>
+                      <p className="text-red-600 text-sm mt-1">
+                        {validationErrors.zipCode}
+                      </p>
                     )}
                   </div>
+                </div>
+
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium text-gray-800 mb-2">
+                    Map Location (click on map to set coordinates) *
+                  </h3>
+
+                  <div className="w-full h-64 rounded-xl overflow-hidden border border-gray-200">
+                    <StationLocationPicker
+                      value={
+                        formData.latitude && formData.longitude
+                          ? {
+                              lat: formData.latitude,
+                              lng: formData.longitude,
+                            }
+                          : null
+                      }
+                      onChange={handleMapLocationChange}
+                    />
+                  </div>
+
+                  {validationErrors.mapLocation && (
+                    <p className="text-red-600 text-sm mt-1">
+                      {validationErrors.mapLocation}
+                    </p>
+                  )}
+                  {formData.latitude && formData.longitude && (
+                    <p className="text-gray-500 text-xs mt-2">
+                      Selected: {formData.latitude.toFixed(6)},{' '}
+                      {formData.longitude.toFixed(6)}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Charger Configuration */}
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Charger Configuration</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Charger Configuration
+              </h2>
               {validationErrors.chargers && (
-                <p className="text-red-600 text-sm mb-4">{validationErrors.chargers}</p>
+                <p className="text-red-600 text-sm mb-4">
+                  {validationErrors.chargers}
+                </p>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -372,7 +476,9 @@ export default function AddStation() {
                     }`}
                   />
                   {validationErrors.level2Chargers && (
-                    <p className="text-red-600 text-sm mt-1">{validationErrors.level2Chargers}</p>
+                    <p className="text-red-600 text-sm mt-1">
+                      {validationErrors.level2Chargers}
+                    </p>
                   )}
                 </div>
 
@@ -393,15 +499,18 @@ export default function AddStation() {
                     }`}
                   />
                   {validationErrors.dcFastChargers && (
-                    <p className="text-red-600 text-sm mt-1">{validationErrors.dcFastChargers}</p>
+                    <p className="text-red-600 text-sm mt-1">
+                      {validationErrors.dcFastChargers}
+                    </p>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Pricing Configuration */}
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Pricing Configuration</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Pricing Configuration
+              </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -421,7 +530,9 @@ export default function AddStation() {
                     }`}
                   />
                   {validationErrors.level2Rate && (
-                    <p className="text-red-600 text-sm mt-1">{validationErrors.level2Rate}</p>
+                    <p className="text-red-600 text-sm mt-1">
+                      {validationErrors.level2Rate}
+                    </p>
                   )}
                 </div>
 
@@ -443,12 +554,13 @@ export default function AddStation() {
                     }`}
                   />
                   {validationErrors.dcFastRate && (
-                    <p className="text-red-600 text-sm mt-1">{validationErrors.dcFastRate}</p>
+                    <p className="text-red-600 text-sm mt-1">
+                      {validationErrors.dcFastRate}
+                    </p>
                   )}
                 </div>
               </div>
 
-              {/* Peak Pricing */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
@@ -458,13 +570,15 @@ export default function AddStation() {
                     onChange={handleInputChange}
                     className="w-4 h-4 text-blue-600 rounded"
                   />
-                  <span className="text-sm font-medium text-gray-700">Enable Peak Pricing</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Enable Peak Pricing
+                  </span>
                 </label>
 
                 {formData.peakPricing && (
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Peak Multiplier (must be > 1.0) *
+                      Peak Multiplier (must be &gt; 1.0) *
                     </label>
                     <input
                       type="number"
@@ -480,14 +594,15 @@ export default function AddStation() {
                       }`}
                     />
                     {validationErrors.peakMultiplier && (
-                      <p className="text-red-600 text-sm mt-1">{validationErrors.peakMultiplier}</p>
+                      <p className="text-red-600 text-sm mt-1">
+                        {validationErrors.peakMultiplier}
+                      </p>
                     )}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Notes */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Notes (Optional)
@@ -502,7 +617,6 @@ export default function AddStation() {
               />
             </div>
 
-            {/* Buttons */}
             <div className="flex gap-4 pt-4">
               <button
                 type="submit"

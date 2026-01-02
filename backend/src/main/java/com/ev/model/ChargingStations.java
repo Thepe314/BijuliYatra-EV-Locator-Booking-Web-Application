@@ -72,10 +72,16 @@ public class ChargingStations {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
     
-    // ✅ Keep only this - it handles both the relationship AND the foreign key
+  
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "operator_id", nullable = false)
     private User operator;
+    
+    @Column(nullable = true)
+    private Double latitude;
+
+    @Column(nullable = true)
+    private Double longitude;
     
     @PrePersist
     protected void onCreate() {
@@ -149,7 +155,7 @@ public class ChargingStations {
     public User getOperator() { return operator; }
     public void setOperator(User operator) { this.operator = operator; }
     
-    // ✅ Convenience method to get operator ID from the relationship
+
     public Long getOperatorId() {
         return operator != null ? operator.getUser_id() : null;
     }
@@ -159,6 +165,22 @@ public class ChargingStations {
 
     public Integer getAvailableSlots() { return availableSlots; }
     public void setAvailableSlots(Integer availableSlots) { this.availableSlots = availableSlots; }
+
+	public Double getLatitude() {
+		return latitude;
+	}
+
+	public void setLatitude(Double latitude) {
+		this.latitude = latitude;
+	}
+
+	public Double getLongitude() {
+		return longitude;
+	}
+
+	public void setLongitude(Double longitude) {
+		this.longitude = longitude;
+	}
     
     
     

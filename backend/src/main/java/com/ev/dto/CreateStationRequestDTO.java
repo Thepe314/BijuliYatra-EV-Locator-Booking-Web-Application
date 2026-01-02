@@ -13,9 +13,18 @@ public class CreateStationRequestDTO {
     @Size(min = 2, max = 100, message = "Station name must be between 2 and 100 characters")
     private String name;
 
-    @NotBlank(message = "Location (Lat,Lng) is required")
-    @Size(min = 5, max = 100, message = "Location must be between 5 and 100 characters")
+    @Size(max = 100, message = "Location description must be at most 100 characters")
     private String location;
+
+    @NotNull(message = "Latitude is required")
+    @DecimalMin(value = "-90.0", message = "Latitude cannot be less than -90.0")
+    @DecimalMax(value = "90.0", message = "Latitude cannot be more than 90.0")
+    private Double latitude;
+
+    @NotNull(message = "Longitude is required")
+    @DecimalMin(value = "-180.0", message = "Longitude cannot be less than -180.0")
+    @DecimalMax(value = "180.0", message = "Longitude cannot be more than 180.0")
+    private Double longitude;
 
     @NotBlank(message = "Address is required")
     @Size(min = 5, max = 200, message = "Address must be between 5 and 200 characters")
@@ -75,6 +84,7 @@ public class CreateStationRequestDTO {
         int dc = dcFastChargers != null ? dcFastChargers : 0;
         return (l2 + dc) > 0;
     }
+    
 
     // === Getters and Setters ===
 
@@ -189,4 +199,22 @@ public class CreateStationRequestDTO {
     public void setNotes(String notes) {
         this.notes = notes;
     }
+
+	public Double getLatitude() {
+		return latitude;
+	}
+
+	public void setLatitude(Double latitude) {
+		this.latitude = latitude;
+	}
+
+	public Double getLongitude() {
+		return longitude;
+	}
+
+	public void setLongitude(Double longitude) {
+		this.longitude = longitude;
+	}
+    
+    
 }
