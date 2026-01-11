@@ -3,6 +3,7 @@ package com.ev.controller;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -312,7 +313,7 @@ public class AuthController {
         existingUser.setOtpExpiry(null);
         uRepo.save(existingUser);
 
-        // === your existing token + refresh logic ===
+        // === existing token + refresh logic ===
         String roleString = existingUser.getRoleString();
         String primaryRole = existingUser.getPrimaryRole();
         String accessToken = jwtUtil.generateToken(
@@ -335,19 +336,20 @@ public class AuthController {
         rt.setJti(jti);
         refreshTokenRepo.save(rt);
 
-        return ResponseEntity.ok(Map.of(
-            "message", "Login successful",
-            "token", accessToken,
-            "refreshToken", rt.getToken(),
-            "role", primaryRole,
-            "roles", roleString,
-            "sessionId", sessionId,
-            "redirect", redirectUrl,
-            "userId", existingUser.getUser_id(),
-            "status", existingUser.getStatus()
-        ));
+        // use HashMap instead of Map.of to allow null values safely
+        Map<String, Object> body = new HashMap<>();
+        body.put("message", "Login successful");
+        body.put("token", accessToken);
+        body.put("refreshToken", rt.getToken());
+        body.put("role", primaryRole);
+        body.put("roles", roleString);
+        body.put("sessionId", sessionId);
+        body.put("redirect", redirectUrl);
+        body.put("userId", existingUser.getUser_id());
+        body.put("status", existingUser.getStatus());
+
+        return ResponseEntity.ok(body);
     }
-    
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
         String email = body.get("email");

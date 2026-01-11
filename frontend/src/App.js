@@ -26,6 +26,7 @@ import StationFinderPage from "./components/User/StationFinderPage.js";
 import BookingManagement from "./components/Admin/BookingManagement.js";
 import EditStationPage from "./components/Admin/EditStationPage.js";
 import ForgotPasswordPage from "./components/Auth/ForgetPassword.js";
+import PaymentSuccess from "./components/General/PaymentSuccess.js";
 
 function App() {
   return (
@@ -59,6 +60,8 @@ function App() {
           <Route path="/admin/bookingmanagement" element={<BookingManagement />} />
           <Route path="/analytics" element={<AdminAnalytics />} />
            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+           <Route path="/payment-success" element={<PaymentSuccess />} />
 
           {/* Admin */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />

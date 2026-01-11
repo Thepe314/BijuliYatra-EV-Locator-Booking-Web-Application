@@ -1,9 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { stationService, authService } from '../../Services/api';
-import { 
-  Zap, Settings, Plus, Edit, Trash2, CheckCircle, MapPin, 
-  RefreshCw, LayoutDashboard, Building2, Users, LogOut, 
-  Menu, X, ChevronDown, AlertCircle, Loader 
+import {
+  Zap,
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
+  MapPin,
+  RefreshCw,
+  LayoutDashboard,
+  Building2,
+  Users,
+  LogOut,
+  Menu,
+  X,
+  ChevronDown,
+  AlertCircle,
+  Loader,
+  Book
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,7 +25,7 @@ export default function StationManagement() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
-  
+
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,8 +35,13 @@ export default function StationManagement() {
     total: 0,
     active: 0,
     maintenance: 0,
-    totalChargers: 0
+    totalChargers: 0,
   });
+
+  // filters (same idea as user page)
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCity, setFilterCity] = useState('all');
 
   useEffect(() => {
     fetchStations();
@@ -36,7 +55,7 @@ export default function StationManagement() {
     try {
       const stationsData = await stationService.listStationAdmin();
 
-      const transformedStations = stationsData.map(station => {
+      const transformedStations = stationsData.map((station) => {
         const level2 = station.level2Chargers || 0;
         const dcFast = station.dcFastChargers || 0;
         const totalChargers = level2 + dcFast;
@@ -46,7 +65,7 @@ export default function StationManagement() {
         const statusMap = {
           operational: 'Active',
           active: 'Active',
-          maintenance: 'Maintenance'
+          maintenance: 'Maintenance',
         };
         const status = statusMap[station.status?.toLowerCase()] || 'Inactive';
 
@@ -54,6 +73,7 @@ export default function StationManagement() {
           id: station.id,
           name: station.name,
           address: `${station.address}, ${station.city}, ${station.state}`,
+          rawCity: station.city || '',
           location: station.location || 'N/A',
           status,
           totalChargers,
@@ -63,23 +83,25 @@ export default function StationManagement() {
           level2Rate: station.level2Rate || 0.25,
           dcFastRate: station.dcFastRate || 0.49,
           peakPricing: station.peakPricing || false,
-         operatorName: station.operatorName || null,
+          operatorName: station.operatorName || null,
         };
       });
 
       setStations(transformedStations);
 
-      const active = transformedStations.filter(s => s.status === 'Active').length;
-      const maintenance = transformedStations.filter(s => s.status === 'Maintenance').length;
-      const totalChargers = transformedStations.reduce((sum, s) => sum + s.totalChargers, 0);
+      const active = transformedStations.filter((s) => s.status === 'Active').length;
+      const maintenance = transformedStations.filter((s) => s.status === 'Maintenance').length;
+      const totalChargers = transformedStations.reduce(
+        (sum, s) => sum + s.totalChargers,
+        0
+      );
 
       setStats({
         total: transformedStations.length,
         active,
         maintenance,
-        totalChargers
+        totalChargers,
       });
-
     } catch (err) {
       console.error('Error fetching stations:', err);
       setError(
@@ -96,12 +118,13 @@ export default function StationManagement() {
   const handleRefresh = () => fetchStations(true);
 
   const goToAdd = () => {
-    navigate("/admin/addstation");
+    navigate('/admin/addstation');
   };
 
- const handleViewDetails = (id) => {
+  const handleViewDetails = (id) => {
     navigate(`/stationdetails/${id}`);
   };
+
   const handleLogout = async () => {
     try {
       await authService.logout();
@@ -113,7 +136,12 @@ export default function StationManagement() {
   };
 
   const handleDelete = async (stationId) => {
-    if (!window.confirm('Are you sure you want to delete this station? This cannot be undone.')) return;
+    if (
+      !window.confirm(
+        'Are you sure you want to delete this station? This cannot be undone.'
+      )
+    )
+      return;
 
     try {
       await stationService.deleteStation(stationId);
@@ -126,100 +154,154 @@ export default function StationManagement() {
 
   const getUsagePercentage = (station) => {
     if (station.totalChargers === 0) return 0;
-    return Math.round(((station.totalChargers - station.availableChargers) / station.totalChargers) * 100);
+    return Math.round(
+      ((station.totalChargers - station.availableChargers) / station.totalChargers) * 100
+    );
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading stations...</p>
+          <Loader className="w-12 h-12 text-emerald-400 animate-spin mx-auto mb-4" />
+          <p className="text-slate-300 text-sm">Loading stations...</p>
         </div>
       </div>
     );
   }
 
-  const navigationItems = [
-  { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-  { name: 'Station Management', icon: Building2, path: '/admin/stationmanagement' },
-  { name: 'User Management', icon: Users, path: '/admin/usermanagement' },
-  { name: 'Settings', icon: Settings, path: '/admin/settings' },
-];
+   const navigationItems = [
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', current: true },
+    { name: 'Stations', icon: Building2, path: '/admin/stationmanagement' },
+    { name: 'Users', icon: Users, path: '/admin/usermanagement' },
+    { name: 'Bookings', icon: Book, path: '/admin/bookingmanagement' },
+    { name: 'Settings', icon: Settings, path: '/admin/settings' },
+  ];
 
-const handleEdit = (stationId) => {
-  navigate(`/admin/editStation/${stationId}`);
-};
+
+  const handleEdit = (stationId) => {
+    navigate(`/admin/editStation/${stationId}`);
+  };
+
+  // filters
+  const filteredStations = stations.filter((s) => {
+    const text = `${s.name} ${s.address}`.toLowerCase();
+    const matchesSearch = text.includes(searchTerm.toLowerCase());
+
+    const matchesStatus = filterStatus === 'all' || s.status === filterStatus;
+
+    const cityFromAddress = s.rawCity || s.address.split(',')[1]?.trim() || '';
+    const matchesCity = filterCity === 'all' || cityFromAddress === filterCity;
+
+    return matchesSearch && matchesStatus && matchesCity;
+  });
+
+  const uniqueCities = Array.from(
+    new Set(stations.map((s) => s.rawCity).filter(Boolean))
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col h-screen sticky top-0`}>
-        {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
+      <aside
+        className={`${
+          sidebarOpen ? 'w-64' : 'w-20'
+        } bg-slate-950 border-r border-slate-800 transition-all duration-300 flex flex-col h-screen sticky top-0`}
+      >
+        {/* Brand */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 flex-shrink-0">
           {sidebarOpen ? (
             <>
               <div className="flex items-center gap-3">
-                <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-2 rounded-lg">
-                  <Zap className="w-6 h-6 text-white" />
+                <div className="bg-emerald-500/90 p-2 rounded-lg shadow-md shadow-emerald-500/40">
+                  <Zap className="w-6 h-6 text-slate-950" />
                 </div>
-                <span className="font-bold text-xl text-gray-900">BijuliYatra</span>
+                <span className="font-semibold text-sm text-slate-50">
+                  BijuliYatra
+                </span>
               </div>
-              <button onClick={() => setSidebarOpen(false)} className="p-1 hover:bg-gray-100 rounded-lg">
-                <X className="w-5 h-5 text-gray-500" />
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 hover:bg-slate-800/70 rounded-lg"
+              >
+                <X className="w-5 h-5 text-slate-400" />
               </button>
             </>
           ) : (
-            <button onClick={() => setSidebarOpen(true)} className="mx-auto p-2 hover:bg-gray-100 rounded-lg">
-              <Menu className="w-6 h-6 text-gray-600" />
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="mx-auto p-2 hover:bg-slate-800/70 rounded-lg"
+            >
+              <Menu className="w-6 h-6 text-slate-200" />
             </button>
           )}
         </div>
 
-        {/* Navigation */}
+        {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navigationItems.map((item) => (
-            <button
-              key={item.name}
-              onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                item.current
-                  ? 'bg-blue-50 text-blue-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <item.icon className={`w-5 h-5 ${item.current ? 'text-blue-700' : 'text-gray-500'}`} />
-              {sidebarOpen && <span className="text-sm">{item.name}</span>}
-            </button>
-          ))}
+          {navigationItems.map((item) => {
+            const isCurrent = item.path === '/admin/stationmanagement';
+            return (
+              <button
+                key={item.name}
+                onClick={() => navigate(item.path)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
+                  isCurrent
+                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 shadow-[0_0_0_1px_rgba(16,185,129,0.4)]'
+                    : 'text-slate-300 hover:bg-slate-800/70'
+                }`}
+              >
+                <item.icon
+                  className={`w-5 h-5 ${
+                    isCurrent ? 'text-emerald-400' : 'text-slate-400'
+                  }`}
+                />
+                {sidebarOpen && <span>{item.name}</span>}
+              </button>
+            );
+          })}
         </nav>
 
-        {/* User Menu */}
-        <div className="border-t border-gray-200 p-4 flex-shrink-0">
+        {/* User */}
+        <div className="border-t border-slate-800 p-4 flex-shrink-0">
           <div className="relative">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 transition-all ${!sidebarOpen && 'justify-center'}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800/80 transition-all ${
+                !sidebarOpen && 'justify-center'
+              }`}
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-bold">
-                
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center text-slate-950 font-bold">
+                AU
               </div>
               {sidebarOpen && (
                 <>
                   <div className="flex-1 text-left">
-                    <p className="font-medium text-gray-900">Admin User</p>
-                    <p className="text-xs text-gray-500">admin@bijuliyatra.com</p>
+                    <p className="font-medium text-slate-50 text-sm">
+                      Admin User
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      admin@bijuliyatra.com
+                    </p>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-400 transition-transform ${
+                      userMenuOpen ? 'rotate-180' : ''
+                    }`}
+                  />
                 </>
               )}
             </button>
 
             {userMenuOpen && sidebarOpen && (
-              <div className="absolute bottom-full left-4 right-4 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50">
-                <button className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3">
+              <div className="absolute bottom-full left-4 right-4 mb-2 bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
+                <button className="w-full px-4 py-3 text-left text-xs hover:bg-slate-800 flex items-center gap-3 text-slate-200">
                   <Settings className="w-4 h-4" /> Settings
                 </button>
-                <button onClick={handleLogout} className="w-full px-4 py-3 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-3">
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-3 text-left text-xs hover:bg-rose-600/10 text-rose-400 flex items-center gap-3"
+                >
                   <LogOut className="w-4 h-4" /> Logout
                 </button>
               </div>
@@ -228,216 +310,246 @@ const handleEdit = (stationId) => {
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Station Management</h1>
-              <p className="text-gray-500 mt-1">Manage and monitor all charging stations</p>
-            </div>
+        <header className="bg-slate-950/90 border-b border-slate-800 backdrop-blur">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 className="text-lg font-semibold text-slate-50">
+              Stations Management
+            </h1>
             <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-400 w-60">
+                <input
+                  placeholder="Search..."
+                  className="bg-transparent outline-none text-slate-100 placeholder:text-slate-500 w-full"
+                />
+              </div>
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-medium flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50"
               >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-4 h-4 text-slate-100 ${
+                    refreshing ? 'animate-spin' : ''
+                  }`}
+                />
                 Refresh
               </button>
-             <button 
-                onClick={goToAdd} 
-                className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-medium flex items-center gap-2 hover:bg-blue-700 shadow-sm transition-colors"
+              {/* <button
+                onClick={goToAdd}
+                className="bg-emerald-500 text-slate-950 px-5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 hover:bg-emerald-400 shadow-md shadow-emerald-500/30"
               >
-                <Plus className="w-5 h-5" />
-                Add Station
-              </button>
+                <Plus className="w-4 h-4" />
+                Add Station Manually
+              </button> */}
             </div>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-
-            {/* Error Alert */}
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto bg-slate-950">
+          <div className="max-w-7xl mx-auto px-6 py-6">
+            {/* Error */}
             {error && (
-              <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                <p className="text-red-800 text-sm flex-1">{error}</p>
-                <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800">×</button>
+              <div className="mb-6 p-4 bg-rose-950/40 border border-rose-600/60 rounded-xl flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-rose-300 mt-0.5" />
+                <p className="text-sm text-rose-100 flex-1">{error}</p>
+                <button
+                  onClick={() => setError(null)}
+                  className="text-rose-300 hover:text-rose-100 text-lg leading-none"
+                >
+                  ×
+                </button>
               </div>
             )}
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-                <div className="bg-blue-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
-                  <MapPin className="w-6 h-6 text-blue-600" />
+            {/* Filters (user-style) */}
+            <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5 mb-6 shadow-lg shadow-black/40">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search by station name or address..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
                 </div>
-                <p className="text-gray-600 text-sm">Total Stations</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</p>
-              </div>
-              <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-                <div className="bg-green-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <p className="text-gray-600 text-sm">Active</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.active}</p>
-              </div>
-              <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-                <div className="bg-orange-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
-                  <AlertCircle className="w-6 h-6 text-orange-600" />
-                </div>
-                <p className="text-gray-600 text-sm">In Maintenance</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.maintenance}</p>
-              </div>
-              <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-                <div className="bg-purple-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
-                  <Zap className="w-6 h-6 text-purple-600" />
-                </div>
-                <p className="text-gray-600 text-sm">Total Chargers</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalChargers}</p>
+
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="Active">Active</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+
+                <select
+                  value={filterCity}
+                  onChange={(e) => setFilterCity(e.target.value)}
+                  className="px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="all">All Cities</option>
+                  {uniqueCities.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            {/* Stations List */}
-            {stations.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm p-16 text-center border-2 border-dashed border-gray-300">
-                <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <MapPin className="w-10 h-10 text-gray-400" />
+            {/* Table card */}
+            <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg shadow-black/40 overflow-hidden">
+              {filteredStations.length === 0 ? (
+                <div className="p-16 text-center">
+                  <Loader className="w-10 h-10 text-emerald-400 animate-spin mx-auto mb-4" />
+                  <p className="text-sm text-slate-400">
+                    No stations found. Try adjusting filters or adding a new station.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No stations yet</h3>
-                <p className="text-gray-500 mb-8">Start by adding your first charging station</p>
-                <button className="bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 inline-flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Add Your First Station
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {stations.map((station) => (
-                  <div key={station.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden">
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-xl font-bold text-gray-900">{station.name}</h3>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              station.status === 'Active' ? 'bg-green-100 text-green-700' :
-                              station.status === 'Maintenance' ? 'bg-orange-100 text-orange-700' :
-                              'bg-red-100 text-red-700'
-                            }`}>
-                              {station.status}
-                            </span>
-                          </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-slate-900 border-b border-slate-800">
+                      <tr>
+                        <th className="px-6 py-4 text-left font-semibold text-slate-400 uppercase tracking-wider">
+                          Station
+                        </th>
+                        <th className="px-6 py-4 text-left font-semibold text-slate-400 uppercase tracking-wider">
+                          City
+                        </th>
+                        <th className="px-6 py-4 text-left font-semibold text-slate-400 uppercase tracking-wider">
+                          Owner
+                        </th>
+                        <th className="px-6 py-4 text-left font-semibold text-slate-400 uppercase tracking-wider">
+                          Connectors
+                        </th>
+                        <th className="px-6 py-4 text-left font-semibold text-slate-400 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-4 text-right font-semibold text-slate-400 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800">
+                      {filteredStations.map((station) => {
+                        const usage = getUsagePercentage(station);
+                        const [addrCity] = station.address
+                          .split(',')
+                          .map((s) => s.trim());
+                        const connectorLabel = `${station.totalChargers} connectors`;
+                        const typesLabel =
+                          station.fastChargers > 0 && station.slowChargers > 0
+                            ? 'DC Fast, Type 2'
+                            : station.fastChargers > 0
+                            ? 'DC Fast'
+                            : station.slowChargers > 0
+                            ? 'Type 2'
+                            : '—';
 
-                          {/* Operator name displayed here */}
-                          <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
-                          <Building2 className="w-4 h-4" />
-                          {station.operatorName || 'Platform Station'}
-                        </p>
-                        
-
-                          <div className="flex items-center text-gray-600 text-sm mt-2">
-                            <MapPin className="w-4 h-4 mr-1" />
-                            {station.address}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(station.id)}  
-                            className="p-2 hover:bg-gray-100 rounded-lg"
+                        return (
+                          <tr
+                            key={station.id}
+                            className="hover:bg-slate-900/70 transition-colors"
                           >
-                            <Edit className="w-5 h-5 text-gray-600" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(station.id)}
-                            className="p-2 hover:bg-red-50 rounded-lg"
-                          >
-                            <Trash2 className="w-5 h-5 text-red-600" />
-                          </button>
-                        </div>
-                      </div>
+                            {/* Station */}
+                            <td className="px-6 py-4">
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center mt-0.5">
+                                  <MapPin className="w-4 h-4 text-emerald-400" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-semibold text-slate-50">
+                                    {station.name}
+                                  </p>
+                                  <p className="text-[11px] text-slate-500 mt-1">
+                                    {station.address}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
 
-                      <div className="grid grid-cols-3 gap-4 mb-6">
-                        <div className="bg-gray-50 rounded-xl p-4 text-center">
-                          <p className="text-xs text-gray-500">Total</p>
-                          <p className="text-2xl font-bold text-gray-900">{station.totalChargers}</p>
-                        </div>
-                        <div className="bg-blue-50 rounded-xl p-4 text-center">
-                          <p className="text-xs text-blue-600 font-medium">DC Fast</p>
-                          <p className="text-2xl font-bold text-blue-600">{station.fastChargers}</p>
-                        </div>
-                        <div className="bg-green-50 rounded-xl p-4 text-center">
-                          <p className="text-xs text-green-600 font-medium">Available</p>
-                          <p className="text-2xl font-bold text-green-600">{station.availableChargers}</p>
-                        </div>
-                      </div>
+                            {/* City */}
+                            <td className="px-6 py-4 text-[11px] text-slate-300 align-top">
+                              {addrCity || '-'}
+                            </td>
 
-                      <div className="mb-6">
-                        <div className="flex justify-between text-sm mb-2">
-                          <span className="text-gray-600">Charger Usage</span>
-                          <span className="font-semibold">{getUsagePercentage(station)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3">
-                          <div
-                            className={`h-3 rounded-full transition-all ${
-                              getUsagePercentage(station) > 80 ? 'bg-red-500' :
-                              getUsagePercentage(station) > 60 ? 'bg-orange-500' : 'bg-green-500'
-                            }`}
-                            style={{ width: `${getUsagePercentage(station)}%` }}
-                          />
-                        </div>
-                      </div>
+                            {/* Owner */}
+                            <td className="px-6 py-4 text-[11px] text-slate-300 align-top">
+                              {station.operatorName || 'Platform Station'}
+                            </td>
 
-                      <div className="flex items-center justify-between text-sm pt-4 border-t border-gray-200">
-                        <div className="text-center">
-                          <p className="text-gray-500">Level 2 Rate</p>
-                          <p className="font-semibold">${station.level2Rate}/kWh</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-gray-500">DC Fast Rate</p>
-                          <p className="font-semibold">${station.dcFastRate}/kWh</p>
-                        </div>
-                        {station.peakPricing && (
-                          <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
-                            Peak Pricing
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                            {/* Connectors */}
+                            <td className="px-6 py-4 text-[11px] text-slate-300 align-top">
+                              <p className="text-sm font-semibold text-slate-50">
+                                {connectorLabel}
+                              </p>
+                              <p className="text-[11px] text-slate-500 mt-1">
+                                {typesLabel}
+                              </p>
+                            </td>
 
-                    <div className="bg-gray-50 px-6 py-4 flex justify-between text-sm font-medium">
-                       <button
-                  onClick={() => handleViewDetails(station.id)}
-                  className="text-sm text-blue-600 font-medium hover:text-blue-800"
-                >
-                  View Details
-                </button>
-                      <button className="text-gray-600 hover:text-gray-800">Edit Station</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                            {/* Status */}
+                            <td className="px-6 py-4 align-top">
+                              <span
+                                className={`inline-flex px-3 py-1 rounded-full text-[11px] font-medium ${
+                                  station.status === 'Active'
+                                    ? 'bg-emerald-500/20 text-emerald-200'
+                                    : station.status === 'Maintenance'
+                                    ? 'bg-amber-500/20 text-amber-200'
+                                    : 'bg-slate-700 text-slate-200'
+                                }`}
+                              >
+                                {station.status === 'Active'
+                                  ? 'Online'
+                                  : station.status === 'Maintenance'
+                                  ? 'Maintenance'
+                                  : 'Offline'}
+                              </span>
+                              <p className="text-[11px] text-slate-500 mt-1">
+                                {usage}% usage
+                              </p>
+                            </td>
 
-            {/* Add New Station Card */}
-            {stations.length > 0 && (
-              <div className="mt-8">
-                <div
-                  className="bg-white rounded-2xl border-2 border-dashed border-gray-300 p-12 text-center hover:border-blue-500 transition-colors cursor-pointer"
-                  onClick={goToAdd}
-                >
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Plus className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Add New Charging Station</h3>
-                  <p className="text-gray-500 mt-2">Expand your network with a new location</p>
+                            {/* Actions */}
+                            <td className="px-6 py-4 text-right align-top">
+                              <div className="inline-flex gap-1.5">
+                                <button
+                                  onClick={() => handleViewDetails(station.id)}
+                                  className="px-3 py-1.5 rounded-lg bg-slate-800 text-[11px] text-slate-100 hover:bg-slate-700"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  onClick={() => handleEdit(station.id)}
+                                  className="p-2 rounded-lg hover:bg-slate-800"
+                                >
+                                  <Edit className="w-4 h-4 text-slate-200" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(station.id)}
+                                  className="p-2 rounded-lg hover:bg-rose-600/10"
+                                >
+                                  <Trash2 className="w-4 h-4 text-rose-400" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </main>
       </div>

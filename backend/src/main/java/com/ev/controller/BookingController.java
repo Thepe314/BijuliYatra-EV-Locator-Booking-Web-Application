@@ -7,6 +7,11 @@ import com.ev.repository.BookingRepository;
 import com.ev.repository.ChargingStationRepository;
 import com.ev.repository.UserRepository;
 
+import com.stripe.exception.StripeException;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.checkout.SessionCreateParams; // [web:20][web:27]
+import org.springframework.beans.factory.annotation.Value;
+
 import jakarta.persistence.EntityNotFoundException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +35,50 @@ public class BookingController {
     @Autowired private BookingRepository bookingRepo;
     @Autowired private ChargingStationRepository stationRepo;
     @Autowired private UserRepository userRepository;
+    
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
+
+    @Value("${stripe.currency:npr}")
+    private String stripeCurrency;
+    
+    
+    private String createStripeCheckoutUrl(Long bookingId, long amountInRs) throws StripeException {
+        long minRs = 100; // or 80, but must be >= Stripe minimum
+        if (amountInRs < minRs) {
+            amountInRs = minRs;
+        }
+
+        long amountInSmallestUnit = amountInRs * 100; // Rs → paisa
+
+        SessionCreateParams params =
+            SessionCreateParams.builder()
+                .setMode(SessionCreateParams.Mode.PAYMENT)
+                .setSuccessUrl(frontendBaseUrl + "/payment-success?bookingId=" + bookingId)
+                .setCancelUrl(frontendBaseUrl + "/payment-failed?bookingId=" + bookingId)
+                .addLineItem(
+                    SessionCreateParams.LineItem.builder()
+                        .setQuantity(1L)
+                        .setPriceData(
+                            SessionCreateParams.LineItem.PriceData.builder()
+                                .setCurrency(stripeCurrency)
+                                .setUnitAmount(amountInSmallestUnit)
+                                .setProductData(
+                                    SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                        .setName("EV Charging Booking #" + bookingId)
+                                        .build()
+                                )
+                                .build()
+                        )
+                        .build()
+                )
+                .putMetadata("bookingId", String.valueOf(bookingId))
+                .build();
+
+        Session session = Session.create(params);
+        return session.getUrl();
+    }
+
 
     // ===================== LIST BOOKINGS (All Roles) =====================
     @GetMapping
@@ -216,10 +265,25 @@ public class BookingController {
             booking.setStatus(BookingStatus.IN_PROGRESS);
             Booking saved = bookingRepo.save(booking);
 
-            // 9. INIT PAYMENT WITH GATEWAY (stub for now)
-            // TODO: based on paymentMethod, call Khalti/eSewa/card SDK and get a paymentUrl
-            // For now, just mock a URL so your frontend flow works:
-            String paymentUrl = "https://example.com/mock-payment?bookingId=" + saved.getId();
+         // 9. INIT PAYMENT WITH GATEWAY
+            String paymentUrl;
+
+            if ("CARD".equalsIgnoreCase(paymentMethod)) {
+                long amountLong = (long) totalAmount;
+                paymentUrl = createStripeCheckoutUrl(saved.getId(), amountLong);
+            } else if ("KHALTI".equalsIgnoreCase(paymentMethod)) {
+                // TODO: plug real Khalti integration here
+                paymentUrl = "https://khalti.com/mock-payment?bookingId=" + saved.getId();
+            } else if ("ESEWA".equalsIgnoreCase(paymentMethod)) {
+                // TODO: plug real eSewa integration here
+                paymentUrl = "https://esewa.com/mock-payment?bookingId=" + saved.getId();
+            } else {
+                return ResponseEntity.badRequest().body("Unsupported payment method");
+            }
+
+            if (paymentUrl == null || paymentUrl.isEmpty()) {
+                return ResponseEntity.status(502).body("Unable to start payment");
+            }
 
             // 10. Return bookingId + paymentUrl for redirect
             return ResponseEntity.ok(Map.of(
@@ -229,6 +293,9 @@ public class BookingController {
                     "paymentMethod", paymentMethod
             ));
 
+        } catch (StripeException se) {
+            se.printStackTrace();
+            return ResponseEntity.status(502).body("Stripe error: " + se.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body("Booking/payment init failed: " + e.getMessage());
@@ -265,5 +332,21 @@ public class BookingController {
 
         return ResponseEntity.ok("Booking cancelled successfully");
     }
+    
+    
+    
+    //Confirmed Booking after payment
+    
+    @PatchMapping("/{id}/confirm")
+    public ResponseEntity<?> confirmBooking(@PathVariable Long id) {
+        Booking booking = bookingRepo.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+
+        booking.setStatus(BookingStatus.CONFIRMED);
+        bookingRepo.save(booking);
+
+        return ResponseEntity.ok("Booking confirmed");
+    }
+
    
 }

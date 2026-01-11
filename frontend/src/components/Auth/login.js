@@ -374,140 +374,211 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" />
-      </div>
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4 py-10">
+      {/* Outer frame */}
+      <div className="w-full max-w-6xl bg-slate-950 rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
+        <div className="grid md:grid-cols-2">
+          {/* LEFT: brand / marketing panel */}
+          <div className="relative bg-gradient-to-b from-slate-950 to-slate-900 px-10 py-10 flex flex-col justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-3 mb-12">
+              <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center">
+                <Zap className="w-6 h-6 text-slate-950" />
+              </div>
+              <span className="text-base font-semibold text-white">BijuliYatra</span>
+            </div>
 
-      <div className="w-full max-w-md bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-10 relative z-10">
-        <div className="flex justify-center mb-8">
-          <div className="bg-gradient-to-br from-emerald-500 to-cyan-600 p-4 rounded-2xl">
-            <Zap className="w-12 h-12 text-white" strokeWidth={2} />
+            {/* Hero text */}
+            <div>
+              <h1 className="text-3xl font-semibold text-white mb-4 leading-snug">
+                Power Your Journey{" "}
+                <br className="hidden sm:block" />
+                with Smart EV Charging
+              </h1>
+              <p className="text-sm text-slate-300 max-w-md mb-8">
+                Connect to thousands of charging stations across India. Monitor your
+                charging sessions, manage your stations, and drive the electric revolution.
+              </p>
+
+              {/* Stats row */}
+              <div className="flex flex-wrap gap-8 text-emerald-400 text-sm font-semibold">
+                <div>
+                  <div className="text-lg">5,000+</div>
+                  <div className="text-[11px] uppercase tracking-wide text-slate-300">
+                    Charging Stations
+                  </div>
+                </div>
+                <div>
+                  <div className="text-lg">50K+</div>
+                  <div className="text-[11px] uppercase tracking-wide text-slate-300">
+                    Active Users
+                  </div>
+                </div>
+                <div>
+                  <div className="text-lg">24/7</div>
+                  <div className="text-[11px] uppercase tracking-wide text-slate-300">
+                    Support
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer copy */}
+            <p className="mt-10 text-[11px] text-slate-500">
+              © {new Date().getFullYear()} BijuliYatra. All rights reserved.
+            </p>
+          </div>
+
+          {/* RIGHT: login form panel */}
+          <div className="bg-slate-950 px-10 py-10 flex flex-col justify-center border-l border-slate-800">
+            <div className="w-full max-w-sm mx-auto">
+              <h2 className="text-2xl font-semibold text-white mb-1">
+                Welcome Back
+              </h2>
+              <p className="text-xs text-slate-400 mb-8">
+                Sign in to access your account.
+              </p>
+
+              <form onSubmit={handleLogin} className="space-y-6">
+                {/* Email */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-2">
+                    Email or Phone
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder="you@example.com"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                  </div>
+                  {touched.email && errors.email && (
+                    <p className="text-red-400 text-[11px] mt-1">{errors.email}</p>
+                  )}
+          
+                </div>
+
+                {/* Password */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-medium text-slate-300">
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-[11px] text-emerald-400 hover:text-emerald-300"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder="Enter your password"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-md pl-9 pr-9 py-2.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  {touched.password && errors.password && (
+                    <p className="text-red-400 text-[11px] mt-1">
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+
+                {/* Remember / spacing */}
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                    />
+                    <span>Remember me</span>
+                  </label>
+                </div>
+
+                {/* Login button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-full rounded-md py-2.5 text-sm font-semibold shadow-sm transition ${
+                    isSubmitting
+                      ? "bg-emerald-500/60 cursor-not-allowed"
+                      : "bg-emerald-500 hover:bg-emerald-600"
+                  }`}
+                >
+                  {isSubmitting ? "Logging in..." : "Login"}
+                </button>
+
+                {apiError && (
+                  <p className="text-red-400 text-[11px] text-center">
+                    {apiError}
+                  </p>
+                )}
+
+                {/* Divider + OTP button */}
+                <div className="flex items-center gap-3 my-3">
+                  <div className="flex-1 h-px bg-slate-800" />
+                  <span className="text-[11px] text-slate-500">or</span>
+                  <div className="flex-1 h-px bg-slate-800" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    // optional: trigger OTP-only flow
+                    notify.info("Use your email + password to receive OTP.");
+                  }}
+                  className="w-full rounded-md bg-slate-800 border border-slate-700 py-2.5 text-xs font-medium text-slate-100 hover:bg-slate-700 transition"
+                >
+                  Continue with OTP
+                </button>
+
+                {/* Sign up links */}
+                <div className="mt-6 text-center text-[11px] text-slate-400 space-y-2">
+                  <p>Don&apos;t have an account?</p>
+                  <p>
+                    <Link
+                      to="/signup/ev-owner"
+                      className="text-emerald-400 hover:text-emerald-300 font-medium"
+                    >
+                      Sign up as EV Owner →
+                    </Link>
+                  </p>
+                  <p>
+                    <Link
+                      to="/signup/operator"
+                      className="text-emerald-400 hover:text-emerald-300 font-medium"
+                    >
+                      Sign up as Station Owner / Operator →
+                    </Link>
+                  </p>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
-
-        <h1 className="text-3xl font-bold text-center text-slate-900 mb-2">
-          Welcome Back
-        </h1>
-        <p className="text-center text-slate-600 mb-8">
-          Sign in to your BijuliYatra account
-        </p>
-
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                className="w-full pl-12 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:outline-none transition-colors"
-                placeholder="you@example.com"
-              />
-            </div>
-            {touched.email && errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                className="w-full pl-12 pr-12 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:outline-none transition-colors"
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                {showPassword ? (
-                  <EyeOff className="w-5 h-5" />
-                ) : (
-                  <Eye className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-            {touched.password && errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
-              />
-              <span className="ml-2 text-sm text-slate-600">Remember me</span>
-            </label>
-            <button
-              type="button"
-              onClick={handleForgotPassword}
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
-            >
-              Forgot Password?
-            </button>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full py-3 rounded-xl font-semibold transition-all transform shadow-lg ${
-              isSubmitting
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-emerald-500 to-cyan-600 text-white hover:from-emerald-600 hover:to-cyan-700 hover:scale-[1.02] hover:shadow-xl"
-            }`}
-          >
-            {isSubmitting ? "Logging in..." : "Login"}
-          </button>
-
-          {apiError && (
-            <p className="text-red-500 text-sm text-center mt-2">
-              {apiError}
-            </p>
-          )}
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-slate-500">
-                Or continue with
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {/* Social login buttons can go here */}
-          </div>
-
-          <p className="text-center text-sm text-slate-600 mt-6">
-            Don’t have an account?{" "}
-            <Link
-              to="/signup/ev-owner"
-              className="text-emerald-600 hover:text-emerald-700 font-semibold"
-            >
-              Sign up
-            </Link>
-          </p>
-        </form>
       </div>
 
       {/* OTP Modal */}
@@ -579,5 +650,6 @@ export default function LoginPage() {
         </div>
       )}
     </div>
+    
   );
 }

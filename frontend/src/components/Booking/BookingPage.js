@@ -611,7 +611,7 @@ export default function BookingPage() {
                   toast.error('Payment URL missing');
                   return;
                 }
-                window.open(cardPaymentUrl, '_blank', 'width=600,height=700');
+                window.open(cardPaymentUrl, '_blank', 'width=600,height=700'); // opens Stripe Checkout
               }}
               className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition"
             >

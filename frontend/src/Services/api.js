@@ -213,15 +213,17 @@ export const userService = {
     }
   },
 
-  createUser: async (userData) => {
-    try {
-      const response = await api.post("/admin/users/new", userData);
-      return response.data;
-    } catch (error) {
-      console.error("Error creating user:", error);
-      throw error;
-    }
-  },
+createUser: async (userData) => {
+  try {
+    const response = await api.post("/admin/new", userData);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
+},
+
+  
 
   updateUser: async (userId, userData) => {
   try {
@@ -448,11 +450,11 @@ getActiveBookingsCount: async (stationIds) => {
 
   createBooking: async (bookingData) => {
   try {
-    const response = await api.post("/payments/initialize", bookingData);
-    // expected: { bookingId, paymentUrl }
+    const response = await api.post("/bookings", bookingData);
+    // backend returns: { bookingId, paymentUrl, amount, paymentMethod }
     return response.data;
   } catch (error) {
-    console.error("Error initializing booking payment:", error);
+    console.error("Error creating booking:", error);
     throw error;
   }
 },
@@ -466,6 +468,11 @@ getActiveBookingsCount: async (stationIds) => {
       throw error;
     }
   },
+
+  confirmBooking: async (bookingId) => {
+  const res = await api.patch(`/bookings/${bookingId}/confirm`);
+  return res.data;
+},
 
   cancelBooking: async (bookingId) => {
     try {

@@ -1,291 +1,317 @@
-// src/pages/StationFinderPage.jsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Zap, Search, MapPin, Navigation, BatteryCharging, Clock, DollarSign, 
-  Star, Menu, X, User, Bell, AlertCircle 
-} from 'lucide-react';
-import { toast } from 'react-toastify';
-import { stationService } from '../../Services/api';
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-export default function StationFinderPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [stations, setStations] = useState([]);
-  const [filteredStations, setFilteredStations] = useState([]);
-  const [selectedStation, setSelectedStation] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const navigate = useNavigate();
-
-  useEffect(() => {
-  const loadStations = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await stationService.listStationsForOwner();
-      const stationList = response?.data || response || [];
-
-      const enrichedStations = stationList.map(station => {
-        const level2 = station.level2Chargers || 0;
-        const dcFast = station.dcFastChargers || 0;
-        const total = station.totalSlots || (level2 + dcFast);
-        const available = station.availableSlots !== undefined 
-          ? station.availableSlots 
-          : total;
-
-        return {
-          ...station,
-          totalSlots: total,
-          availableSlots: available,
-          pricePerKwh: station.dcFastRate || station.level2Rate || 40,
-          maxPower: dcFast > 0 ? '150 kW' : '22 kW',
-          rating: station.rating || '4.6'
-        };
-      });
-
-      setStations(enrichedStations);
-      setFilteredStations(enrichedStations);
-      toast.success(
-        `Loaded ${enrichedStations.length} stations across Nepal`,
-        { toastId: 'stations-loaded' }
-      );
-    } catch (err) {
-      console.error("Failed to load stations:", err);
-      const msg = err.response?.status === 401 || err.response?.status === 403
-        ? "Please log in to continue"
-        : "No stations found or server error";
-      setError(msg);
-      toast.error(msg, { toastId: 'stations-error' });
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        navigate('/login');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  loadStations();
-}, [navigate]);
-
-  // Search filter
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredStations(stations);
-      return;
-    }
-    const query = searchQuery.toLowerCase();
-    const filtered = stations.filter(s =>
-      s.name?.toLowerCase().includes(query) ||
-      s.address?.toLowerCase().includes(query) ||
-      s.city?.toLowerCase().includes(query) ||
-      s.location?.toLowerCase().includes(query)
-    );
-    setFilteredStations(filtered);
-  }, [searchQuery, stations]);
-
-  const handleBookNow = (e, station) => {
-    // Prevent card click event from firing
-    e.stopPropagation();
-    
-    console.log("=== BOOKING DEBUG ===");
-    console.log("Station data:", station);
-    console.log("Station ID:", station.id);
-    console.log("Available slots:", station.availableSlots);
-    console.log("====================");
-
-    if (station.availableSlots <= 0) {
-      toast.error("No slots available right now!");
-      return;
-    }
-
-    const bookingPath = `/book/station/${station.id}`;
-    console.log("Navigating to:", bookingPath);
-    navigate(bookingPath);
-  };
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <header className="bg-white shadow-lg sticky top-0 z-50 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-emerald-500 to-cyan-600 p-2.5 rounded-xl shadow-md">
-                <Zap className="w-7 h-7 text-white" strokeWidth={3} />
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
-                BijuliYatra
-              </h1>
+    <div className="min-h-screen bg-[#020617] text-white flex flex-col">
+      {/* Top nav */}
+      <header className="w-full border-b border-white/5 bg-[#020617]/90 backdrop-blur">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-full bg-emerald-500 flex items-center justify-center">
+              <span className="text-xl font-bold">⚡</span>
             </div>
-
-            <nav className="hidden md:flex items-center gap-10">
-              <a href="/ev-owner/dashboard" className="text-slate-700 hover:text-emerald-600 font-medium transition">Dashboard</a>
-              <a 
-                onClick={(e) => { e.preventDefault(); navigate('/ev-owner/station'); }} 
-                href="/ev-owner/station"
-                className="text-emerald-600 font-bold text-lg hover:underline transition cursor-pointer"
-              >
-                Find Stations
-              </a>
-              <a href="/bookings" className="text-slate-700 hover:text-emerald-600 font-medium transition">My Bookings</a>
-            </nav>
-
-            <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-slate-100 rounded-lg transition">
-                <Bell className="w-5 h-5 text-slate-600" />
-              </button>
-              <button 
-                onClick={() => navigate('/profile')}
-                className="hidden md:flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-cyan-600 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition-all"
-              >
-                <User className="w-4 h-4" />
-                My Account
-              </button>
-              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden">
-                {mobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
-              </button>
+            <div className="flex flex-col leading-tight">
+              <span className="font-semibold text-sm">BijuliYatra</span>
+              <span className="text-[11px] text-slate-400">
+                India&apos;s largest EV charging network
+              </span>
             </div>
+          </Link>
+
+          {/* Links */}
+          <nav className="hidden md:flex items-center gap-6 text-sm text-slate-200">
+            <a href="#features" className="hover:text-white">Features</a>
+            <a href="#pricing" className="hover:text-white">Pricing</a>
+            <a href="#operators" className="hover:text-white">For Operators</a>
+            <a href="#owners" className="hover:text-white">For EV Owners</a>
+          </nav>
+
+          {/* Auth / CTA */}
+          <div className="flex items-center gap-3 text-sm">
+            <Link to="/login" className="hidden sm:inline text-slate-200 hover:text-white">
+              Login
+            </Link>
+            <Link
+              to="/signup"
+              className="hidden sm:inline rounded-full border border-emerald-500/40 px-4 py-2 text-emerald-400 hover:bg-emerald-500 hover:text-white transition"
+            >
+              Sign up
+            </Link>
+            <Link
+              to="/app"
+              className="rounded-full bg-emerald-500 px-4 py-2 font-medium hover:bg-emerald-600 transition"
+            >
+              Get started
+            </Link>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="text-center mb-10">
-          <h1 className="text-5xl font-bold text-slate-900 mb-3">
-            Charge Anywhere in Nepal
-          </h1>
-          <p className="text-xl text-slate-600">Real-time availability • Kathmandu • Pokhara • Chitwan • Biratnagar</p>
-        </div>
-
-        {/* Search */}
-        <div className="max-w-3xl mx-auto mb-10">
-          <div className="relative">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by location: Thamel, Lakeside, Narayanghat..."
-              className="w-full pl-14 pr-48 py-5 text-lg border-2 border-slate-300 rounded-2xl focus:border-emerald-500 focus:outline-none transition-all shadow-sm"
-            />
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 bg-gradient-to-r from-emerald-500 to-cyan-600 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition-all">
-              <Navigation className="w-5 h-5" />
-              Near Me
-            </button>
-          </div>
-        </div>
-
-        {/* Loading / Error */}
-        {loading && (
-          <div className="text-center py-20">
-            <div className="inline-block animate-spin rounded-full h-16 w-16 border-8 border-emerald-500 border-t-transparent mb-6"></div>
-            <p className="text-xl text-slate-600">Finding charging stations across Nepal...</p>
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 text-center max-w-2xl mx-auto">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <p className="text-lg font-medium text-red-800">{error}</p>
-          </div>
-        )}
-
-        {/* Main Content */}
-        {!loading && !error && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Station List */}
-            <div className="space-y-5">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-slate-900">
-                  {filteredStations.length} Stations Available
-                </h2>
-                <span className="text-sm text-slate-500">Real-time data</span>
-              </div>
-
-              {filteredStations.length === 0 ? (
-                <div className="bg-white rounded-2xl p-16 text-center shadow-lg">
-                  <MapPin className="w-20 h-20 text-slate-300 mx-auto mb-4" />
-                  <p className="text-lg text-slate-500">No stations match your search</p>
-                  <p className="text-sm text-slate-400 mt-2">Try "Kathmandu" or "Pokhara"</p>
-                </div>
-              ) : (
-                filteredStations.map((station) => (
-                  <div
-                    key={station.id}
-                    onClick={() => setSelectedStation(station)}
-                    className={`bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all cursor-pointer border-3 ${
-                      selectedStation?.id === station.id 
-                        ? 'border-emerald-500 ring-4 ring-emerald-100' 
-                        : 'border-transparent'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-xl font-bold text-slate-900">{station.name}</h3>
-                        <p className="text-slate-600 flex items-center gap-2 mt-1">
-                          <MapPin className="w-4 h-4" />
-                          {station.address || station.location}, {station.city}
-                        </p>
-                      </div>
-                      <div className="bg-amber-50 px-4 py-2 rounded-full flex items-center gap-1">
-                        <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-                        <span className="font-bold text-amber-700">{station.rating}</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      <div className="text-center">
-                        <BatteryCharging className={`w-8 h-8 mx-auto mb-1 ${station.availableSlots > 0 ? 'text-emerald-600' : 'text-red-600'}`} />
-                        <p className="text-xs text-slate-500">Available</p>
-                        <p className={`text-2xl font-bold ${station.availableSlots > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                          {station.availableSlots}/{station.totalSlots}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <DollarSign className="w-8 h-8 mx-auto mb-1 text-slate-600" />
-                        <p className="text-xs text-slate-500">Price</p>
-                        <p className="text-2xl font-bold text-emerald-600">Rs. {station.pricePerKwh}</p>
-                      </div>
-                      <div className="text-center">
-                        <Zap className="w-8 h-8 mx-auto mb-1 text-cyan-600" />
-                        <p className="text-xs text-slate-500">Max Power</p>
-                        <p className="text-xl font-bold">{station.maxPower}</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={(e) => handleBookNow(e, station)}
-                      disabled={station.availableSlots === 0}
-                      className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
-                        station.availableSlots > 0
-                          ? 'bg-gradient-to-r from-emerald-500 to-cyan-600 text-white hover:from-emerald-600 hover:to-cyan-700 shadow-lg transform hover:scale-105'
-                          : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                      }`}
-                    >
-                      {station.availableSlots > 0 ? 'Book Now →' : 'Fully Booked'}
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Map Placeholder */}
-            <div className="bg-gradient-to-br from-emerald-50 to-cyan-50 rounded-3xl shadow-xl overflow-hidden sticky top-24 h-[700px] flex flex-col items-center justify-center p-10">
-              <MapPin className="w-32 h-32 text-emerald-600 mb-6 animate-pulse" />
-              <h3 className="text-3xl font-bold text-slate-800 mb-3">Interactive Map Coming Soon</h3>
-              <p className="text-center text-slate-600 max-w-md text-lg">
-                GPS-powered map with live station pins across all 7 provinces of Nepal
+      {/* Main scrollable content */}
+      <main className="flex-1">
+        {/* Hero */}
+        <section className="border-b border-white/5 bg-gradient-to-b from-[#020617] to-[#020617]">
+          <div className="max-w-6xl mx-auto px-6 pt-16 pb-20 grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-center">
+            {/* Left hero content */}
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-emerald-400 mb-3">
+                EV CHARGING MADE EASY
               </p>
-              <div className="mt-8 bg-white/20 backdrop-blur px-6 py-3 rounded-full">
-                <p className="text-slate-700 font-medium">Powered by Leaflet + OpenStreetMap</p>
+              <h1 className="text-4xl sm:text-5xl font-semibold leading-tight mb-4">
+                Charge smarter, <span className="text-emerald-400">drive farther</span>
+              </h1>
+              <p className="text-sm sm:text-base text-slate-300 max-w-md mb-6">
+                Find and book EV charging stations near you instantly. Access real‑time
+                availability, smart payments, and the largest charging network across India.
+              </p>
+
+              {/* Primary CTAs */}
+              <div className="flex flex-wrap gap-4 mb-6">
+                <Link
+                  to="/app/find-stations"
+                  className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-medium hover:bg-emerald-600 transition"
+                >
+                  Find stations
+                </Link>
+                <Link
+                  to="/signup?role=OPERATOR"
+                  className="inline-flex items-center justify-center rounded-full border border-slate-600 px-5 py-2.5 text-sm font-medium text-slate-100 hover:border-emerald-500 hover:text-white transition"
+                >
+                  Become an operator
+                </Link>
+              </div>
+
+              {/* Stats */}
+              <div className="flex flex-wrap items-center gap-6 text-[11px] text-slate-300">
+                <div>
+                  <div className="font-semibold text-emerald-400 text-sm">10,000+ </div>
+                  <div>Stations</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-emerald-400 text-sm">500,000+ </div>
+                  <div>Users</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-emerald-400 text-sm">24/7</div>
+                  <div>Secure payments</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right mock image/card */}
+            <div className="relative">
+              <div className="rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 shadow-[0_0_80px_rgba(16,185,129,0.35)] overflow-hidden">
+                <div className="aspect-video w-full bg-slate-900/40 flex items-center justify-center">
+                  {/* Placeholder for hero image – swap with real image later */}
+                  <span className="text-xs text-slate-500">
+                    Charging station mockup / illustration
+                  </span>
+                </div>
+                <div className="p-4 flex justify-between text-xs text-slate-200 border-t border-white/5">
+                  <div>
+                    <div className="font-medium text-emerald-400">Available now</div>
+                    <div className="text-[11px] text-slate-400">3 ports free</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-slate-200">Nearby stations</div>
+                    <div className="text-[11px] text-emerald-400">All with fast charging</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        )}
+        </section>
+
+        {/* Features */}
+        <section id="features" className="border-b border-white/5 bg-[#020617]">
+          <div className="max-w-6xl mx-auto px-6 py-14 grid gap-6 md:grid-cols-3">
+            <FeatureCard
+              title="Real‑time station availability"
+              body="Check live availability of charging ports across all stations so you never drive to a full charger again."
+            />
+            <FeatureCard
+              title="Smart booking & payments"
+              body="Reserve your slot in advance and pay seamlessly with integrated digital payments."
+            />
+            <FeatureCard
+              title="Operator analytics"
+              body="Give station owners detailed insights into usage patterns, revenue and performance."
+            />
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section id="owners" className="border-b border-white/5 bg-[#020617]">
+          <div className="max-w-4xl mx-auto px-6 py-16 text-center">
+            <h2 className="text-2xl font-semibold mb-2">How BijuliYatra works</h2>
+            <p className="text-sm text-slate-300 mb-10">
+              Get charged in three simple steps.
+            </p>
+
+            <div className="grid gap-10 md:grid-cols-3 text-left md:text-center">
+              <StepCard
+                step="01"
+                title="Find a station"
+                body="Search for nearby charging stations on an interactive map."
+              />
+              <StepCard
+                step="02"
+                title="Book your slot"
+                body="Reserve a charging port at your preferred time."
+              />
+              <StepCard
+                step="03"
+                title="Charge & pay"
+                body="Plug in, monitor your session and pay securely."
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section id="pricing" className="border-b border-white/5 bg-[#020617]">
+          <div className="max-w-5xl mx-auto px-6 py-16 text-center">
+            <h2 className="text-2xl font-semibold mb-2">Simple, transparent pricing</h2>
+            <p className="text-sm text-slate-300 mb-10">
+              Choose the plan that fits your needs.
+            </p>
+
+            <div className="grid gap-6 md:grid-cols-2 items-stretch">
+              {/* EV Owners card */}
+              <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-left flex flex-col">
+                <h3 className="text-sm font-semibold text-slate-200 mb-1">EV Owners</h3>
+                <p className="text-xs text-slate-400 mb-4">
+                  Perfect for individual EV drivers.
+                </p>
+                <p className="text-3xl font-semibold mb-1">Free</p>
+                <p className="text-[11px] text-slate-400 mb-4">No monthly fees.</p>
+                <button className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium mb-4 self-start hover:bg-emerald-600 transition">
+                  Start charging
+                </button>
+                <ul className="mt-auto space-y-2 text-xs text-slate-200">
+                  <li>• Find all charging stations</li>
+                  <li>• Real‑time availability</li>
+                  <li>• Book charging slots</li>
+                  <li>• Digital payments</li>
+                  <li>• Trip history</li>
+                  <li>• Mobile app access (coming soon)</li>
+                </ul>
+              </div>
+
+              {/* Station Operators card */}
+              <div className="relative rounded-3xl border border-emerald-500/70 bg-gradient-to-br from-emerald-600/15 to-emerald-500/5 p-6 text-left flex flex-col shadow-[0_0_80px_rgba(16,185,129,0.35)]">
+                <div className="inline-block rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] text-emerald-300 mb-3">
+                  MOST POPULAR
+                </div>
+                <h3 className="text-sm font-semibold text-slate-200 mb-1">
+                  Station Operators
+                </h3>
+                <p className="text-xs text-slate-400 mb-4">
+                  For charging station owners and fleets.
+                </p>
+                <p className="text-3xl font-semibold mb-1">₹2,999</p>
+                <p className="text-[11px] text-slate-400 mb-4">per month</p>
+                <button className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium mb-4 self-start hover:bg-emerald-600 transition">
+                  Start 30‑day trial
+                </button>
+                <ul className="mt-auto space-y-2 text-xs text-slate-200">
+                  <li>• List unlimited stations</li>
+                  <li>• Advanced analytics dashboard</li>
+                  <li>• Revenue and settlement reports</li>
+                  <li>• Customer insights & marketing tools</li>
+                  <li>• Priority support & API access</li>
+                  <li>• White‑label option for fleets</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="bg-[#020617]">
+          <div className="max-w-6xl mx-auto px-6 pt-10 pb-8 border-t border-white/5 text-xs text-slate-400">
+            <div className="grid gap-8 md:grid-cols-4 mb-8">
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <span className="text-sm font-bold">⚡</span>
+                  </div>
+                  <span className="font-semibold text-sm text-slate-100">BijuliYatra</span>
+                </div>
+                <p className="text-[11px]">
+                  India&apos;s largest EV charging network. Charge smarter, drive farther.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="mb-2 font-semibold text-slate-200 text-xs">Product</h4>
+                <ul className="space-y-1">
+                  <li>Features</li>
+                  <li>Pricing</li>
+                  <li>For EV Owners</li>
+                  <li>For Operators</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="mb-2 font-semibold text-slate-200 text-xs">Company</h4>
+                <ul className="space-y-1">
+                  <li>About us</li>
+                  <li>Blog</li>
+                  <li>Press</li>
+                  <li>Partners</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="mb-2 font-semibold text-slate-200 text-xs">Contact</h4>
+                <ul className="space-y-1">
+                  <li>support@bijuliyatra.com</li>
+                  <li>+91 1800‑123‑4567</li>
+                  <li>Bengaluru, India</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>© {new Date().getFullYear()} BijuliYatra. All rights reserved.</span>
+              <div className="flex gap-3 text-[11px]">
+                <span>Privacy</span>
+                <span>Terms</span>
+                <span>Cookies</span>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+/* Small sub‑components for clarity */
+
+function FeatureCard({ title, body }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-6">
+      <div className="mb-3 h-9 w-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+        ⚡
       </div>
+      <h3 className="text-sm font-semibold mb-1">{title}</h3>
+      <p className="text-xs text-slate-300">{body}</p>
+    </div>
+  );
+}
+
+function StepCard({ step, title, body }) {
+  return (
+    <div className="flex flex-col items-center md:items-center text-center">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-xs text-emerald-400">
+        STEP {step}
+      </div>
+      <h3 className="text-sm font-semibold mb-1">{title}</h3>
+      <p className="text-xs text-slate-300 max-w-[220px]">{body}</p>
     </div>
   );
 }
