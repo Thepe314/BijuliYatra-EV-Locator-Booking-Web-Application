@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, notify } from 'react';
 import { Zap, Mail, Lock, User, Eye, EyeOff, Phone, MapPin, Car, Battery, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../Services/api';
+
 
 export default function EVOwnerSignUp() {
   const navigate = useNavigate();

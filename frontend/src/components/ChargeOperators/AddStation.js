@@ -28,6 +28,8 @@ export default function AddStation() {
     notes: '',
     latitude: null,
     longitude: null,
+    // NEW: image key metadata to send to backend
+    imageKey: 'station-1',
   });
 
   const validateForm = () => {
@@ -114,7 +116,6 @@ export default function AddStation() {
 
   // Map click: set coords and reverse geocode address
   const handleMapLocationChange = async ({ lat, lng }) => {
-    // set coordinates immediately
     setFormData((prev) => ({
       ...prev,
       latitude: lat,
@@ -129,11 +130,10 @@ export default function AddStation() {
     }
 
     try {
-      // Nominatim reverse geocoding (OpenStreetMap)
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`
       );
-      const data = await res.json(); // returns address object etc.[web:111]
+      const data = await res.json();
 
       const addr = data.address || {};
       const city =
@@ -158,7 +158,6 @@ export default function AddStation() {
       }));
     } catch (e) {
       console.error('Reverse geocoding failed', e);
-      // keep lat/lng; user can still type manually
     }
   };
 
@@ -197,6 +196,8 @@ export default function AddStation() {
           (parseInt(formData.dcFastChargers, 10) || 0),
         latitude: formData.latitude,
         longitude: formData.longitude,
+        // NEW: send imageKey to backend
+        imageKey: formData.imageKey,
       };
 
       console.log('Submitting station data:', stationData);
@@ -220,6 +221,7 @@ export default function AddStation() {
         notes: '',
         latitude: null,
         longitude: null,
+        imageKey: 'station-1',
       });
 
       setTimeout(() => {
@@ -413,6 +415,23 @@ export default function AddStation() {
                       </p>
                     )}
                   </div>
+                </div>
+
+                {/* NEW: imageKey selector field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Station Image Preset
+                  </label>
+                  <select
+                    name="imageKey"
+                    value={formData.imageKey}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 border-gray-300 focus:ring-blue-500"
+                  >
+                    <option value="station-1">Preset 1</option>
+                    <option value="station-2">Preset 2</option>
+                    <option value="station-3">Preset 3</option>
+                  </select>
                 </div>
 
                 <div className="mt-6">

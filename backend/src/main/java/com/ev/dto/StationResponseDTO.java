@@ -25,7 +25,7 @@ public class StationResponseDTO {
     private String createdAt;
     private String updatedAt;
     private Long operatorId;
-
+    private String imageKey;
     
     private String operatorName;
 
@@ -52,6 +52,7 @@ public class StationResponseDTO {
         this.createdAt = station.getCreatedAt().toString();
         this.updatedAt = station.getUpdatedAt().toString();
         this.operatorId = station.getOperatorId();
+        this.imageKey = station.getImageKey();
 
         // Extract company name safely
         User operator = station.getOperator();
@@ -106,6 +107,14 @@ public class StationResponseDTO {
 
     public String getOperatorName() { return operatorName; }
     public void setOperatorName(String operatorName) { this.operatorName = operatorName; }
+
+	public String getImageKey() {
+		return imageKey;
+	}
+
+	public void setImageKey(String imageKey) {
+		this.imageKey = imageKey;
+	}
     
     
 }

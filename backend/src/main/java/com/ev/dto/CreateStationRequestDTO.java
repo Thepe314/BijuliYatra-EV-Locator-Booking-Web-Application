@@ -13,7 +13,8 @@ public class CreateStationRequestDTO {
     @Size(min = 2, max = 100, message = "Station name must be between 2 and 100 characters")
     private String name;
 
-    @Size(max = 100, message = "Location description must be at most 100 characters")
+    @NotBlank(message = "Location (Lat,Lng) is required")
+    @Size(min = 5, max = 255, message = "Location must be between 5 and 255 characters")
     private String location;
 
     @NotNull(message = "Latitude is required")
@@ -69,6 +70,8 @@ public class CreateStationRequestDTO {
 
     @Size(max = 500, message = "Notes cannot exceed 500 characters")
     private String notes;
+    
+    private String imageKey;
 
     // Custom validation: peakMultiplier required only if peakPricing = true
     @AssertTrue(message = "Peak multiplier must be greater than 1.0 when peak pricing is enabled")
@@ -215,6 +218,16 @@ public class CreateStationRequestDTO {
 	public void setLongitude(Double longitude) {
 		this.longitude = longitude;
 	}
+
+	public String getImageKey() {
+		return imageKey;
+	}
+
+	public void setImageKey(String imageKey) {
+		this.imageKey = imageKey;
+	}
+	
+	
     
     
 }

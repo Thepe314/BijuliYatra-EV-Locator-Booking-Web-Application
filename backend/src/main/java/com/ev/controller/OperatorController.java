@@ -67,6 +67,7 @@ public class OperatorController {
         station.setOperator(operator);       
         station.setTotalSlots(request.getLevel2Chargers() + request.getDcFastChargers());
         station.setAvailableSlots(station.getTotalSlots());
+        station.setImageKey(request.getImageKey());
 
         ChargingStations saved = repository.save(station);
         return new ResponseEntity<>(new StationResponseDTO(saved), HttpStatus.CREATED);

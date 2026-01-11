@@ -83,6 +83,9 @@ public class ChargingStations {
     @Column(nullable = true)
     private Double longitude;
     
+    @Column(nullable = true)
+    private String imageKey; 
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -180,6 +183,14 @@ public class ChargingStations {
 
 	public void setLongitude(Double longitude) {
 		this.longitude = longitude;
+	}
+
+	public String getImageKey() {
+		return imageKey;
+	}
+
+	public void setImageKey(String imageKey) {
+		this.imageKey = imageKey;
 	}
     
     

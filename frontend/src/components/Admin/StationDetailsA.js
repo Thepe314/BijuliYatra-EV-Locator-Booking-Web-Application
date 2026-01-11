@@ -1,32 +1,20 @@
-
 import React, { useEffect, useState } from 'react';
 import {
-  MapPin,
-  Zap,
-  Clock,
-  Navigation,
-  Shield,
-  Check,
-  ArrowLeft,
-  Phone,
-  Share2,
-  Heart,
-  Info,
+  MapPin, Zap, Clock, Navigation, Shield, Check,
+  ArrowLeft, Phone, Share2, Heart, Info
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { stationService } from '../../Services/api';
 
 // local images mapped by key
-import stationImg1 from '../Assets/stations/Station-1.jpg';
-
+import stationImg2 from '../Assets/stations/Station-2.jpg';
 
 const imageMap = {
-  'station-1': stationImg1,
-  // 'station-2': stationImg2,
-  // 'station-3': stationImg3,
+  // 'station-1': stationImg1,
+   'station-2': stationImg2,
 };
 
-export default function StationDetailsPage() {
+export default function StationDetailsA() {
   const [activeImage, setActiveImage] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [station, setStation] = useState(null);
@@ -41,7 +29,7 @@ export default function StationDetailsPage() {
       try {
         setLoading(true);
         setError(null);
-        const data = await stationService.getStationByIdO(stationId);
+        const data = await stationService.getStationById(stationId);
         setStation(data);
       } catch (err) {
         console.error(err);
@@ -79,62 +67,13 @@ export default function StationDetailsPage() {
   const createdAt = station.createdAt || '-';
   const updatedAt = station.updatedAt || '-';
 
-  // Resolve image from imageKey; fallback to stationImg1
-  const mainImage = imageMap[station.imageKey] || stationImg1;
-
-  // For now single image; you can extend this array later
+  // resolve image from imageKey (fallback to stationImg1)
+  const mainImage = imageMap[station.imageKey] || stationImg2;
   const images = [{ src: mainImage }];
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-2 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Stations
-          </button>
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {station.name}
-              </h1>
-              <div className="flex items-center gap-4 mt-2 text-gray-600">
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-sm">{fullAddress}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Zap className="w-4 h-4 text-green-500" />
-                  <span className="text-sm font-medium capitalize">
-                    {station.status}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsFavorite(!isFavorite)}
-                className={`p-3 rounded-lg border-2 transition-all ${
-                  isFavorite
-                    ? 'border-red-500 bg-red-50 text-red-600'
-                    : 'border-gray-300 text-gray-600 hover:border-gray-400'
-                }`}
-              >
-                <Heart
-                  className={`w-5 h-5 ${isFavorite ? 'fill-red-600' : ''}`}
-                />
-              </button>
-              <button className="p-3 rounded-lg border-2 border-gray-300 text-gray-600 hover:border-gray-400 transition-colors">
-                <Share2 className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -163,7 +102,7 @@ export default function StationDetailsPage() {
                 )}
               </div>
 
-              {/* Thumbnail strip */}
+              {/* Thumbnails */}
               <div className="grid grid-cols-4 gap-2 p-4 bg-gray-50">
                 {images.map((img, idx) => (
                   <button
@@ -191,9 +130,7 @@ export default function StationDetailsPage() {
 
             {/* Overview */}
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Station Overview
-              </h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Station Overview</h2>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -207,8 +144,7 @@ export default function StationDetailsPage() {
                     {station.totalChargers}
                   </p>
                   <p className="text-xs text-green-600 mt-1">
-                    Level 2: {station.level2Chargers} • DC Fast:{' '}
-                    {station.dcFastChargers}
+                    Level 2: {station.level2Chargers} • DC Fast: {station.dcFastChargers}
                   </p>
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -242,8 +178,7 @@ export default function StationDetailsPage() {
                   <div>
                     <p className="text-xs text-gray-500">Operator</p>
                     <p className="text-sm font-medium">
-                      {station.operatorName ||
-                        `ID: ${station.operatorId || 'N/A'}`}
+                      {station.operatorName || `ID: ${station.operatorId || 'N/A'}`}
                     </p>
                   </div>
                 </div>
@@ -304,9 +239,10 @@ export default function StationDetailsPage() {
                 </div>
               </div>
             </div>
+
           </div>
 
-          {/* Right column */}
+          {/* Right column: admin info only */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-100">
               <h3 className="text-lg font-bold text-gray-900 mb-4">
@@ -336,10 +272,7 @@ export default function StationDetailsPage() {
                       Managed Station
                     </p>
                     <p className="text-xs text-gray-600">
-                      Operator:{' '}
-                      {station.operatorName ||
-                        station.operatorId ||
-                        'N/A'}
+                      Operator: {station.operatorName || station.operatorId || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -396,8 +329,8 @@ export default function StationDetailsPage() {
                 Internal View
               </p>
               <p className="text-xs text-blue-800">
-                This page is visible to operators and admins only and reflects
-                the current values from the database (StationResponseDTO).
+                This page is visible to operators and admins only and reflects the current values
+                from the database (StationResponseDTO).
               </p>
             </div>
           </div>

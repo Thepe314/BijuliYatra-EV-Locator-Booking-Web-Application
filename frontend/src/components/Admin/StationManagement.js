@@ -122,7 +122,7 @@ export default function StationManagement() {
   };
 
   const handleViewDetails = (id) => {
-    navigate(`/stationdetails/${id}`);
+    navigate(`/admin/stationdetails/${id}`);
   };
 
   const handleLogout = async () => {

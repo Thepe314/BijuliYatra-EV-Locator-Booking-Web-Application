@@ -27,6 +27,7 @@ import BookingManagement from "./components/Admin/BookingManagement.js";
 import EditStationPage from "./components/Admin/EditStationPage.js";
 import ForgotPasswordPage from "./components/Auth/ForgetPassword.js";
 import PaymentSuccess from "./components/General/PaymentSuccess.js";
+import StationDetailsA from "./components/Admin/StationDetailsA.js";
 
 function App() {
   return (
@@ -68,6 +69,7 @@ function App() {
           <Route path="/admin/editUser/:userId" element={<EditUserPage />} />
           <Route path="/admin/editStation/:id" element={<EditStationPage />} />
           <Route path="/admin/addstation" element={<AddStationAdmin />} />
+             <Route path="/admin/stationdetails/:stationId" element={<StationDetailsA />} />
 
           {/* Operator */}
           <Route path="/operator/dashboard" element={<OperatorDashboard />} />
