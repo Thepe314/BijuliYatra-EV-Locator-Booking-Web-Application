@@ -73,7 +73,7 @@ export default function OperatorEditStation() {
     const loadStation = async () => {
       setLoading(true);
       try {
-        const apiStation = await stationService.getStationById(stationId);
+        const apiStation = await stationService.getStationByIdO(stationId);
         if (!mounted) return;
         setFormData((prev) => ({ ...prev, ...mapApiToForm(apiStation) }));
       } catch (err) {
@@ -212,7 +212,7 @@ const handleMapLocationChange = async ({ lat, lng }) => {
         longitude: formData.longitude,
       };
 
-      await stationService.updateStationAdmin(stationId, payload);
+      await stationService.updateStationOperator(stationId, payload);
       setNotification({
         type: 'success',
         message: 'Station updated successfully!',
@@ -329,7 +329,7 @@ const handleMapLocationChange = async ({ lat, lng }) => {
         <header className="h-16 bg-white border-b border-slate-200 flex items-center">
           <div className="max-w-5xl w-full mx-auto px-6 flex items-center justify-between">
             <button
-              onClick={() => navigate('/admin/dashboard')}
+              onClick={() => navigate('/operator/dashboard')}
               className="inline-flex items-center gap-2 text-sm text-slate-700 hover:text-slate-900"
             >
               <ArrowLeft className="w-4 h-4" />

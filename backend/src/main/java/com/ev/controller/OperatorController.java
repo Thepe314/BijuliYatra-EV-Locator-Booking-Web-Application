@@ -1,6 +1,7 @@
 package com.ev.controller;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,8 @@ public class OperatorController {
 
 	 @Autowired
 	 private ChargingStationRepository repository;
+	 
+	 
 	 
 	 @Autowired
 	 private UserRepository userRepository;
@@ -100,29 +103,62 @@ public class OperatorController {
 //        return ResponseEntity.ok(new StationResponseDTO(station));
 //    }
     
-    @PutMapping("/stations/{id}")
-    public ResponseEntity<StationResponseDTO> updateStation(
-            @PathVariable Long id,
-            @Valid @RequestBody CreateStationRequestDTO request) {
-        ChargingStations station = repository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Station not found with id: " + id));
-        
+    @PutMapping("/stations/edit/{stationId}")
+    public ResponseEntity<StationResponseDTO> updateStationOperator(
+            @PathVariable Long stationId,
+            @Valid @RequestBody CreateStationRequestDTO request,
+            Authentication authentication) {
+
+        // 1) Load station
+        Optional<ChargingStations> opt = repository.findById(stationId);
+        if (opt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        ChargingStations station = opt.get();
+
+        // 2) Resolve operator from authenticated user
+        String email = authentication.getName(); // e.g. "operator@gmail.com"
+        User operator = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Operator not found"));
+        station.setOperator(operator);
+
+        // 3) Basic fields
         station.setName(request.getName());
         station.setLocation(request.getLocation());
+        station.setLatitude(request.getLatitude());
+        station.setLongitude(request.getLongitude());
         station.setAddress(request.getAddress());
         station.setCity(request.getCity());
         station.setState(request.getState());
         station.setZipCode(request.getZipCode());
+
+        // 4) Chargers & rates
         station.setLevel2Chargers(request.getLevel2Chargers());
         station.setDcFastChargers(request.getDcFastChargers());
         station.setLevel2Rate(request.getLevel2Rate());
         station.setDcFastRate(request.getDcFastRate());
+
+        // 5) Peak pricing
         station.setPeakPricing(request.getPeakPricing());
-        station.setPeakMultiplier(request.getPeakMultiplier() != null ? request.getPeakMultiplier() : 1.25);
+        station.setPeakMultiplier(
+                request.getPeakMultiplier() != null
+                        ? request.getPeakMultiplier()
+                        : 1.25
+        );
+
+        // 6) Notes
         station.setNotes(request.getNotes());
-        station.setLatitude(request.getLatitude());
-        station.setLongitude(request.getLongitude());
-        
+
+        // 7) Image preset
+        station.setImageKey(request.getImageKey());
+
+        // 8) Total / available slots (same rule as admin)
+        int totalSlots = request.getLevel2Chargers() + request.getDcFastChargers();
+        station.setTotalSlots(totalSlots);
+        if (station.getAvailableSlots() == null || station.getAvailableSlots() > totalSlots) {
+            station.setAvailableSlots(totalSlots);
+        }
+
         ChargingStations updated = repository.save(station);
         return ResponseEntity.ok(new StationResponseDTO(updated));
     }

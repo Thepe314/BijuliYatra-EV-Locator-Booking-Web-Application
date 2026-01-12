@@ -5,7 +5,6 @@ import jakarta.validation.constraints.*;
 
 public class CreateStationRequestDTO {
 
-
     @JsonProperty("operatorId")
     private Long operatorId;
 
@@ -70,25 +69,22 @@ public class CreateStationRequestDTO {
 
     @Size(max = 500, message = "Notes cannot exceed 500 characters")
     private String notes;
-    
+
     private String imageKey;
-    
- 
-    // Custom validation: peakMultiplier required only if peakPricing = true
+
+    // custom validation
     @AssertTrue(message = "Peak multiplier must be greater than 1.0 when peak pricing is enabled")
     private boolean isPeakMultiplierValid() {
-        return !Boolean.TRUE.equals(peakPricing) || 
-               (peakMultiplier != null && peakMultiplier > 1.0);
+        return !Boolean.TRUE.equals(peakPricing) ||
+                (peakMultiplier != null && peakMultiplier > 1.0);
     }
 
-    // At least one charger must be present
     @AssertTrue(message = "At least one Level 2 or DC Fast charger is required")
     private boolean isAtLeastOneChargerPresent() {
         int l2 = level2Chargers != null ? level2Chargers : 0;
         int dc = dcFastChargers != null ? dcFastChargers : 0;
         return (l2 + dc) > 0;
     }
-    
 
     // === Getters and Setters ===
 

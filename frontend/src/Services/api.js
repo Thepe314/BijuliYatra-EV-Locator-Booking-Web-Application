@@ -366,6 +366,10 @@ getStationByIdE: async (id) => {
     return res.data;
   },
 
+updateStationOperator: async (id, data) => {
+  const res = await api.put(`/operator/stations/edit/${id}`, data);
+  return res.data;
+},
   // Delete for operators - only their own stations
   deleteStation: async (stationId) => {
     try {
@@ -406,6 +410,13 @@ listStationsForOwner: async (filters = {}) => {
     console.error("Error fetching EV owner stations:", error);
     throw error;
   }
+},
+
+listNearbyStations: async ({ lat, lng }) => {
+  const res = await api.get('/stations/nearby', {
+    params: { lat, lng },
+  });
+  return res;
 },
 
 };

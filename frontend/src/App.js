@@ -31,6 +31,7 @@ import BookingPage from "./components/Booking/BookingPage.js";
 import EVOwnerBookingsList from "./components/User/EVOwnerBookingsList.js";
 import KhaltiReturnPage from "./Services/KhaltiReturnPage.js";
 import WalletPage from "./components/User/WalletPage.js";
+import OperatorEditStation from "./components/ChargeOperators/OperatorEditStation.js";
 
 function App() {
   return (
@@ -80,6 +81,7 @@ function App() {
           {/* Operator */}
           <Route path="/operator/dashboard" element={<OperatorDashboard />} />
           <Route path="/operator/addstation" element={<AddStationPage />} />
+       <Route path="/operator/editstation/:id" element={<OperatorEditStation />} />
 
           {/* EV owner */}
           <Route path="/ev-owner/dashboard" element={<EVUserDashboard />} />
@@ -88,6 +90,7 @@ function App() {
          <Route path="/ev-owner/book/:stationId" element={<BookingPage />}/>
          <Route path="/ev-owner/bookings" element={<EVOwnerBookingsList />} />
          <Route path="/ev-owner/wallet" element={<WalletPage />} />
+      
 
         </Routes>
       </Router>

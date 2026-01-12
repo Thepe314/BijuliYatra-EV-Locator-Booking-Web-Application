@@ -1,24 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, SlidersHorizontal, Zap, Star } from 'lucide-react';
+import { MapPin, SlidersHorizontal, Zap } from 'lucide-react';
 import { stationService } from '../../Services/api'; // must expose listStationsForOwner
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-
-
-export default function EVFindStations() {
-  const [stations, setStations] = useState([]);
-  const [loading, setLoading] = useState(true);
-const [selectedStationId, setSelectedStationId] = useState(null);
-  const [city, setCity] = useState('');
-  const [connectorFilter, setConnectorFilter] = useState([]); // "Level 2" | "DC Fast"
-  const [powerFilter, setPowerFilter] = useState([]); // '50' | '100' | '120' | '150+'
-  const [sortBy, setSortBy] = useState('price');
-  const navigate = useNavigate();
- 
-  
+// Haversine distance in km between two lat/lng points
+function distanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371; // earth radius km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 const stationIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -26,11 +27,21 @@ const stationIcon = L.icon({
   iconAnchor: [12, 41],
 });
 
+export default function EVFindStations() {
+  const [stations, setStations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedStationId, setSelectedStationId] = useState(null);
+  const [city, setCity] = useState('');
+  const [connectorFilter, setConnectorFilter] = useState([]); // "Level 2" | "DC Fast"
+  const [powerFilter, setPowerFilter] = useState([]); // '50' | '100' | '120' | '150+'
+  const [sortBy, setSortBy] = useState('price');
+  const [userLocation, setUserLocation] = useState(null); // { lat, lng }
+  const navigate = useNavigate();
+
   useEffect(() => {
     const loadStations = async () => {
       try {
         setLoading(true);
-        // Hits EvOwnerController.getAllStations -> /evowner/station
         const data = await stationService.listStationsForOwner();
         setStations(data || []);
       } catch (err) {
@@ -41,10 +52,34 @@ const stationIcon = L.icon({
     };
 
     loadStations();
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+        },
+        (err) => {
+          console.warn('Geolocation error', err);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
   }, []);
 
+  // Attach distance (if possible) to each station
+  const stationsWithDistance = stations.map((s) => {
+    let dist = null;
+    if (userLocation && s.latitude && s.longitude) {
+      dist = distanceKm(userLocation.lat, userLocation.lng, s.latitude, s.longitude);
+    }
+    return { ...s, distanceKm: dist };
+  });
+
   // derive filtered + sorted stations from StationResponseDTO fields
-  const filteredStations = stations
+  const filteredStations = stationsWithDistance
     .filter((s) =>
       city ? s.city?.toLowerCase().includes(city.toLowerCase()) : true
     )
@@ -61,7 +96,6 @@ const stationIcon = L.icon({
     .filter((s) =>
       powerFilter.length
         ? powerFilter.some((range) => {
-            // rough mapping using charger types
             const p =
               s.dcFastChargers && s.dcFastChargers > 0
                 ? 60
@@ -85,10 +119,13 @@ const stationIcon = L.icon({
       if (sortBy === 'name') {
         return (a.name || '').localeCompare(b.name || '');
       }
+      if (sortBy === 'distance') {
+        if (a.distanceKm == null) return 1;
+        if (b.distanceKm == null) return -1;
+        return a.distanceKm - b.distanceKm;
+      }
       return 0;
     });
-
-    
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -103,7 +140,7 @@ const stationIcon = L.icon({
           </div>
 
           <nav className="hidden md:flex items-center gap-6 text-sm text-slate-600">
-           <button onClick={() => navigate('/ev-owner/dashboard')}>Home</button>
+            <button onClick={() => navigate('/ev-owner/dashboard')}>Home</button>
             <button className="text-emerald-600 font-medium">Find stations</button>
             <button onClick={() => navigate('/ev-owner/bookings')}>My bookings</button>
             <button>Wallet/Payments</button>
@@ -147,7 +184,7 @@ const stationIcon = L.icon({
               />
             </div>
 
-            {/* Distance slider (visual only for now) */}
+            {/* Distance slider (still visual) */}
             <div className="mb-5">
               <div className="flex justify-between text-[11px] text-slate-500 mb-1">
                 <span>Distance: 20 km</span>
@@ -249,7 +286,22 @@ const stationIcon = L.icon({
                       className="w-full rounded-lg border border-slate-200 bg-slate-50 px-8 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
-                  <button className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-600">
+                  <button
+                    className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-600"
+                    onClick={() => {
+                      if (!userLocation && 'geolocation' in navigator) {
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => {
+                            setUserLocation({
+                              lat: pos.coords.latitude,
+                              lng: pos.coords.longitude,
+                            });
+                          },
+                          (err) => console.warn('Geolocation error', err)
+                        );
+                      }
+                    }}
+                  >
                     Use my location
                   </button>
                 </div>
@@ -264,6 +316,7 @@ const stationIcon = L.icon({
                     >
                       <option value="price">Price</option>
                       <option value="name">Name</option>
+                      <option value="distance">Distance</option>
                     </select>
                   </div>
                 </div>
@@ -280,19 +333,18 @@ const stationIcon = L.icon({
                   </p>
                 )}
 
-                      {!loading &&
-                      filteredStations.map((s) => (
-                        <div
-                          key={s.id}
-                          className={
-                            "rounded-2xl bg-white border shadow-sm px-4 py-3 flex flex-col gap-3 " +
-                            (s.id === selectedStationId
-                              ? "border-emerald-500 ring-2 ring-emerald-200"
-                              : "border-emerald-50")
-                          }
-                          onClick={() => setSelectedStationId(s.id)}  // also select when clicking card
-                        >
-    
+                {!loading &&
+                  filteredStations.map((s) => (
+                    <div
+                      key={s.id}
+                      className={
+                        'rounded-2xl bg-white border shadow-sm px-4 py-3 flex flex-col gap-3 ' +
+                        (s.id === selectedStationId
+                          ? 'border-emerald-500 ring-2 ring-emerald-200'
+                          : 'border-emerald-50')
+                      }
+                      onClick={() => setSelectedStationId(s.id)}
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <h3 className="text-sm font-semibold text-slate-900">
@@ -306,6 +358,11 @@ const stationIcon = L.icon({
                           <p className="mt-1 text-[11px] text-slate-500">
                             Operated by {s.operatorName || 'BijuliYatra'}
                           </p>
+                          {s.distanceKm != null && (
+                            <p className="mt-1 text-[11px] text-slate-500">
+                              Approx. {s.distanceKm.toFixed(1)} km away
+                            </p>
+                          )}
                         </div>
                         <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
                           {s.status || 'Available'}
@@ -349,15 +406,15 @@ const stationIcon = L.icon({
                           View details
                         </button>
                         <button
-                            className="rounded-lg bg-emerald-500 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-600"
-                             onClick={() => {
-                                    console.log('Book clicked for', s.id);
-                                    navigate(`/ev-owner/book/${s.id}`);
-                                  }}
-                                      
-                          >
-                            Book now
-                          </button>
+                          className="rounded-lg bg-emerald-500 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log('Book clicked for', s.id);
+                            navigate(`/ev-owner/book/${s.id}`);
+                          }}
+                        >
+                          Book now
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -369,39 +426,44 @@ const stationIcon = L.icon({
                 )}
               </div>
 
-                    {/* Map view */}
-                    <div className="hidden lg:block flex-1 bg-emerald-50 relative">
-                      <MapContainer
-                        center={[27.7, 85.32]}  // default center (e.g. Kathmandu)
-                        zoom={12}
-                        className="absolute inset-6 rounded-3xl"
+              {/* Map view */}
+              <div className="hidden lg:block flex-1 bg-emerald-50 relative">
+                <MapContainer
+                  center={[27.7, 85.32]} // default center (e.g. Kathmandu)
+                  zoom={12}
+                  className="absolute inset-6 rounded-3xl"
+                >
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution="&copy; OpenStreetMap contributors"
+                  />
+                  {filteredStations
+                    .filter((s) => s.latitude && s.longitude)
+                    .map((s) => (
+                      <Marker
+                        key={s.id}
+                        position={[s.latitude, s.longitude]}
+                        icon={stationIcon}
+                        eventHandlers={{ click: () => setSelectedStationId(s.id) }}
                       >
-                        <TileLayer
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          attribution="&copy; OpenStreetMap contributors"
-                        />
-                       {filteredStations
-                          .filter((s) => s.latitude && s.longitude)
-                          .map((s) => (
-                            <Marker
-                              key={s.id}
-                              position={[s.latitude, s.longitude]}
-                              icon={stationIcon}
-                              eventHandlers={{ click: () => setSelectedStationId(s.id) }}
-                            >
-                              <Popup>
-                                <div className="text-xs">
-                                  <strong>{s.name}</strong>
-                                  <br />
-                                  {s.address}
-                                  {s.city && `, ${s.city}`}
-                                </div>
-                              </Popup>
-                            </Marker>
-                          ))}
-                   
-                      </MapContainer>
-                    </div>
+                        <Popup>
+                          <div className="text-xs">
+                            <strong>{s.name}</strong>
+                            <br />
+                            {s.address}
+                            {s.city && `, ${s.city}`}
+                            {s.distanceKm != null && (
+                              <>
+                                <br />
+                                ~{s.distanceKm.toFixed(1)} km away
+                              </>
+                            )}
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                </MapContainer>
+              </div>
             </div>
           </section>
         </main>

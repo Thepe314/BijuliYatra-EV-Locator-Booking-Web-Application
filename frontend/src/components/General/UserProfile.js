@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   User,
-  Car,
   CreditCard,
   Bell,
   Lock,
@@ -12,9 +11,72 @@ import {
   Edit2,
   Zap,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { userService } from '../../Services/api';
+import { MapContainer, TileLayer, Marker, useMapEvent } from 'react-leaflet';
+import * as L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+const homeIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+// Handles clicks on the map to set home location
+function LocationClickHandler({ editMode, setProfileData }) {
+  useMapEvent('click', async (e) => {
+    if (!editMode) return;
+    const { lat, lng } = e.latlng;
+
+    // update coords immediately so marker and "Current:" text move
+    setProfileData((prev) => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+    }));
+
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`
+      );
+      const data = await res.json();
+      const addr = data.address || {};
+
+      // build a compact street address string
+      const street = [addr.road, addr.neighbourhood, addr.suburb]
+        .filter(Boolean)
+        .join(', ');
+
+      const city =
+        addr.city ||
+        addr.town ||
+        addr.village ||
+        addr.municipality;
+
+      const state = addr.state;
+      const postcode = addr.postcode;
+
+      setProfileData((prev) => ({
+        ...prev,
+        latitude: lat,
+        longitude: lng,
+        address: street || prev.address,
+        city: city || prev.city,
+        state: state || prev.state,
+        zipCode: postcode || prev.zipCode,
+      }));
+    } catch (err) {
+      console.error('Reverse geocoding failed', err);
+      // coordinates still saved; address stays as it was
+    }
+  });
+  return null;
+}
 
 export default function UserProfile() {
+  const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState('profile');
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -24,7 +86,12 @@ export default function UserProfile() {
     email: '',
     phone: '',
     address: '',
-    role: '', // ROLE_EV_OWNER | ROLE_CHARGER_OPERATOR | ROLE_ADMIN
+    role: '',
+    latitude: null,
+    longitude: null,
+    city: '',
+    state: '',
+    zipCode: '',
   });
 
   const [notifications, setNotifications] = useState({
@@ -51,7 +118,12 @@ export default function UserProfile() {
           email: data.email,
           phone: data.phoneNumber,
           address: data.address,
-          role: data.role, // ROLE_EV_OWNER / ROLE_CHARGER_OPERATOR / ROLE_ADMIN
+          role: data.role,
+          latitude: data.latitude ?? null,
+          longitude: data.longitude ?? null,
+          city: data.city || '',
+          state: data.state || '',
+          zipCode: data.zipCode || '',
         });
       } catch (e) {
         console.error('Failed to load profile', e);
@@ -88,33 +160,46 @@ export default function UserProfile() {
       ? 'Admin'
       : 'User';
 
+  const handleSave = async () => {
+    try {
+      const updated = await userService.updateCurrentProfile({
+        fullName: profileData.name,
+        email: profileData.email,
+        phoneNumber: profileData.phone,
+        address: profileData.address,
+        role: profileData.role,
+        latitude: profileData.latitude,
+        longitude: profileData.longitude,
+        city: profileData.city,
+        state: profileData.state,
+        zipCode: profileData.zipCode,
+      });
+      setProfileData({
+        name: updated.fullName,
+        email: updated.email,
+        phone: updated.phoneNumber,
+        address: updated.address,
+        role: updated.role,
+        latitude: updated.latitude ?? null,
+        longitude: updated.longitude ?? null,
+        city: updated.city || '',
+        state: updated.state || '',
+        zipCode: updated.zipCode || '',
+      });
+      setEditMode(false);
+    } catch (e) {
+      console.error('Failed to update profile', e);
+    }
+  };
 
-    const handleSave = async () => {
-  try {
-    const updated = await userService.updateCurrentProfile({
-      fullName: profileData.name,
-      email: profileData.email,
-      phoneNumber: profileData.phone,
-      address: profileData.address,
-      role: profileData.role, // optional
-    });
-    // sync state with backend response
-    setProfileData({
-      name: updated.fullName,
-      email: updated.email,
-      phone: updated.phoneNumber,
-      address: updated.address,
-      role: updated.role,
-    });
-    setEditMode(false);
-  } catch (e) {
-    console.error('Failed to update profile', e);
-  }
-};
+  const center =
+    profileData.latitude && profileData.longitude
+      ? [profileData.latitude, profileData.longitude]
+      : [27.7, 85.32]; // default center if no saved location
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Top bar similar to app header */}
+      {/* Top bar */}
       <div className="bg-white border-b">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -123,13 +208,21 @@ export default function UserProfile() {
             </div>
             <span className="font-semibold text-slate-900">BijuliYatra</span>
           </div>
-          <h1 className="text-lg font-semibold text-slate-900">My Profile</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold text-slate-900">My Profile</h1>
+            <button
+              onClick={() => navigate('/ev-owner/dashboard')}
+              className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50"
+            >
+              Back to dashboard
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Left column: main profile content */}
+          {/* Left column */}
           <div className="lg:col-span-3 space-y-6">
             {/* Personal information card */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
@@ -139,7 +232,7 @@ export default function UserProfile() {
                     Personal Information
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Manage your account and preferences
+                    Manage your account and home location
                   </p>
                 </div>
                 <button
@@ -163,6 +256,7 @@ export default function UserProfile() {
                 </div>
               </div>
 
+              {/* Basic fields + location fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm">
                 <div>
                   <label className="block text-[11px] font-medium text-slate-600 mb-1">
@@ -230,21 +324,161 @@ export default function UserProfile() {
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={profileData.city}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, city: e.target.value })
+                    }
+                    disabled={!editMode}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    value={profileData.state}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, state: e.target.value })
+                    }
+                    disabled={!editMode}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                    ZIP code
+                  </label>
+                  <input
+                    type="text"
+                    value={profileData.zipCode}
+                    onChange={(e) =>
+                      setProfileData({
+                        ...profileData,
+                        zipCode: e.target.value,
+                      })
+                    }
+                    disabled={!editMode}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50"
+                  />
+                </div>
+
+                {/* Latitude / Longitude fields */}
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                    Home Latitude
+                  </label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={profileData.latitude ?? ''}
+                    onChange={(e) =>
+                      setProfileData({
+                        ...profileData,
+                        latitude:
+                          e.target.value === '' ? null : Number(e.target.value),
+                      })
+                    }
+                    disabled={!editMode}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                    Home Longitude
+                  </label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={profileData.longitude ?? ''}
+                    onChange={(e) =>
+                      setProfileData({
+                        ...profileData,
+                        longitude:
+                          e.target.value === '' ? null : Number(e.target.value),
+                      })
+                    }
+                    disabled={!editMode}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50"
+                  />
+                </div>
               </div>
-                {editMode && (
-                  <div className="mt-5">
-                    <button
-                      onClick={handleSave}
-                      className="w-full md:w-auto px-5 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      Save Changes
-                    </button>
-                  </div>
+
+              {/* Map picker for home location */}
+              <div className="mt-6">
+                <p className="text-[11px] font-medium text-slate-600 mb-2 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  Home Location on Map
+                  {!editMode && (
+                    <span className="text-slate-400 ml-1">
+                      (enable Edit to move marker)
+                    </span>
+                  )}
+                </p>
+                <div className="h-56 rounded-xl overflow-hidden border border-slate-200">
+                  <MapContainer center={center} zoom={12} className="h-full w-full">
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution="&copy; OpenStreetMap contributors"
+                    />
+
+                    <LocationClickHandler
+                      editMode={editMode}
+                      setProfileData={setProfileData}
+                    />
+
+                    {profileData.latitude && profileData.longitude && (
+                      <Marker
+                        position={[profileData.latitude, profileData.longitude]}
+                        icon={homeIcon}
+                        draggable={editMode}
+                        eventHandlers={{
+                          dragend: (e) => {
+                            const { lat, lng } = e.target.getLatLng();
+                            setProfileData((prev) => ({
+                              ...prev,
+                              latitude: lat,
+                              longitude: lng,
+                            }));
+                          },
+                        }}
+                      />
+                    )}
+                  </MapContainer>
+                </div>
+                {profileData.latitude && profileData.longitude && (
+                  <p className="text-[11px] text-slate-500 mt-2">
+                    Current: {profileData.latitude.toFixed(5)},{' '}
+                    {profileData.longitude.toFixed(5)}
+                  </p>
                 )}
+              </div>
+
+              {editMode && (
+                <div className="mt-5">
+                  <button
+                    onClick={handleSave}
+                    className="w-full md:w-auto px-5 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    Save Changes
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Tabs (no vehicles/stats for now) */}
+            {/* Tabs */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
               <div className="flex gap-2 mb-4 overflow-x-auto">
                 {tabs.map((tab) => (
@@ -266,8 +500,7 @@ export default function UserProfile() {
               <div className="mt-4">
                 {activeTab === 'profile' && (
                   <p className="text-xs text-slate-500">
-                    Use the personal information card above to update your
-                    details.
+                    Use the personal information card above to update your details and home location.
                   </p>
                 )}
 
@@ -285,7 +518,7 @@ export default function UserProfile() {
             </div>
           </div>
 
-          {/* Right column: for now just quick actions */}
+          {/* Right column: quick actions */}
           <div className="lg:col-span-1 space-y-4">
             <div className="bg-white rounded-2xl border border-slate-100 p-4">
               <h3 className="text-sm font-semibold text-slate-900 mb-3">

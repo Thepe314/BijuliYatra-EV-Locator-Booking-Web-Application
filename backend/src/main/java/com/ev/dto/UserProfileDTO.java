@@ -8,7 +8,13 @@ public class UserProfileDTO {
     private String email;
     private String phoneNumber;
     private String address;
-    private String role; // "ROLE_ADMIN", "ROLE_CHARGER_OPERATOR", "ROLE_EV_OWNER"
+    private String role;
+
+    private Double latitude;
+    private Double longitude;
+    private String region;
+    private String city;
+    private String district;
 
     public Long getId() {
         return id;
@@ -50,5 +56,40 @@ public class UserProfileDTO {
     }
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getRegion() {
+        return region;
+    }
+    public void setRegion(String region) {
+        this.region = region;
+    }
+
+    public String getCity() {
+        return city;
+    }
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getDistrict() {
+        return district;
+    }
+    public void setDistrict(String district) {
+        this.district = district;
     }
 }

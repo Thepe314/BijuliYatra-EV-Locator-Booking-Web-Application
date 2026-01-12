@@ -197,7 +197,7 @@ public class AdminController {
         }
     }
     @PutMapping("/stations/edit/{stationId}")
-    public ResponseEntity<StationResponseDTO> updateStation(
+    public ResponseEntity<StationResponseDTO> updateStationAdmin(
             @PathVariable Long stationId,
             @Valid @RequestBody CreateStationRequestDTO request) {
 
@@ -208,7 +208,7 @@ public class AdminController {
 
         ChargingStations station = opt.get();
 
-        // operator
+        // operator from request
         User operator = userRepository.findById(request.getOperatorId())
                 .orElseThrow(() -> new RuntimeException("Operator not found"));
         station.setOperator(operator);
@@ -216,6 +216,8 @@ public class AdminController {
         // basic fields
         station.setName(request.getName());
         station.setLocation(request.getLocation());
+        station.setLatitude(request.getLatitude());
+        station.setLongitude(request.getLongitude());
         station.setAddress(request.getAddress());
         station.setCity(request.getCity());
         station.setState(request.getState());
@@ -238,10 +240,12 @@ public class AdminController {
         // notes
         station.setNotes(request.getNotes());
 
+        // image preset
+        station.setImageKey(request.getImageKey());
+
         // total / available slots
         int totalSlots = request.getLevel2Chargers() + request.getDcFastChargers();
         station.setTotalSlots(totalSlots);
-        // simple rule: clamp availableSlots to totalSlots, keep existing if already lower
         if (station.getAvailableSlots() == null || station.getAvailableSlots() > totalSlots) {
             station.setAvailableSlots(totalSlots);
         }

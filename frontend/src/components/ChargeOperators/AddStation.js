@@ -1,6 +1,6 @@
 // src/pages/AddStation.jsx
 import React, { useState } from 'react';
-import { AlertCircle, CheckCircle, Loader, MapPin } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader, MapPin, Zap } from 'lucide-react';
 import { stationService } from '../../Services/api';
 import { useNavigate, NavLink } from 'react-router-dom';
 import StationLocationPicker from '../../Services/StationLocationPicker';
@@ -239,13 +239,13 @@ export default function AddStation() {
     <div className="min-h-screen bg-slate-50 flex">
       {/* LEFT SIDEBAR */}
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
-        <div className="h-16 flex items-center px-6 border-b border-slate-200">
-          <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center mr-3">
-            <MapPin className="w-5 h-5 text-emerald-600" />
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+          <div className="bg-emerald-500 p-2 rounded-xl">
+            <Zap className="w-6 h-6 text-white" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-900">ChargeOps</p>
-            <p className="text-xs text-slate-500">Operator Portal</p>
+            <p className="text-sm font-semibold text-slate-900">BijuliYatra</p>
+            <p className="text-[11px] text-slate-500">Operator Portal</p>
           </div>
         </div>
 
@@ -331,9 +331,7 @@ export default function AddStation() {
         <header className="h-16 bg-white border-b border-slate-200 flex items-center">
           <div className="max-w-5xl w-full mx-auto px-6 flex items-center justify-between">
             <div>
-              <p className="text-xs text-slate-500">
-                View Details and Add Station
-              </p>
+           
               <h1 className="text-xl font-semibold text-slate-900">
                 Add New Station
               </h1>
