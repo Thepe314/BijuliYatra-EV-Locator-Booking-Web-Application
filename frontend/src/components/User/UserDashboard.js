@@ -279,7 +279,7 @@ export default function EVUserDashboard() {
                 </div>
 
                 <button
-                  onClick={() => setActiveTab('upcoming')}
+                  onClick={() => navigate('/ev-owner/bookings')}
                   className="mt-5 inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600"
                 >
                   Manage booking

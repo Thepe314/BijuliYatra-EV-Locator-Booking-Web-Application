@@ -103,11 +103,11 @@ const stationIcon = L.icon({
           </div>
 
           <nav className="hidden md:flex items-center gap-6 text-sm text-slate-600">
-            <button>Home</button>
+           <button onClick={() => navigate('/ev-owner/dashboard')}>Home</button>
             <button className="text-emerald-600 font-medium">Find stations</button>
-            <button>My bookings</button>
+            <button onClick={() => navigate('/ev-owner/bookings')}>My bookings</button>
             <button>Wallet/Payments</button>
-            <button>Profile</button>
+            <button onClick={() => navigate('/profile')}>Profile</button>
           </nav>
         </header>
 
@@ -350,7 +350,11 @@ const stationIcon = L.icon({
                         </button>
                         <button
                             className="rounded-lg bg-emerald-500 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-600"
-                             onClick={() => navigate(`/ev-owner/book/${s.id}`)}
+                             onClick={() => {
+                                    console.log('Book clicked for', s.id);
+                                    navigate(`/ev-owner/book/${s.id}`);
+                                  }}
+                                      
                           >
                             Book now
                           </button>

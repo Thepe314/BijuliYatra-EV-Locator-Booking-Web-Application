@@ -16,6 +16,7 @@ import { stationService, bookingService } from '../../Services/api';
 
 export default function BookingPage() {
   const { stationId } = useParams();
+console.log('booking stationId', stationId);
   const navigate = useNavigate();
 
   const [station, setStation] = useState(null);
@@ -52,45 +53,32 @@ export default function BookingPage() {
 
   // 1) Load single station from /evowner/{id}
   useEffect(() => {
-    const loadStation = async () => {
-      if (!stationId) {
-        navigate('/stations');
-        return;
-      }
+  const loadStation = async () => {
+    if (!stationId) {
+      navigate('/ev-owner/station');
+      return;
+    }
 
-      try {
-        setLoading(true);
-        // if stationService has a wrapper for this, use it; otherwise fetch directly
-        const res = await fetch(`/evowner/${stationId}`, {
-          credentials: 'include',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-          },
-        });
+    try {
+      setLoading(true);
+      // uses /evowner/{id} under the hood; no manual fetch
+      const data = await stationService.getStationByIdE(stationId);
+      setStation(data);
+      toast.success(`Welcome to ${data.name}`, {
+        icon: <Zap className="w-5 h-5" />,
+        toastId: `welcome-station-${data.id}`,
+      });
+    } catch (err) {
+      // if backend returns 404/403/etc. you land here
+      toast.error('Failed to load station');
+      navigate('/ev-owner/station'); // go back to list
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        if (!res.ok) {
-          toast.error('Station not found');
-          navigate('/stations');
-          return;
-        }
-
-        const data = await res.json();
-        setStation(data);
-        toast.success(`Welcome to ${data.name}`, {
-          icon: <Zap className="w-5 h-5" />,
-          toastId: `welcome-station-${data.id}`,
-        });
-      } catch (err) {
-        console.error(err);
-        toast.error('Failed to load station');
-        navigate('/stations');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStation();
-  }, [stationId, navigate]);
+  loadStation();
+}, [stationId, navigate]);
 
   // 2) Fetch bookings for a day to build blocked slots
   useEffect(() => {

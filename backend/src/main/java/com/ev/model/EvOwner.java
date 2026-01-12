@@ -1,7 +1,9 @@
 package com.ev.model;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -21,6 +23,19 @@ public class EvOwner extends User {
 	    
 	    private String batteryCapacity;
 
+	    
+	    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
+	    private java.util.List<Vehicle> vehicles = new java.util.ArrayList<>();
+
+	    public java.util.List<Vehicle> getVehicles() {
+	        return vehicles;
+	    }
+
+	    public void setVehicles(java.util.List<Vehicle> vehicles) {
+	        this.vehicles = vehicles;
+	    }
+
+	    
 		public String getVehicleBrand() {
 			return vehicleBrand;
 		}

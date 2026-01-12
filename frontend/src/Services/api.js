@@ -260,6 +260,10 @@ createUser: async (userData) => {
   return response.data;
   
 },
+ getCurrentProfile: async () => {
+    const res = await api.get('/users/me');
+    return res.data;
+  },
 };
 
 export const stationService = {
@@ -337,8 +341,8 @@ export const stationService = {
   return res.data;
 },
 
- getStationByIdE: async (id) => {
-  const res = await api.get(`/evowner/stations/${id}`);
+getStationByIdE: async (id) => {
+  const res = await api.get(`/evowner/${id}`);  
   return res.data;
 },
 
@@ -422,6 +426,16 @@ export const bookingService = {
     throw error;
   }
 },
+
+listBookingsEv: async (filters = {}) => {
+    try {
+      const response = await api.get("/bookings", { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      throw error;
+    }
+  },
 
 getActiveBookingsCount: async (stationIds) => {
   try {

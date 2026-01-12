@@ -27,8 +27,8 @@ import PaymentSuccess from "./components/General/PaymentSuccess.js";
 import StationDetailsA from "./components/Admin/StationDetailsA.js";
 import HomePage from "./components/General/HomePage.js";
 import EVFindStations from "./components/User/EvFindStations.js";
-import StationDetailsBookingPage from "./components/Booking/BookingPage.js";
 import BookingPage from "./components/Booking/BookingPage.js";
+import EVOwnerBookingsList from "./components/User/EVOwnerBookingsList.js";
 
 function App() {
   return (
@@ -81,6 +81,8 @@ function App() {
           <Route path="/signup/ev-owner" element={<SignUpPage />} />
           <Route path="/ev-owner/station" element={<EVFindStations />} />
          <Route path="/ev-owner/book/:stationId" element={<BookingPage />}/>
+         <Route path="/ev-owner/bookings" element={<EVOwnerBookingsList />} />
+
         </Routes>
       </Router>
     </UserSessionProvider>
