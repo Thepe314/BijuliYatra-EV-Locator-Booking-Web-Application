@@ -193,6 +193,16 @@ export const userService = {
     }
   },
 
+  getUserByIdE: async (userId) => {
+    try {
+      const response = await api.get(`/users/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      throw error;
+    }
+  },
+
   getUsersByRole: async (roleType) => {
     try {
       const response = await api.get(`/admin/users/role/${roleType}`);

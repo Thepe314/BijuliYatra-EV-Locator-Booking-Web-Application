@@ -21,7 +21,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState([
     { label: 'Total Users', value: '0', change: '+0%', icon: Users, color: 'bg-blue-500', key: 'users' },
     { label: 'Active Stations', value: '0', change: '+0', icon: MapPin, color: 'bg-green-500', key: 'stations' },
-    { label: 'Revenue', value: '$0', change: '+0%', icon: DollarSign, color: 'bg-purple-500', key: 'revenue' },
+    { label: 'Revenue', value: 'NPR0', change: '+0%', icon: DollarSign, color: 'bg-purple-500', key: 'revenue' },
     { label: 'Energy Delivered', value: '0 kWh', change: '+0%', icon: Battery, color: 'bg-orange-500', key: 'energy' },
   ]);
 
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
       setStats([
         { label: 'Total Users', value: totalUsers.toLocaleString(), change: `${userGrowth >= 0 ? '+' : ''}${userGrowth}%`, icon: Users, color: 'bg-blue-500', key: 'users' },
         { label: 'Active Stations', value: activeStations.toString(), change: `${stationGrowth >= 0 ? '+' : ''}${stationGrowth}`, icon: MapPin, color: 'bg-green-500', key: 'stations' },
-        { label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, change: `${revenueGrowth >= 0 ? '+' : ''}${revenueGrowth}%`, icon: DollarSign, color: 'bg-purple-500', key: 'revenue' },
+        { label: 'Revenue', value: `NPR${totalRevenue.toLocaleString()}`, change: `${revenueGrowth >= 0 ? '+' : ''}${revenueGrowth}%`, icon: DollarSign, color: 'bg-purple-500', key: 'revenue' },
         { label: 'Energy Delivered', value: `${totalEnergy.toLocaleString()} kWh`, change: `${energyGrowth >= 0 ? '+' : ''}${energyGrowth}%`, icon: Battery, color: 'bg-orange-500', key: 'energy' },
       ]);
 
@@ -163,8 +163,8 @@ export default function AdminDashboard() {
         time: formatTimeAgo(booking.bookedAt || booking.startTime),
         status: formatStatus(booking.status),
         amount: booking.totalAmount != null 
-          ? `$${Number(booking.totalAmount).toFixed(2)}` 
-          : '$0.00'
+          ? `NPR${Number(booking.totalAmount).toFixed(2)}` 
+          : 'NPR0.00'
         }));
 
       setRecentBookings(transformedBookings.length > 0 ? transformedBookings : []);

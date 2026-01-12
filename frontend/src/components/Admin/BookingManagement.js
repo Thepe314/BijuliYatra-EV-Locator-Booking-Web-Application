@@ -113,19 +113,24 @@ export default function BookingManagement() {
   }, [bookings]);
 
   const filteredBookings = bookings.filter((booking) => {
-    const q = searchTerm.toLowerCase();
-    const matchesSearch =
-      booking.user.toLowerCase().includes(q) ||
-      booking.id.toLowerCase().includes(q) ||
-      booking.station.toLowerCase().includes(q);
+  const q = searchTerm.toLowerCase();
 
-    const matchesStatus =
-      statusFilter === 'all' ||
-      booking.status.toLowerCase() === statusFilter.toLowerCase();
+  const user = (booking.user || '').toString().toLowerCase();
+  const id = (booking.id ?? '').toString().toLowerCase();
+  const station = (booking.station || '').toString().toLowerCase();
 
-    // Optionally apply dateFilter using booking.date here
-    return matchesSearch && matchesStatus;
-  });
+  const matchesSearch =
+    user.includes(q) ||
+    id.includes(q) ||
+    station.includes(q);
+
+  const matchesStatus =
+    statusFilter === 'all' ||
+    (booking.status || '').toString().toLowerCase() === statusFilter.toLowerCase();
+
+  // TODO: apply dateFilter using booking.date if you want
+  return matchesSearch && matchesStatus;
+});
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -315,32 +320,35 @@ export default function BookingManagement() {
 
           {/* Filters row */}
           <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-5">
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search by booking ID, user or station..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-[11px] text-slate-400 hidden md:block" />
-              <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-[11px] text-slate-400 hidden md:block" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="all">All Status</option>
-                <option value="completed">Completed</option>
-                <option value="in progress">In Progress</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="confirmed">Confirmed</option>
-              </select>
-            </div>
-          </div>
+  <div className="flex flex-col md:flex-row gap-3 items-stretch">
+    {/* Search */}
+    <div className="flex-1 relative">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+      <input
+        type="text"
+        placeholder="Search by booking ID, user or station..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      />
+    </div>
+
+    {/* Status filter */}
+    <div className="w-full md:w-40">
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <option value="all">All Status</option>
+        <option value="completed">Completed</option>
+        <option value="in progress">In Progress</option>
+        <option value="cancelled">Cancelled</option>
+        <option value="confirmed">Confirmed</option>
+      </select>
+    </div>
+  </div>
+</div>
 
           {/* Table */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

@@ -10,6 +10,7 @@ export default function EVOwnerBookingsList() {
   const [search, setSearch] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const navigate = useNavigate();
+    const [statusFilter, setStatusFilter] = useState('ALL'); 
 
   useEffect(() => {
     const load = async () => {
@@ -42,7 +43,12 @@ export default function EVOwnerBookingsList() {
     }
   };
 
-  const filtered = bookings.filter((b) => {
+ const filtered = bookings
+  .filter((b) => {
+    if (statusFilter === 'ALL') return true;
+    return b.status === statusFilter;
+  })
+  .filter((b) => {
     const key = `${b.stationName || ''} ${b.id || ''}`.toLowerCase();
     return key.includes(search.toLowerCase());
   });
@@ -69,7 +75,7 @@ const cancelled = bookings.filter((b) => b.status === 'CANCELLED').length;
             <button onClick={() => navigate('/ev-owner/dashboard')}>Home</button>
             <button onClick={() => navigate('/ev-owner/station')}>Find stations</button>
             <button className="text-emerald-600 font-medium">My bookings</button>
-            <button>Wallet/Payments</button>
+            <button onClick={() => navigate('/ev-owner/wallet')}>Wallet/Payments</button>
             <button onClick={() => navigate('/profile')}>Profile</button>
           </nav>
         </header>
@@ -100,14 +106,34 @@ const cancelled = bookings.filter((b) => b.status === 'CANCELLED').length;
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-              <SummaryCard label="Total Bookings" value={total} />
-              <SummaryCard label="Upcoming" value={upcoming} highlight />
-              <SummaryCard label="In Progress" value={confirmed} />
-              <SummaryCard label="Completed" value={cancelled} />
-            </div>
-          </div>
+        {/* Status filter buttons */}
+        <div className="flex flex-wrap gap-2 mb-4 text-xs">
+          {['ALL', 'UPCOMING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].map(
+            (status) => (
+              <button
+                key={status}
+                type="button"
+                onClick={() => setStatusFilter(status)}
+                className={`px-3 py-1.5 rounded-full border ${
+                  statusFilter === status
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-semibold'
+                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-emerald-400'
+                }`}
+              >
+                {status === 'ALL' ? 'All' : status.replace('_', ' ')}
+              </button>
+            )
+          )}
+        </div>
+
+                  {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <SummaryCard label="Total Bookings" value={total} />
+          <SummaryCard label="Upcoming" value={upcoming} highlight />
+          <SummaryCard label="Confirmed" value={confirmed} />
+          <SummaryCard label="Cancelled" value={cancelled} />
+        </div>
+      </div>
 
           {/* Bookings list */}
           <div className="space-y-3">
@@ -233,7 +259,7 @@ function BookingCard({ booking, onViewDetails, onCancel }) {
         <div>
           <p className="mb-0.5">Total Amount</p>
           <p className="font-medium text-emerald-700">
-            ₹{totalAmount != null ? totalAmount.toFixed(2) : '0.00'}
+            NPR{totalAmount != null ? totalAmount.toFixed(2) : '0.00'}
           </p>
         </div>
       </div>
@@ -370,7 +396,7 @@ function BookingDetailsModal({ booking, onClose }) {
             <div>
               <p className="text-[11px] text-slate-500 mb-0.5">Total Amount</p>
               <p className="font-semibold text-emerald-700">
-                ₹{totalAmount != null ? totalAmount.toFixed(2) : '0.00'}
+                NPR{totalAmount != null ? totalAmount.toFixed(2) : '0.00'}
               </p>
             </div>
           </div>

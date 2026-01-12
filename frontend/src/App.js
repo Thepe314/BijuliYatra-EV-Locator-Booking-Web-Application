@@ -30,6 +30,7 @@ import EVFindStations from "./components/User/EvFindStations.js";
 import BookingPage from "./components/Booking/BookingPage.js";
 import EVOwnerBookingsList from "./components/User/EVOwnerBookingsList.js";
 import KhaltiReturnPage from "./Services/KhaltiReturnPage.js";
+import WalletPage from "./components/User/WalletPage.js";
 
 function App() {
   return (
@@ -86,6 +87,7 @@ function App() {
           <Route path="/ev-owner/station" element={<EVFindStations />} />
          <Route path="/ev-owner/book/:stationId" element={<BookingPage />}/>
          <Route path="/ev-owner/bookings" element={<EVOwnerBookingsList />} />
+         <Route path="/ev-owner/wallet" element={<WalletPage />} />
 
         </Routes>
       </Router>

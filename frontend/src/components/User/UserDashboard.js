@@ -12,6 +12,7 @@ export default function EVUserDashboard() {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [selectedVehicle, setSelectedVehicle] = useState('all');
   const [loading, setLoading] = useState(true);
+   const [user, setUser] = useState(null);
 
   // Data from API
   const [upcomingBookings, setUpcomingBookings] = useState([]);
@@ -27,12 +28,32 @@ export default function EVUserDashboard() {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
+ useEffect(() => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
 
+      // 1) read from localStorage
+      const storedUserRaw = localStorage.getItem('user');
+      console.log('storedUserRaw:', storedUserRaw);
+      const storedUser = JSON.parse(storedUserRaw || 'null');
+      console.log('storedUser parsed:', storedUser);
+
+      let profile = null;
+
+      // 2) if we have userId, fetch full profile
+      if (storedUser?.userId && authService.getUserByIdE) {
+        const profile = await authService.getUserByIdE(storedUser.userId);
+        console.log('Loaded profile by ID:', profile);
+        setUser(profile);
+      } else {
+        console.warn('No userId or getUserByIdE not defined');
+        setUser(storedUser);
+      }
+
+      // 3) bookings
       const bookingsRes = await bookingService.listBookings();
+      console.log('bookingsRes:', bookingsRes);
       const allBookings = bookingsRes.data || bookingsRes || [];
       const now = new Date();
 
@@ -73,9 +94,6 @@ export default function EVUserDashboard() {
       toast.success('Dashboard loaded', { toastId: 'dashboard-loaded' });
     } catch (err) {
       console.error('Failed to load dashboard:', err);
-      toast.error('Could not load bookings. Please try again.', {
-        toastId: 'dashboard-error',
-      });
     } finally {
       setLoading(false);
     }
@@ -83,6 +101,7 @@ export default function EVUserDashboard() {
 
   loadDashboardData();
 }, []);
+
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-NP', {
@@ -158,7 +177,7 @@ export default function EVUserDashboard() {
           <button className="text-emerald-600 font-medium">Home</button>
           <button onClick={() => navigate('/ev-owner/station')}>Find stations</button>
           <button onClick={() => navigate('/ev-owner/bookings')}>My bookings</button>
-          <button>Wallet/Payments</button>
+          <button onClick={() => navigate('/ev-owner/wallet')}>Wallet/Payments</button>
           <button onClick={() => navigate('/profile')}>Profile</button>
           
         </nav>
@@ -193,13 +212,13 @@ export default function EVUserDashboard() {
             <div>
               <p className="text-emerald-100 text-xs uppercase tracking-wide">
                 EV Owner Dashboard
-              </p>
+                </p>
               <h1 className="text-2xl md:text-3xl font-semibold text-white">
-                Welcome back, Rajesh!
+                Welcome back, {user?.name || user?.fullName || user?.username || 'EV Driver'}!
               </h1>
-              <p className="text-emerald-100 text-sm mt-1">
-                Ready to charge your Tesla Model 3?
-              </p>
+          <p className="text-emerald-100 text-sm mt-1">
+            Ready to charge your EV?
+          </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <button
@@ -237,20 +256,20 @@ export default function EVUserDashboard() {
 
             {upcomingBookings[0] ? (
               <>
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="mt-1">
-                    <Zap className="w-5 h-5 text-emerald-500" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      {upcomingBookings[0].station?.name || 'Unknown Station'}
-                    </p>
-                    <p className="text-xs text-slate-500 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {upcomingBookings[0].station?.address || 'Location not available'}
-                    </p>
-                  </div>
+              <div className="flex items-start gap-3 mb-4">
+                <div className="mt-1">
+                  <Zap className="w-5 h-5 text-emerald-500" />
                 </div>
+                <div>
+                  <p className="font-semibold text-slate-900">
+                    {upcomingBookings[0].stationName || 'Unknown Station'}
+                  </p>
+                  <p className="text-xs text-slate-500 flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    {upcomingBookings[0].address || 'Location not available'}
+                  </p>
+                </div>
+              </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs md:text-sm">
                   <div>

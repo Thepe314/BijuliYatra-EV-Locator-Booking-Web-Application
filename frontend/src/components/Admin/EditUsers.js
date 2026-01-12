@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Mail, Phone, MapPin, Calendar,
-  Save, X, ArrowLeft, CheckCircle, AlertCircle, Camera,
-  Car, Zap, Building2
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Save,
+  X,
+  ArrowLeft,
+  CheckCircle,
+  AlertCircle,
+  Camera,
+  Car,
+  Zap,
+  Building2,
 } from 'lucide-react';
 import { userService } from '../../Services/api';
 
@@ -238,43 +248,46 @@ export default function EditUserPage() {
   };
 
   const initials =
-    `${(formData.firstName || '').charAt(0) || ''}${(formData.lastName || '').charAt(0) || ''}` || 'U';
+    `${(formData.firstName || '').charAt(0) || ''}${(formData.lastName || '').charAt(0) || ''}` ||
+    'U';
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-sm text-gray-600">Loading user...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-slate-50">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
               <button
                 onClick={() => navigate(-1)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
+                className="p-2 hover:bg-emerald-50 rounded-lg border border-transparent hover:border-emerald-100 transition flex-shrink-0"
               >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                <ArrowLeft className="w-5 h-5 text-slate-600" />
               </button>
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Edit User</h1>
-                <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">
+                <h1 className="text-lg sm:text-2xl font-semibold text-slate-900 truncate">
+                  Edit User
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">
                   {userType === 'EV_OWNER'
-                    ? 'EV Owner Profile'
+                    ? 'EV owner profile'
                     : userType === 'CHARGER_OPERATOR'
-                    ? 'Charger Operator Profile'
-                    : 'User Profile'}
+                    ? 'Charger operator profile'
+                    : 'Admin user profile'}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={() => navigate(-1)}
-                className="p-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2"
+                className="p-2 sm:px-4 sm:py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition flex items-center gap-2 text-xs sm:text-sm text-slate-700"
               >
                 <X className="w-4 h-4" />
                 <span className="hidden sm:inline">Cancel</span>
@@ -282,10 +295,10 @@ export default function EditUserPage() {
               <button
                 onClick={handleSubmit}
                 disabled={saving}
-                className="p-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50"
+                className="p-2 sm:px-4 sm:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition flex items-center gap-2 text-xs sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
               >
                 <Save className="w-4 h-4" />
-                <span className="hidden sm:inline">{saving ? 'Saving...' : 'Save'}</span>
+                <span className="hidden sm:inline">{saving ? 'Saving...' : 'Save changes'}</span>
               </button>
             </div>
           </div>
@@ -295,20 +308,20 @@ export default function EditUserPage() {
       {notification && (
         <div className="px-4 sm:px-6 lg:px-8 mt-4">
           <div
-            className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg ${
+            className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border ${
               notification.type === 'success'
-                ? 'bg-green-50 border border-green-200'
-                : 'bg-red-50 border border-red-200'
+                ? 'bg-emerald-50 border-emerald-200'
+                : 'bg-red-50 border-red-200'
             }`}
           >
             {notification.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             ) : (
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
             )}
             <p
               className={`text-xs sm:text-sm font-medium ${
-                notification.type === 'success' ? 'text-green-800' : 'text-red-800'
+                notification.type === 'success' ? 'text-emerald-800' : 'text-red-800'
               }`}
             >
               {notification.message}
@@ -319,10 +332,11 @@ export default function EditUserPage() {
 
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Left profile card */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6 text-center">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6 text-center">
               <div className="relative inline-block mb-4">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-3xl sm:text-4xl font-bold overflow-hidden">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white text-3xl sm:text-4xl font-semibold overflow-hidden">
                   {profileImage ? (
                     <img
                       src={profileImage}
@@ -333,7 +347,7 @@ export default function EditUserPage() {
                     initials
                   )}
                 </div>
-                <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition">
+                <label className="absolute bottom-0 right-0 bg-emerald-600 text-white p-2 rounded-full cursor-pointer hover:bg-emerald-700 transition shadow-sm">
                   <Camera className="w-4 h-4" />
                   <input
                     type="file"
@@ -344,36 +358,38 @@ export default function EditUserPage() {
                 </label>
               </div>
 
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
+              <h3 className="text-lg sm:text-xl font-semibold text-slate-900">
                 {formData.firstName} {formData.lastName}
               </h3>
-              <p className="text-xs sm:text-sm text-gray-600 break-all">{formData.email}</p>
+              <p className="text-xs sm:text-sm text-slate-500 break-all">{formData.email}</p>
 
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                 <span
-                  className={`px-2 sm:px-3 py-1 text-xs font-medium rounded-full ${
+                  className={`px-2 sm:px-3 py-1 text-xs font-medium rounded-full border ${
                     formData.status === 'Active'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-slate-50 text-slate-700 border-slate-200'
                   }`}
                 >
                   {formData.status}
                 </span>
 
-                <span className="px-2 sm:px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                  {formData.role}
-                </span>
+                {formData.role && (
+                  <span className="px-2 sm:px-3 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    {formData.role}
+                  </span>
+                )}
               </div>
 
-              <div className="mt-4 pt-4 border-t border-gray-200 space-y-3 text-left">
+              <div className="mt-4 pt-4 border-t border-slate-100 space-y-3 text-left">
                 {userType === 'CHARGER_OPERATOR' && formData.companyName && (
-                  <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-600">
-                    <Building2 className="w-4 h-4" />
+                  <div className="flex items-center gap-3 text-xs sm:text-sm text-slate-600">
+                    <Building2 className="w-4 h-4 text-emerald-500" />
                     <span className="truncate">{formData.companyName}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-600">
-                  <Calendar className="w-4 h-4" />
+                <div className="flex items-center gap-3 text-xs sm:text-sm text-slate-600">
+                  <Calendar className="w-4 h-4 text-slate-400" />
                   <span>
                     Joined{' '}
                     {formData.joinDate
@@ -384,8 +400,8 @@ export default function EditUserPage() {
                       : '—'}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-600">
-                  <MapPin className="w-4 h-4" />
+                <div className="flex items-center gap-3 text-xs sm:text-sm text-slate-600">
+                  <MapPin className="w-4 h-4 text-slate-400" />
                   <span className="truncate">
                     {formData.city || 'N/A'}, {formData.region || 'N/A'}
                   </span>
@@ -394,17 +410,19 @@ export default function EditUserPage() {
             </div>
           </div>
 
+          {/* Right form */}
           <div className="lg:col-span-2">
-            <form className="bg-white rounded-lg shadow" onSubmit={handleSubmit}>
-              <div className="p-4 sm:p-6 border-b border-gray-200">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+            <form className="bg-white rounded-2xl shadow-sm border border-slate-100" onSubmit={handleSubmit}>
+              {/* Personal info */}
+              <div className="p-4 sm:p-6 border-b border-slate-100">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4">
                   Personal Information
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label
                       htmlFor="firstName"
-                      className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                      className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                     >
                       First Name *
                     </label>
@@ -414,7 +432,9 @@ export default function EditUserPage() {
                       value={formData.firstName}
                       onChange={handleChange}
                       className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg outline-none transition ${
-                        errors.firstName ? 'border-red-500' : 'border-gray-300'
+                        errors.firstName
+                          ? 'border-red-500 focus:ring-1 focus:ring-red-400'
+                          : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                       }`}
                     />
                     {errors.firstName && (
@@ -425,7 +445,7 @@ export default function EditUserPage() {
                   <div>
                     <label
                       htmlFor="lastName"
-                      className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                      className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                     >
                       Last Name *
                     </label>
@@ -435,7 +455,9 @@ export default function EditUserPage() {
                       value={formData.lastName}
                       onChange={handleChange}
                       className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg outline-none transition ${
-                        errors.lastName ? 'border-red-500' : 'border-gray-300'
+                        errors.lastName
+                          ? 'border-red-500 focus:ring-1 focus:ring-red-400'
+                          : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                       }`}
                     />
                     {errors.lastName && (
@@ -446,13 +468,13 @@ export default function EditUserPage() {
                   <div className="sm:col-span-2 md:col-span-1">
                     <label
                       htmlFor="email"
-                      className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                      className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                     >
                       Email Address *
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="w-4 sm:w-5 h-4 sm:h-5 text-gray-400" />
+                        <Mail className="w-4 sm:w-5 h-4 sm:h-5 text-slate-400" />
                       </div>
                       <input
                         id="email"
@@ -461,7 +483,9 @@ export default function EditUserPage() {
                         value={formData.email}
                         onChange={handleChange}
                         className={`w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm sm:text-base border rounded-lg outline-none transition ${
-                          errors.email ? 'border-red-500' : 'border-gray-300'
+                          errors.email
+                            ? 'border-red-500 focus:ring-1 focus:ring-red-400'
+                            : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                         }`}
                       />
                     </div>
@@ -473,13 +497,13 @@ export default function EditUserPage() {
                   <div className="sm:col-span-2 md:col-span-1">
                     <label
                       htmlFor="phone"
-                      className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                      className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                     >
                       Phone Number
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Phone className="w-4 sm:w-5 h-4 sm:h-5 text-gray-400" />
+                        <Phone className="w-4 sm:w-5 h-4 sm:h-5 text-slate-400" />
                       </div>
                       <input
                         id="phone"
@@ -488,7 +512,9 @@ export default function EditUserPage() {
                         value={formData.phone}
                         onChange={handleChange}
                         className={`w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm sm:text-base border rounded-lg outline-none transition ${
-                          errors.phone ? 'border-red-500' : 'border-gray-300'
+                          errors.phone
+                            ? 'border-red-500 focus:ring-1 focus:ring-red-400'
+                            : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                         }`}
                       />
                     </div>
@@ -499,34 +525,40 @@ export default function EditUserPage() {
                 </div>
               </div>
 
-              <div className="p-4 sm:p-6 border-b border-gray-200">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+              {/* Account settings */}
+              <div className="p-4 sm:p-6 border-b border-slate-100">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4">
                   Account Settings
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label
-                      htmlFor="role"
-                      className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
-                    >
-                      Role *
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                      User Role *
                     </label>
-                    <select
-                      id="role"
-                      name="role"
-                      value={formData.role}
-                      onChange={handleChange}
-                      className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg outline-none transition ${
-                        errors.role ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    >
-                      <option value="">Select Role</option>
-                      <option value="Admin">Admin</option>
-                      <option value="EV Owner">EV Owner</option>
-                      <option value="Charger Operator">Charger Operator</option>
-                      <option value="Manager">Manager</option>
-                      <option value="Viewer">Viewer</option>
-                    </select>
+                    <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
+                      {['EV Owner', 'Charger Operator', 'Admin',].map((label) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() =>
+                            handleChange({
+                              target: { name: 'role', value: label },
+                            })
+                          }
+                          className={`flex items-center justify-center gap-1 rounded-lg border px-2 py-2 ${
+                            formData.role === label
+                              ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold'
+                              : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-400 hover:text-emerald-700'
+                          }`}
+                        >
+                          {label === 'EV Owner' && <Car className="w-3 h-3" />}
+                          {label === 'Charger Operator' && <Zap className="w-3 h-3" />}
+                          {label === 'Admin' && <Building2 className="w-3 h-3" />}
+                          {label === 'Viewer' && <EyeIcon className="w-3 h-3" />}
+                          <span>{label}</span>
+                        </button>
+                      ))}
+                    </div>
                     {errors.role && (
                       <p className="text-xs text-red-600 mt-1">{errors.role}</p>
                     )}
@@ -535,7 +567,7 @@ export default function EditUserPage() {
                   <div>
                     <label
                       htmlFor="status"
-                      className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                      className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                     >
                       Status
                     </label>
@@ -544,7 +576,7 @@ export default function EditUserPage() {
                       name="status"
                       value={formData.status}
                       onChange={handleChange}
-                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
                     >
                       <option value="Active">Active</option>
                       <option value="Inactive">Inactive</option>
@@ -554,11 +586,12 @@ export default function EditUserPage() {
                 </div>
               </div>
 
+              {/* EV owner block */}
               {userType === 'EV_OWNER' && (
-                <div className="p-4 sm:p-6 border-b border-gray-200">
+                <div className="p-4 sm:p-6 border-b border-slate-100">
                   <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                    <Car className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                    <Car className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-900">
                       Vehicle Information
                     </h3>
                   </div>
@@ -566,7 +599,7 @@ export default function EditUserPage() {
                     <div>
                       <label
                         htmlFor="vehicleBrand"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Vehicle Brand *
                       </label>
@@ -576,21 +609,21 @@ export default function EditUserPage() {
                         value={formData.vehicleBrand}
                         onChange={handleChange}
                         className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg outline-none transition ${
-                          errors.vehicleBrand ? 'border-red-500' : 'border-gray-300'
+                          errors.vehicleBrand
+                            ? 'border-red-500 focus:ring-1 focus:ring-red-400'
+                            : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                         }`}
-                        placeholder="e.g., Tesla, Nissan"
+                        placeholder="e.g., Tata, Nissan"
                       />
                       {errors.vehicleBrand && (
-                        <p className="text-xs text-red-600 mt-1">
-                          {errors.vehicleBrand}
-                        </p>
+                        <p className="text-xs text-red-600 mt-1">{errors.vehicleBrand}</p>
                       )}
                     </div>
 
                     <div>
                       <label
                         htmlFor="vehicleModel"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Vehicle Model *
                       </label>
@@ -600,21 +633,21 @@ export default function EditUserPage() {
                         value={formData.vehicleModel}
                         onChange={handleChange}
                         className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg outline-none transition ${
-                          errors.vehicleModel ? 'border-red-500' : 'border-gray-300'
+                          errors.vehicleModel
+                            ? 'border-red-500 focus:ring-1 focus:ring-red-400'
+                            : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                         }`}
-                        placeholder="e.g., Model 3, Leaf"
+                        placeholder="e.g., Nexon EV"
                       />
                       {errors.vehicleModel && (
-                        <p className="text-xs text-red-600 mt-1">
-                          {errors.vehicleModel}
-                        </p>
+                        <p className="text-xs text-red-600 mt-1">{errors.vehicleModel}</p>
                       )}
                     </div>
 
                     <div>
                       <label
                         htmlFor="vehicleYear"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Vehicle Year
                       </label>
@@ -623,7 +656,7 @@ export default function EditUserPage() {
                         name="vehicleYear"
                         value={formData.vehicleYear}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
                         placeholder="e.g., 2023"
                       />
                     </div>
@@ -631,7 +664,7 @@ export default function EditUserPage() {
                     <div>
                       <label
                         htmlFor="vehicleRegistrationNumber"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Registration Number
                       </label>
@@ -640,15 +673,15 @@ export default function EditUserPage() {
                         name="vehicleRegistrationNumber"
                         value={formData.vehicleRegistrationNumber}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
-                        placeholder="e.g., ABC-123"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
+                        placeholder="e.g., BA-12-CHA-3456"
                       />
                     </div>
 
                     <div>
                       <label
                         htmlFor="chargingType"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Charging Type
                       </label>
@@ -657,7 +690,7 @@ export default function EditUserPage() {
                         name="chargingType"
                         value={formData.chargingType}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
                       >
                         <option value="">Select Type</option>
                         <option value="AC">AC Charging</option>
@@ -669,7 +702,7 @@ export default function EditUserPage() {
                     <div>
                       <label
                         htmlFor="batteryCapacity"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Battery Capacity
                       </label>
@@ -678,19 +711,20 @@ export default function EditUserPage() {
                         name="batteryCapacity"
                         value={formData.batteryCapacity}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
-                        placeholder="e.g., 75 kWh"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
+                        placeholder="e.g., 40 kWh"
                       />
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* Operator block */}
               {userType === 'CHARGER_OPERATOR' && (
-                <div className="p-4 sm:p-6 border-b border-gray-200">
+                <div className="p-4 sm:p-6 border-b border-slate-100">
                   <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                    <Zap className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                    <Zap className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-900">
                       Operator Information
                     </h3>
                   </div>
@@ -698,7 +732,7 @@ export default function EditUserPage() {
                     <div className="sm:col-span-2">
                       <label
                         htmlFor="companyName"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Company Name *
                       </label>
@@ -708,21 +742,21 @@ export default function EditUserPage() {
                         value={formData.companyName}
                         onChange={handleChange}
                         className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg outline-none transition ${
-                          errors.companyName ? 'border-red-500' : 'border-gray-300'
+                          errors.companyName
+                            ? 'border-red-500 focus:ring-1 focus:ring-red-400'
+                            : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                         }`}
                         placeholder="Company name"
                       />
                       {errors.companyName && (
-                        <p className="text-xs text-red-600 mt-1">
-                          {errors.companyName}
-                        </p>
+                        <p className="text-xs text-red-600 mt-1">{errors.companyName}</p>
                       )}
                     </div>
 
                     <div>
                       <label
                         htmlFor="companyRegistrationNo"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Registration No *
                       </label>
@@ -733,8 +767,8 @@ export default function EditUserPage() {
                         onChange={handleChange}
                         className={`w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg outline-none transition ${
                           errors.companyRegistrationNo
-                            ? 'border-red-500'
-                            : 'border-gray-300'
+                            ? 'border-red-500 focus:ring-1 focus:ring-red-400'
+                            : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                         }`}
                         placeholder="Registration number"
                       />
@@ -748,7 +782,7 @@ export default function EditUserPage() {
                     <div>
                       <label
                         htmlFor="companyPan"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Company PAN
                       </label>
@@ -757,7 +791,7 @@ export default function EditUserPage() {
                         name="companyPan"
                         value={formData.companyPan}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
                         placeholder="Company PAN"
                       />
                     </div>
@@ -765,7 +799,7 @@ export default function EditUserPage() {
                     <div>
                       <label
                         htmlFor="companyLicenseNo"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Company License No
                       </label>
@@ -774,15 +808,15 @@ export default function EditUserPage() {
                         name="companyLicenseNo"
                         value={formData.companyLicenseNo}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
-                        placeholder="Company License Number"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
+                        placeholder="Company license number"
                       />
                     </div>
 
                     <div>
                       <label
                         htmlFor="companyType"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Company Type
                       </label>
@@ -791,15 +825,15 @@ export default function EditUserPage() {
                         name="companyType"
                         value={formData.companyType}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
-                        placeholder="Company Type"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
+                        placeholder="Company type"
                       />
                     </div>
 
                     <div>
                       <label
                         htmlFor="stationCount"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Station Count
                       </label>
@@ -810,15 +844,15 @@ export default function EditUserPage() {
                         min="0"
                         value={formData.stationCount}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
-                        placeholder="Number of Stations"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
+                        placeholder="Number of stations"
                       />
                     </div>
 
                     <div>
                       <label
                         htmlFor="operatorChargingType"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Charging Type
                       </label>
@@ -827,7 +861,7 @@ export default function EditUserPage() {
                         name="operatorChargingType"
                         value={formData.operatorChargingType}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
                       >
                         <option value="">Select Type</option>
                         <option value="AC">AC Charging</option>
@@ -839,7 +873,7 @@ export default function EditUserPage() {
                     <div>
                       <label
                         htmlFor="openingHours"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Opening Hours
                       </label>
@@ -849,14 +883,14 @@ export default function EditUserPage() {
                         type="time"
                         value={formData.openingHours}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
                       />
                     </div>
 
                     <div>
                       <label
                         htmlFor="closingHours"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
                         Closing Hours
                       </label>
@@ -866,16 +900,16 @@ export default function EditUserPage() {
                         type="time"
                         value={formData.closingHours}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
                       />
                     </div>
 
                     <div>
                       <label
                         htmlFor="chargePerKwh"
-                        className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
                       >
-                        Charge Per kWh
+                        Charge per kWh
                       </label>
                       <input
                         id="chargePerKwh"
@@ -885,7 +919,7 @@ export default function EditUserPage() {
                         step="0.01"
                         value={formData.chargePerKwh}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg outline-none transition"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
                         placeholder="Charge per kWh"
                       />
                     </div>
@@ -897,5 +931,23 @@ export default function EditUserPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Small helper icon for Viewer role (lucide doesn't export Eye as default here)
+function EyeIcon(props) {
+  return (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      fill="none"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
   );
 }
