@@ -249,7 +249,13 @@ public class BookingController {
                     ? (station.getDcFastRate() != null ? station.getDcFastRate() : 60.0)
                     : (station.getLevel2Rate() != null ? station.getLevel2Rate() : 40.0);
 
-            double estimatedKwh = hours * 50;
+            double estimatedKwh;
+            if ("DC Fast".equalsIgnoreCase(connectorType)) {
+                estimatedKwh = hours * 25;
+            } else {
+                estimatedKwh = hours * 15;
+            }
+            
             double totalAmount = Math.round(rate * estimatedKwh);
 
             // 8. Create booking as PENDING (not confirmed until payment success)
@@ -305,31 +311,40 @@ public class BookingController {
     
     @DeleteMapping("/{id}")
     public ResponseEntity<String> cancelBooking(@PathVariable Long id, Authentication auth) {
-        // Get the email/username from JWT
         String email = auth.getName(); // or (String) auth.getPrincipal();
 
-        // Load full User entity
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         Booking booking = bookingRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
 
+        System.out.println("Cancel attempt:");
+        System.out.println("  authEmail      = " + email);
+        System.out.println("  authUserId     = " + user.getUser_id());
+        System.out.println("  bookingId      = " + booking.getId());
+        System.out.println("  bookingUserId  = " + booking.getEvOwner().getUser_id());
+        System.out.println("  bookingStatus  = " + booking.getStatus());
+
         if (!booking.getEvOwner().getUser_id().equals(user.getUser_id())) {
+            System.out.println("  RESULT         = Not your booking (403)");
             return ResponseEntity.status(403).body("Not your booking");
         }
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
+            System.out.println("  RESULT         = Already cancelled (400)");
             return ResponseEntity.badRequest().body("Already cancelled");
         }
 
         if (booking.getStartTime().isBefore(LocalDateTime.now().plusMinutes(30))) {
+            System.out.println("  RESULT         = Too close to start (400)");
             return ResponseEntity.badRequest().body("Cannot cancel < 30 mins before");
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepo.save(booking);
 
+        System.out.println("  RESULT         = Cancelled OK (200)");
         return ResponseEntity.ok("Booking cancelled successfully");
     }
     

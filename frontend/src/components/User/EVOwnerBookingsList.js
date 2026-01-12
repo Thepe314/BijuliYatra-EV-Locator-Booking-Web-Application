@@ -28,6 +28,7 @@ export default function EVOwnerBookingsList() {
   }, []);
 
   const handleCancelBooking = async (bookingId) => {
+     console.log('Cancelling booking from UI, id =', bookingId);
     try {
       await bookingService.cancelBooking(bookingId);
       notify.success('Booking cancelled successfully');

@@ -33,6 +33,15 @@ import { useNavigate } from "react-router-dom";
 import { stationService, authService, bookingService } from "../../Services/api";
 import { toast, ToastContainer } from "react-toastify";
 
+import station1 from '../Assets/stations/Station-1.jpg';
+import station2 from '../Assets/stations/Station-2.jpg';
+
+export const STATION_IMAGES = {
+  'station-1': station1,
+  'station-2': station2,
+ 
+};
+
 export default function OperatorDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
@@ -50,6 +59,8 @@ export default function OperatorDashboard() {
   const [bookings, setBookings] = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingsError, setBookingsError] = useState(null);
+
+  
 
   // Mock analytics data
   const revenueData = [
@@ -112,48 +123,47 @@ export default function OperatorDashboard() {
       console.log("Fetched stations:", data);
 
       const transformedStations = (Array.isArray(data) ? data : []).map(
-        (station) => {
-          const level2 = station.level2Chargers || 0;
-          const dcFast = station.dcFastChargers || 0;
-          const totalChargers = level2 + dcFast;
+  (station) => {
+    const level2 = station.level2Chargers || 0;
+    const dcFast = station.dcFastChargers || 0;
+    const totalChargers = level2 + dcFast;
+    const activeChargers = Math.floor(totalChargers * 0.3);
+    const utilization =
+      totalChargers > 0
+        ? Math.round((activeChargers / totalChargers) * 100)
+        : 0;
 
-          const activeChargers = Math.floor(totalChargers * 0.3); // placeholder
-          const utilization =
-            totalChargers > 0
-              ? Math.round((activeChargers / totalChargers) * 100)
-              : 0;
+    const normalizedStatus =
+      station.status?.toLowerCase() === 'operational' ||
+      station.status?.toLowerCase() === 'active'
+        ? 'operational'
+        : 'maintenance';
 
-          const normalizedStatus =
-            station.status?.toLowerCase() === "operational" ||
-            station.status?.toLowerCase() === "active"
-              ? "operational"
-              : "maintenance";
-
-          return {
-            id: station.id,
-            name: station.name,
-            location: station.location || station.address,
-            chargers: totalChargers,
-            active: activeChargers,
-            revenue: 0,
-            utilization,
-            status: normalizedStatus,
-            level2Chargers: level2,
-            dcFastChargers: dcFast,
-            level2Rate: station.level2Rate || 0,
-            dcFastRate: station.dcFastRate || 0,
-            city: station.city,
-            state: station.state,
-            address: station.address,
-            zipCode: station.zipCode,
-            peakPricing: station.peakPricing,
-            notes: station.notes,
-            createdAt: station.createdAt,
-          };
-        }
-      );
-
-      setStationData(transformedStations);
+    return {
+      id: station.id,
+      name: station.name,
+      location: station.location || station.address,
+      chargers: totalChargers,
+      active: activeChargers,
+      revenue: 0,
+      utilization,
+      status: normalizedStatus,
+      level2Chargers: level2,
+      dcFastChargers: dcFast,
+      level2Rate: station.level2Rate || 0,
+      dcFastRate: station.dcFastRate || 0,
+      city: station.city,
+      state: station.state,
+      address: station.address,
+      zipCode: station.zipCode,
+      peakPricing: station.peakPricing,
+      notes: station.notes,
+      createdAt: station.createdAt,
+      imageKey: station.imageKey || 'station-1', // << add this
+    };
+  }
+);
+setStationData(transformedStations);
     } catch (err) {
       console.error("Error fetching stations:", err);
 
@@ -469,76 +479,90 @@ export default function OperatorDashboard() {
   );
 
   const renderStations = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Station Management</h2>
-        <div className="flex gap-3">
+  <div className="space-y-6">
+    <div className="flex items-center justify-between">
+      <h2 className="text-2xl font-bold text-gray-900">Station Management</h2>
+      <div className="flex gap-3">
+        <button
+          onClick={() => fetchStations(true)}
+          disabled={refreshing}
+          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+        >
+          <RefreshCw
+            className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
+          />
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
+        <button
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+          onClick={handleAddStation}
+        >
+          <MapPin className="w-4 h-4 mr-2" />
+          Add New Station
+        </button>
+      </div>
+    </div>
+
+    {error && (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-red-800 text-sm">{error}</p>
           <button
-            onClick={() => fetchStations(true)}
-            disabled={refreshing}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+            onClick={() => setError(null)}
+            className="text-red-600 hover:text-red-800 text-xs mt-2"
           >
-            <RefreshCw
-              className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-            />
-            {refreshing ? "Refreshing..." : "Refresh"}
-          </button>
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
-            onClick={handleAddStation}
-          >
-            <MapPin className="w-4 h-4 mr-2" />
-            Add New Station
+            Dismiss
           </button>
         </div>
       </div>
+    )}
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-red-800 text-sm">{error}</p>
-          </div>
-          <button
-            onClick={() => setError(null)}
-            className="text-red-600 hover:text-red-800"
-          >
-            ×
-          </button>
+    {loading ? (
+      <div className="flex items-center justify-center py-12">
+        <Loader className="w-8 h-8 animate-spin text-blue-600 mr-3" />
+        <p className="text-gray-600">Loading stations...</p>
+      </div>
+    ) : stationData.length === 0 ? (
+      <div className="bg-white rounded-lg shadow-md p-12 text-center">
+        <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <MapPin className="w-8 h-8 text-gray-400" />
         </div>
-      )}
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          No Stations Found
+        </h3>
+        <p className="text-gray-600 mb-4">
+          Get started by adding your first charging station.
+        </p>
+        <button
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 inline-flex items-center gap-2"
+          onClick={handleAddStation}
+        >
+          <MapPin className="w-4 h-4" />
+          Create First Station
+        </button>
+      </div>
+    ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {stationData.map((station) => {
+          const imgSrc =
+            STATION_IMAGES[station.imageKey] || STATION_IMAGES['station-1'];
 
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader className="w-8 h-8 animate-spin text-blue-600 mr-3" />
-          <p className="text-gray-600">Loading stations...</p>
-        </div>
-      ) : stationData.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <MapPin className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            No Stations Found
-          </h3>
-          <p className="text-gray-600 mb-4">
-            Get started by adding your first charging station
-          </p>
-          <button
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 inline-flex items-center gap-2"
-            onClick={handleAddStation}
-          >
-            <MapPin className="w-4 h-4" />
-            Create First Station
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {stationData.map((station) => (
+          return (
             <div
               key={station.id}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
             >
+              {/* Image banner */}
+              <div className="h-32 w-full overflow-hidden">
+                <img
+                  src={imgSrc}
+                  alt={station.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Card content */}
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -549,27 +573,21 @@ export default function OperatorDashboard() {
                       <MapPin className="w-4 h-4 mr-1" />
                       {station.location}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1 flex items-center">
-                      <Users className="w-3.5 h-3.5 mr-1 text-gray-400" />
-                      Managed by:
-                      <span className="font-medium text-gray-700 ml-1">
-                        {station.operatorName ||
-                          station.operatorCompany ||
-                          "You"}
-                      </span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {station.city}, {station.state} {station.zipCode}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        station.status === "operational"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-orange-100 text-orange-800"
-                      }`}
-                    >
-                      {station.status}
-                    </span>
-                  </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      station.status === 'operational'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-orange-100 text-orange-800'
+                    }`}
+                  >
+                    {station.status === 'operational'
+                      ? 'Operational'
+                      : 'Maintenance'}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -579,8 +597,7 @@ export default function OperatorDashboard() {
                       {station.active}/{station.chargers}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      L2: {station.level2Chargers} | DC:{" "}
-                      {station.dcFastChargers}
+                      L2 {station.level2Chargers} • DC {station.dcFastChargers}
                     </p>
                   </div>
                   <div>
@@ -588,21 +605,18 @@ export default function OperatorDashboard() {
                     <p className="text-2xl font-bold text-gray-900">
                       {station.utilization}%
                     </p>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${
-                        station.utilization > 80
-                          ? "bg-red-500"
-                          : station.utilization > 60
-                          ? "bg-orange-500"
-                          : "bg-green-500"
-                      }`}
-                      style={{ width: `${station.utilization}%` }}
-                    />
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${
+                          station.utilization >= 80
+                            ? 'bg-red-500'
+                            : station.utilization >= 60
+                            ? 'bg-orange-500'
+                            : 'bg-green-500'
+                        }`}
+                        style={{ width: `${station.utilization}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -610,19 +624,19 @@ export default function OperatorDashboard() {
                   <div className="bg-blue-50 p-2 rounded">
                     <p className="text-gray-600">L2 Rate</p>
                     <p className="font-semibold text-gray-900">
-                      ${station.level2Rate}/kWh
+                      {station.level2Rate}/kWh
                     </p>
                   </div>
                   <div className="bg-green-50 p-2 rounded">
                     <p className="text-gray-600">DC Rate</p>
                     <p className="font-semibold text-gray-900">
-                      ${station.dcFastRate}/kWh
+                      {station.dcFastRate}/kWh
                     </p>
                   </div>
                 </div>
 
                 {station.peakPricing && (
-                  <div className="mb-4">
+                  <div className="mb-2">
                     <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
                       Peak Pricing Enabled
                     </span>
@@ -630,6 +644,7 @@ export default function OperatorDashboard() {
                 )}
               </div>
 
+              {/* Footer actions */}
               <div className="bg-gray-50 px-6 py-3 flex justify-between items-center border-t border-gray-200">
                 <button
                   onClick={() => handleViewDetails(station.id)}
@@ -653,11 +668,12 @@ export default function OperatorDashboard() {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+          );
+        })}
+      </div>
+    )}
+  </div>
+);
 
   const renderBookings = () => (
     <div className="space-y-6">
@@ -1003,175 +1019,233 @@ export default function OperatorDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        theme="colored"
-        style={{ zIndex: 9999 }}
-      />
+    <div className="min-h-screen bg-slate-50 flex">
+      <ToastContainer position="top-right" autoClose={3000} theme="colored" />
 
-      <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Zap className="w-8 h-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">
+      {/* LEFT SIDEBAR - BijuliYatra logo + nav */}
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+          <div className="bg-emerald-500 p-2 rounded-xl">
+            <Zap className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">BijuliYatra</p>
+            <p className="text-[11px] text-slate-500">Operator Portal</p>
+          </div>
+        </div>
+
+        <nav className="flex-1 px-3 py-4 space-y-1 text-sm">
+          <button
+            onClick={() => setActiveTab("overview")}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
+              activeTab === "overview"
+                ? "bg-emerald-50 text-emerald-700 font-medium"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab("stations")}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
+              activeTab === "stations"
+                ? "bg-emerald-50 text-emerald-700 font-medium"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <MapPin className="w-4 h-4" />
+            Stations
+          </button>
+          <button
+            onClick={() => setActiveTab("bookings")}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
+              activeTab === "bookings"
+                ? "bg-emerald-50 text-emerald-700 font-medium"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Bookings
+          </button>
+          <button
+            onClick={() => setActiveTab("analytics")}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
+              activeTab === "analytics"
+                ? "bg-emerald-50 text-emerald-700 font-medium"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Analytics
+          </button>
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
+              activeTab === "settings"
+                ? "bg-emerald-50 text-emerald-700 font-medium"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <SettingsIcon className="w-4 h-4" />
+            Settings
+          </button>
+        </nav>
+
+        <div className="px-3 py-4 border-top border-slate-100">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-rose-600 hover:bg-rose-50"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* RIGHT MAIN AREA */}
+      <div className="flex-1 flex flex-col">
+        {/* TOP BAR (search + profile like design) */}
+        <header className="bg-white border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-semibold text-slate-900">
                 Operator Dashboard
-              </span>
+              </h1>
+              <p className="text-xs text-slate-500">
+                Monitor your stations, utilization and bookings.
+              </p>
             </div>
-            <div className="flex items-center space-x-4">
+
+            <div className="flex items-center gap-3" ref={profileMenuRef}>
               <button
                 onClick={() => fetchStations(true)}
                 disabled={refreshing}
-                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                className="p-2 rounded-lg hover:bg-slate-50 disabled:opacity-50"
                 title="Refresh stations"
               >
                 <RefreshCw
-                  className={`w-5 h-5 text-gray-600 ${
+                  className={`w-4 h-4 text-slate-500 ${
                     refreshing ? "animate-spin" : ""
                   }`}
                 />
               </button>
-              <button className="p-2 rounded-lg hover:bg-gray-100">
-                <Users className="w-5 h-5 text-gray-600" />
+
+              <button
+                onClick={() => setIsProfileMenuOpen((o) => !o)}
+                className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-slate-50"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-semibold">
+                  OP
+                </div>
+                <div className="hidden md:block text-left">
+                  <p className="text-xs font-semibold text-slate-900">
+                    Operator
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    operator@bijuliyatra.com
+                  </p>
+                </div>
               </button>
 
-              {/* Profile dropdown */}
-              <div className="relative" ref={profileMenuRef}>
-                <button
-                  onClick={() => setIsProfileMenuOpen((open) => !open)}
-                  className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                >
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                    OP
+              {isProfileMenuOpen && (
+                <div className="absolute right-6 top-14 w-56 bg-white rounded-xl shadow-lg border border-slate-100 z-50">
+                  <div className="px-4 py-3 border-b border-slate-100">
+                    <p className="text-sm font-semibold text-slate-900">
+                      Operator
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      operator@bijuliyatra.com
+                    </p>
                   </div>
-                  <span className="hidden md:inline text-sm text-gray-700">
-                    Operator
-                  </span>
-                </button>
-
-                {isProfileMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">
-                        Operator
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        operator@bijuliyatra.com
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileMenuOpen(false);
-                        // navigate("/operator/profile");
-                      }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <UserIcon className="w-4 h-4 mr-2 text-gray-400" />
-                      Profile
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileMenuOpen(false);
-                        setActiveTab("settings");
-                      }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <SettingsIcon className="w-4 h-4 mr-2 text-gray-400" />
-                      Settings
-                    </button>
-
-                    <div className="border-t border-gray-100 my-1" />
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileMenuOpen(false);
-                        handleLogout();
-                      }}
-                      className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      navigate('/operator/profile');
+                    }}
+                    className="w-full flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <UserIcon className="w-4 h-4 mr-2 text-slate-400" />
+                    Profile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      setActiveTab('settings');
+                    }}
+                    className="w-full flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <SettingsIcon className="w-4 h-4 mr-2 text-slate-400" />
+                    Settings
+                  </button>
+                  <div className="border-t border-slate-100 my-1" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center px-4 py-2 text-sm text-rose-600 hover:bg-rose-50"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      </nav>
+        </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm">
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                activeTab === "overview"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab("stations")}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                activeTab === "stations"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              Stations
-            </button>
-            <button
-              onClick={() => setActiveTab("bookings")}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                activeTab === "bookings"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              Bookings
-            </button>
-            <button
-              onClick={() => setActiveTab("analytics")}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                activeTab === "analytics"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              Analytics
-            </button>
-            <button
-              onClick={() => setActiveTab("settings")}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                activeTab === "settings"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              Settings
-            </button>
+        {/* TAB BUTTONS ROW */}
+        <div className="bg-slate-50 border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex gap-2 text-xs">
+            {['overview', 'stations', 'bookings', 'analytics', 'settings'].map(
+              (tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2 rounded-full font-medium ${
+                    activeTab === tab
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-white text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              )
+            )}
           </div>
         </div>
 
-        {activeTab === "overview" && renderOverview()}
-        {activeTab === "stations" && renderStations()}
-        {activeTab === "bookings" && renderBookings()}
-        {activeTab === "analytics" && renderAnalytics()}
-        {activeTab === "settings" && renderSettings()}
+        {/* MAIN CONTENT: use your existing render* functions */}
+        <main className="flex-1 bg-slate-50">
+          <div className="max-w-7xl mx-auto px-6 py-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader className="w-8 h-8 animate-spin text-emerald-500 mr-3" />
+                <p className="text-sm text-slate-600">
+                  Loading stations…
+                </p>
+              </div>
+            ) : error ? (
+              <div className="p-6 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700">
+                {error}
+              </div>
+            ) : activeTab === "overview" ? (
+              renderOverview()
+            ) : activeTab === "stations" ? (
+              renderStations()
+            ) : activeTab === "bookings" ? (
+              renderBookings()
+            ) : activeTab === "analytics" ? (
+              renderAnalytics()
+            ) : (
+              renderSettings()
+            )}
+          </div>
+        </main>
       </div>
     </div>
   );

@@ -12,8 +12,6 @@ import {
   Edit2,
   Zap,
 } from 'lucide-react';
-// assume you add this in Services/api.js
-// export const userService = { getCurrentProfile: () => api.get('/users/me').then(r => r.data) };
 import { userService } from '../../Services/api';
 
 export default function UserProfile() {
@@ -26,20 +24,9 @@ export default function UserProfile() {
     email: '',
     phone: '',
     address: '',
-    role: 'EV_OWNER', // EV_OWNER | CHARGER_OPERATOR | ADMIN
-    memberSince: '',
-    membershipTier: 'Free',
-    verified: false,
+    role: '', // ROLE_EV_OWNER | ROLE_CHARGER_OPERATOR | ROLE_ADMIN
   });
 
-  const [stats, setStats] = useState({
-    totalSessions: 0,
-    totalEnergyKwh: 0,
-    totalSpent: 0,
-    memberSinceLabel: '',
-  });
-
-  const [vehicles, setVehicles] = useState([]);
   const [notifications, setNotifications] = useState({
     bookingReminders: true,
     chargingComplete: true,
@@ -49,7 +36,6 @@ export default function UserProfile() {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'vehicles', label: 'My Vehicles', icon: Car },
     { id: 'payment', label: 'Payment', icon: CreditCard },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Lock },
@@ -60,26 +46,13 @@ export default function UserProfile() {
       try {
         setLoading(true);
         const data = await userService.getCurrentProfile();
-        // shape example; adjust to your DTO
         setProfileData({
           name: data.fullName,
           email: data.email,
           phone: data.phoneNumber,
           address: data.address,
-          role: data.role, // e.g. ROLE_EV_OWNER / ROLE_CHARGER_OPERATOR / ROLE_ADMIN
-          memberSince: data.memberSince,
-          membershipTier: data.membershipTier || 'Free',
-          verified: data.verified,
+          role: data.role, // ROLE_EV_OWNER / ROLE_CHARGER_OPERATOR / ROLE_ADMIN
         });
-        setStats({
-          totalSessions: data.totalSessions || 0,
-          totalEnergyKwh: data.totalEnergyKwh || 0,
-          totalSpent: data.totalSpent || 0,
-          memberSinceLabel: data.memberSinceLabel || data.memberSince,
-        });
-        setVehicles(data.vehicles || []);
-        // optional: notifications from backend
-        if (data.notificationPrefs) setNotifications(data.notificationPrefs);
       } catch (e) {
         console.error('Failed to load profile', e);
       } finally {
@@ -111,7 +84,33 @@ export default function UserProfile() {
       ? 'EV Owner'
       : profileData.role === 'ROLE_CHARGER_OPERATOR'
       ? 'Charging Station Operator'
-      : 'Admin';
+      : profileData.role === 'ROLE_ADMIN'
+      ? 'Admin'
+      : 'User';
+
+
+    const handleSave = async () => {
+  try {
+    const updated = await userService.updateCurrentProfile({
+      fullName: profileData.name,
+      email: profileData.email,
+      phoneNumber: profileData.phone,
+      address: profileData.address,
+      role: profileData.role, // optional
+    });
+    // sync state with backend response
+    setProfileData({
+      name: updated.fullName,
+      email: updated.email,
+      phone: updated.phoneNumber,
+      address: updated.address,
+      role: updated.role,
+    });
+    setEditMode(false);
+  } catch (e) {
+    console.error('Failed to update profile', e);
+  }
+};
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -132,7 +131,7 @@ export default function UserProfile() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left column: main profile content */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Personal information card, like in design */}
+            {/* Personal information card */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
               <div className="flex justify-between items-center mb-6">
                 <div>
@@ -160,14 +159,7 @@ export default function UserProfile() {
                   <h3 className="text-lg font-semibold text-slate-900">
                     {profileData.name}
                   </h3>
-                  <p className="text-xs text-slate-500">
-                    {roleLabel} • {profileData.membershipTier} Member
-                  </p>
-                  {profileData.verified && (
-                    <p className="text-[11px] text-emerald-600 mt-1">
-                      Verified account
-                    </p>
-                  )}
+                  <p className="text-xs text-slate-500">{roleLabel}</p>
                 </div>
               </div>
 
@@ -239,18 +231,20 @@ export default function UserProfile() {
                   />
                 </div>
               </div>
-
-              {editMode && (
-                <div className="mt-5">
-                  <button className="w-full md:w-auto px-5 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2">
-                    <Save className="w-4 h-4" />
-                    Save Changes
-                  </button>
-                </div>
-              )}
+                {editMode && (
+                  <div className="mt-5">
+                    <button
+                      onClick={handleSave}
+                      className="w-full md:w-auto px-5 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </button>
+                  </div>
+                )}
             </div>
 
-            {/* Tabbed content below personal info, using your original tabs */}
+            {/* Tabs (no vehicles/stats for now) */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
               <div className="flex gap-2 mb-4 overflow-x-auto">
                 {tabs.map((tab) => (
@@ -272,12 +266,9 @@ export default function UserProfile() {
               <div className="mt-4">
                 {activeTab === 'profile' && (
                   <p className="text-xs text-slate-500">
-                    Use the personal information card above to update your details.
+                    Use the personal information card above to update your
+                    details.
                   </p>
-                )}
-
-                {activeTab === 'vehicles' && (
-                  <VehiclesSection vehicles={vehicles} />
                 )}
 
                 {activeTab === 'payment' && <PaymentSection />}
@@ -294,53 +285,8 @@ export default function UserProfile() {
             </div>
           </div>
 
-          {/* Right column: account overview + membership + quick actions */}
+          {/* Right column: for now just quick actions */}
           <div className="lg:col-span-1 space-y-4">
-            <div className="bg-emerald-600 text-white rounded-2xl p-5">
-              <h3 className="text-sm font-semibold mb-4">Account Overview</h3>
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between">
-                  <span>Total Sessions</span>
-                  <span className="font-semibold">{stats.totalSessions}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total Energy</span>
-                  <span className="font-semibold">
-                    {stats.totalEnergyKwh} kWh
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total Spent</span>
-                  <span className="font-semibold">
-                    ₹{stats.totalSpent.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between pt-2 border-t border-emerald-500/40">
-                  <span>Member Since</span>
-                  <span className="font-semibold">
-                    {stats.memberSinceLabel}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-100 p-4">
-              <h3 className="text-sm font-semibold text-slate-900 mb-1">
-                Membership
-              </h3>
-              <p className="text-[11px] text-slate-500 mb-3">
-                {profileData.membershipTier} Member
-              </p>
-              <ul className="text-[11px] text-slate-600 space-y-1 mb-3">
-                <li>Priority booking access</li>
-                <li>Cashback on charging (selected plans)</li>
-                <li>24/7 support</li>
-              </ul>
-              <button className="w-full py-2 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">
-                Upgrade Plan
-              </button>
-            </div>
-
             <div className="bg-white rounded-2xl border border-slate-100 p-4">
               <h3 className="text-sm font-semibold text-slate-900 mb-3">
                 Quick Actions
@@ -364,55 +310,9 @@ export default function UserProfile() {
   );
 }
 
-/* --- Subsections reused from your original component --- */
-
-function VehiclesSection({ vehicles }) {
-  if (!vehicles || vehicles.length === 0) {
-    return (
-      <p className="text-xs text-slate-500">
-        No vehicles added yet. Add your EV to personalize booking suggestions.
-      </p>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      {vehicles.map((vehicle) => (
-        <div
-          key={vehicle.id}
-          className="border border-slate-200 rounded-xl p-4 hover:border-emerald-500 transition-colors"
-        >
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">
-                {vehicle.make} {vehicle.model}
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                {vehicle.year} • Battery {vehicle.battery}
-              </p>
-            </div>
-            {vehicle.primary && (
-              <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-medium rounded-full">
-                Primary
-              </span>
-            )}
-          </div>
-          <div className="flex gap-2 text-[11px]">
-            <button className="flex-1 px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50">
-              Edit
-            </button>
-            <button className="flex-1 px-3 py-2 border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-50">
-              Remove
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+/* --- Simple subsections --- */
 
 function PaymentSection() {
-  // keep your existing payment UI or simplify
   return (
     <p className="text-xs text-slate-500">
       Payment methods and billing history will appear here.

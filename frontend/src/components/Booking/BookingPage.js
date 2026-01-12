@@ -162,34 +162,115 @@ console.log('booking stationId', stationId);
     };
 
     try {
-      const result = await bookingService.createBooking(payload);
-      if (!result?.paymentUrl) {
-        toast.error('Unable to start payment. Please try again.');
+  const result = await bookingService.createBooking(payload);
+  if (!result?.paymentUrl) {
+    toast.error('Unable to start payment. Please try again.');
+    return;
+  }
+
+    // 1) eSewa path (NEW)
+    if (formData.paymentMethod === 'ESEWA') {
+      const bookingId = result.id || result.bookingId;
+      if (!bookingId) {
+        toast.error('Missing booking ID for eSewa payment');
         return;
       }
 
-      if (
-        formData.paymentMethod === 'KHALTI' ||
-        formData.paymentMethod === 'ESEWA'
-      ) {
-        toast.info('Redirecting to payment…', { autoClose: 1500 });
-        setTimeout(() => {
-          window.location.href = result.paymentUrl;
-        }, 1200);
-      } else if (formData.paymentMethod === 'CARD') {
-        setCardPaymentUrl(result.paymentUrl);
-        setShowCardPopup(true);
-      } else {
-        toast.error('Unknown payment method');
+      try {
+        const initRes = await fetch('http://localhost:4000/payments/esewa/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId, amount: totalCost }),
+        });
+
+        if (!initRes.ok) {
+          toast.error('Failed to initialize eSewa payment');
+          return;
+        }
+
+        const { esewa, formUrl } = await initRes.json();
+        if (!esewa || !formUrl) {
+          toast.error('Invalid eSewa init response');
+          return;
+        }
+
+        toast.info('Redirecting to eSewa…', { autoClose: 1200 });
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = formUrl;
+
+        Object.entries(esewa).forEach(([key, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      } catch (e) {
+        console.error('eSewa init failed', e);
+        toast.error('Failed to initialize eSewa payment');
+        return;
       }
-    } catch (err) {
-      const msg =
-        err.response?.data ||
-        'Slot no longer available or payment could not be initialized.';
-      toast.error(msg);
-    } finally {
-      setSubmitting(false);
     }
+
+    // 2) Khalti + Card logic
+    if (formData.paymentMethod === 'KHALTI') {
+      const bookingId = result.id || result.bookingId;
+      if (!bookingId) {
+        toast.error('Missing booking ID for Khalti payment');
+        return;
+      }
+
+      try {
+        const initRes = await fetch(
+          'http://localhost:4000/payments/khalti/init',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId, amount: totalCost }),
+          }
+        );
+
+        if (!initRes.ok) {
+          toast.error('Failed to initialize Khalti payment');
+          return;
+        }
+
+        const { paymentUrl } = await initRes.json();
+        if (!paymentUrl) {
+          toast.error('Invalid Khalti init response');
+          return;
+        }
+
+        toast.info('Redirecting to Khalti…', { autoClose: 1500 });
+        setTimeout(() => {
+          window.location.href = paymentUrl; // test-pay.khalti.com/?pidx=...
+        }, 1200);
+      } catch (e) {
+        console.error('Khalti init failed', e);
+        toast.error('Failed to initialize Khalti payment');
+      }
+    } else if (formData.paymentMethod === 'CARD') {
+      setCardPaymentUrl(result.paymentUrl);
+      setShowCardPopup(true);
+    } else if (formData.paymentMethod === 'ESEWA') {
+      toast.error('eSewa temporarily disabled for testing');
+    } else {
+      toast.error('Unknown payment method');
+    }
+  } catch (err) {
+    const msg =
+      err.response?.data ||
+      'Slot no longer available or payment could not be initialized.';
+    toast.error(msg);
+  } finally {
+    setSubmitting(false);
+  }
   };
 
   if (loading) {
@@ -209,8 +290,16 @@ console.log('booking stationId', stationId);
     formData.connectorType === 'DC Fast'
       ? station.dcFastRate || 60
       : station.level2Rate || 40;
-  const estimatedKwh = parseInt(formData.duration, 10) * 50;
-  const totalCost = Math.round(rate * estimatedKwh);
+  const hours = parseInt(formData.duration, 10);
+
+let estimatedKwh;
+if (formData.connectorType === 'DC Fast') {
+  estimatedKwh = hours * 25;
+} else {
+  estimatedKwh = hours * 15;
+}
+
+const totalCost = Math.round(rate * estimatedKwh);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">

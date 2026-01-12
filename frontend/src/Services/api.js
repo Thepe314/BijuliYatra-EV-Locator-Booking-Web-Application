@@ -264,6 +264,11 @@ createUser: async (userData) => {
     const res = await api.get('/users/me');
     return res.data;
   },
+
+  updateCurrentProfile: async (payload) => {
+    const res = await api.put('/users/me', payload);
+    return res.data;
+  },
 };
 
 export const stationService = {

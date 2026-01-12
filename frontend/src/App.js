@@ -29,6 +29,7 @@ import HomePage from "./components/General/HomePage.js";
 import EVFindStations from "./components/User/EvFindStations.js";
 import BookingPage from "./components/Booking/BookingPage.js";
 import EVOwnerBookingsList from "./components/User/EVOwnerBookingsList.js";
+import KhaltiReturnPage from "./Services/KhaltiReturnPage.js";
 
 function App() {
   return (
@@ -49,6 +50,9 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
+         
+
+          <Route path="/payments/khalti/return" element={<KhaltiReturnPage />} />
 
           <Route path="/signup/operator" element={<ChargingOperatorSignUp />} />
           <Route path="/home" element={<HomePage />} />

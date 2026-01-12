@@ -38,4 +38,33 @@ public class UserProfileController {
 
         return dto;
     }
+    
+    @PutMapping("/me")
+    public UserProfileDTO updateCurrentProfile(
+            Authentication auth,
+            @RequestBody UserProfileDTO updateRequest
+    ) {
+        String email = (String) auth.getPrincipal(); // or auth.getName()
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Update only allowed fields
+        user.setFullname(updateRequest.getFullName());
+        user.setEmail(updateRequest.getEmail());
+        user.setPhoneNumber(updateRequest.getPhoneNumber());
+        user.setAddress(updateRequest.getAddress());
+
+        user = userRepository.save(user);
+
+        // Return updated DTO (same as in GET /users/me)
+        UserProfileDTO dto = new UserProfileDTO();
+        dto.setId(user.getUser_id());
+        dto.setFullName(user.getFullname());
+        dto.setEmail(user.getEmail());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setAddress(user.getAddress());
+        dto.setRole(updateRequest.getRole()); // or derive again if you send role
+
+        return dto;
+    }
 }
