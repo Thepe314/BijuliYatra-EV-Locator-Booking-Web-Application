@@ -26,7 +26,8 @@ public class StationResponseDTO {
     private String updatedAt;
     private Long operatorId;
     private String imageKey;
-    
+    private Double latitude;
+    private Double longitude;
     private String operatorName;
 
     // Constructors
@@ -53,6 +54,9 @@ public class StationResponseDTO {
         this.updatedAt = station.getUpdatedAt().toString();
         this.operatorId = station.getOperatorId();
         this.imageKey = station.getImageKey();
+        this.latitude = station.getLatitude();
+        this.longitude = station.getLongitude();
+        
 
         // Extract company name safely
         User operator = station.getOperator();
@@ -114,6 +118,22 @@ public class StationResponseDTO {
 
 	public void setImageKey(String imageKey) {
 		this.imageKey = imageKey;
+	}
+
+	public Double getLatitude() {
+		return latitude;
+	}
+
+	public void setLatitude(Double latitude) {
+		this.latitude = latitude;
+	}
+
+	public Double getLongitude() {
+		return longitude;
+	}
+
+	public void setLongitude(Double longitude) {
+		this.longitude = longitude;
 	}
     
     

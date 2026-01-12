@@ -72,7 +72,8 @@ public class CreateStationRequestDTO {
     private String notes;
     
     private String imageKey;
-
+    
+ 
     // Custom validation: peakMultiplier required only if peakPricing = true
     @AssertTrue(message = "Peak multiplier must be greater than 1.0 when peak pricing is enabled")
     private boolean isPeakMultiplierValid() {

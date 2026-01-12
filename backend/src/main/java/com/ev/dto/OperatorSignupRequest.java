@@ -15,15 +15,13 @@ public class OperatorSignupRequest extends SignupRequestBase {
     
     private String companyType;
     
-    private String stationCount;
-    
-    private String chargingType;
-    
     private String openingHours;
     
     private String closingHours;
     
-    private BigDecimal chargePerKwh;
+    
+    private Double latitude;
+    private Double longitude;
 
 	public String getCompanyName() {
 		return companyName;
@@ -65,21 +63,6 @@ public class OperatorSignupRequest extends SignupRequestBase {
 		this.companyType = companyType;
 	}
 
-	public String getStationCount() {
-		return stationCount;
-	}
-
-	public void setStationCount(String stationCount) {
-		this.stationCount = stationCount;
-	}
-
-	public String getChargingType() {
-		return chargingType;
-	}
-
-	public void setChargingType(String chargingType) {
-		this.chargingType = chargingType;
-	}
 
 	public String getOpeningHours() {
 		return openingHours;
@@ -97,13 +80,23 @@ public class OperatorSignupRequest extends SignupRequestBase {
 		this.closingHours = closingHours;
 	}
 
-	public BigDecimal getChargePerKwh() {
-		return chargePerKwh;
+	public Double getLatitude() {
+		return latitude;
 	}
 
-	public void setChargePerKwh(BigDecimal chargePerKwh) {
-		this.chargePerKwh = chargePerKwh;
+	public void setLatitude(Double latitude) {
+		this.latitude = latitude;
 	}
+
+	public Double getLongitude() {
+		return longitude;
+	}
+
+	public void setLongitude(Double longitude) {
+		this.longitude = longitude;
+	}
+
+	
     
     
     

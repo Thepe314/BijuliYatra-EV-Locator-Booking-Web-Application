@@ -17,6 +17,8 @@ public class UserResponseDTO {
     private LocalDateTime joinDate;
     private String status;
     private String userType; // EV_OWNER, CHARGER_OPERATOR, ADMIN
+    private Double latitude;
+    private Double longitude;
     
     // EV Owner specific fields
     private String vehicleBrand;
@@ -32,10 +34,10 @@ public class UserResponseDTO {
     private String companyPan;
     private String companyLicenseNo;
     private String companyType;
-    private String stationCount;
+
     private String openingHours;
     private String closingHours;
-    private BigDecimal chargePerKwh;
+
     
     // Getters and Setters - Common fields
     public Long getUser_id() {
@@ -216,13 +218,6 @@ public class UserResponseDTO {
         this.companyType = companyType;
     }
     
-    public String getStationCount() {
-        return stationCount;
-    }
-    
-    public void setStationCount(String stationCount) {
-        this.stationCount = stationCount;
-    }
     
     public String getOpeningHours() {
         return openingHours;
@@ -240,15 +235,25 @@ public class UserResponseDTO {
         this.closingHours = closingHours;
     }
     
-    public BigDecimal getChargePerKwh() {
-        return chargePerKwh;
-    }
+ 
     
-    public void setChargePerKwh(BigDecimal chargePerKwh) {
-        this.chargePerKwh = chargePerKwh;
-    }
-    
-    @Override
+    public Double getLatitude() {
+		return latitude;
+	}
+
+	public void setLatitude(Double latitude) {
+		this.latitude = latitude;
+	}
+
+	public Double getLongitude() {
+		return longitude;
+	}
+
+	public void setLongitude(Double longitude) {
+		this.longitude = longitude;
+	}
+
+	@Override
     public String toString() {
         return "UserResponseDTO{" +
                 "user_id=" + user_id +

@@ -15,7 +15,9 @@ public class EvOwnerSignupRequest extends SignupRequestBase {
     private String chargingType;
     
     private String batteryCapacity;
-
+    
+    private Double latitude;
+    private Double longitude;
 
 	public String getVehicleBrand() {
 		return vehicleBrand;
@@ -74,6 +76,26 @@ public class EvOwnerSignupRequest extends SignupRequestBase {
 
 	public void setChargingType(String chargingType) {
 		this.chargingType = chargingType;
+	}
+
+
+	public Double getLatitude() {
+		return latitude;
+	}
+
+
+	public void setLatitude(Double latitude) {
+		this.latitude = latitude;
+	}
+
+
+	public Double getLongitude() {
+		return longitude;
+	}
+
+
+	public void setLongitude(Double longitude) {
+		this.longitude = longitude;
 	}
 
   

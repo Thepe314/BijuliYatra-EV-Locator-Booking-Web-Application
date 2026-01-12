@@ -68,6 +68,8 @@ public class OperatorController {
         station.setTotalSlots(request.getLevel2Chargers() + request.getDcFastChargers());
         station.setAvailableSlots(station.getTotalSlots());
         station.setImageKey(request.getImageKey());
+        station.setLatitude(request.getLatitude());
+        station.setLongitude(request.getLongitude());
 
         ChargingStations saved = repository.save(station);
         return new ResponseEntity<>(new StationResponseDTO(saved), HttpStatus.CREATED);
@@ -118,6 +120,8 @@ public class OperatorController {
         station.setPeakPricing(request.getPeakPricing());
         station.setPeakMultiplier(request.getPeakMultiplier() != null ? request.getPeakMultiplier() : 1.25);
         station.setNotes(request.getNotes());
+        station.setLatitude(request.getLatitude());
+        station.setLongitude(request.getLongitude());
         
         ChargingStations updated = repository.save(station);
         return ResponseEntity.ok(new StationResponseDTO(updated));

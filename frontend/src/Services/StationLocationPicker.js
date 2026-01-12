@@ -50,17 +50,21 @@ export default function StationLocationPicker({ value, onChange }) {
 
   return (
     <MapContainer
-      center={[position.lat, position.lng]}
-      zoom={13}
-      style={{ width: '100%', height: '100%' }} // fill parent box
-    >
-      <InvalidateSizeOnMount />
-      <TileLayer
-        attribution="© OpenStreetMap contributors"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <ClickHandler onChange={handleClick} />
-      <Marker position={[position.lat, position.lng]} icon={markerIcon} />
-    </MapContainer>
+  center={[position.lat, position.lng]}
+  zoom={13}
+  style={{ width: "100%", height: "100%" }}
+>
+  <InvalidateSizeOnMount />
+
+ 
+  <TileLayer
+  attribution="© OpenStreetMap contributors, © CARTO"
+  url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+/>
+  {/* END UPDATE */}
+
+  <ClickHandler onChange={handleClick} />
+  <Marker position={[position.lat, position.lng]} icon={markerIcon} />
+</MapContainer>
   );
 }

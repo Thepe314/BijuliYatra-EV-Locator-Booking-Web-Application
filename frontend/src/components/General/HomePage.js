@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-export default function LandingPage() {
+export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#020617] text-white flex flex-col">
       {/* Top nav */}
@@ -15,7 +15,7 @@ export default function LandingPage() {
             <div className="flex flex-col leading-tight">
               <span className="font-semibold text-sm">BijuliYatra</span>
               <span className="text-[11px] text-slate-400">
-                India&apos;s largest EV charging network
+                Nepal&apos;s largest EV charging network
               </span>
             </div>
           </Link>

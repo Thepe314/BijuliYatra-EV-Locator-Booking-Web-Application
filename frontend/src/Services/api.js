@@ -337,6 +337,11 @@ export const stationService = {
   return res.data;
 },
 
+ getStationByIdE: async (id) => {
+  const res = await api.get(`/evowner/stations/${id}`);
+  return res.data;
+},
+
   updateStationAdmin: async (id, data) => {
     const res = await api.put(`/admin/stations/edit/${id}`, data);
     return res.data;

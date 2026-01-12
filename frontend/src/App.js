@@ -5,10 +5,8 @@ import "react-toastify/dist/ReactToastify.css";
 
 import LoginPage from "./components/Auth/login";
 import SignUpPage from "./components/Auth/signup";
-import HomePage from "./components/User/StationFinderPage.js";
 import AdminDashboard from "./components/Admin/Dashboard.js";
 import ChargingStationsMap from "./components/General/ChargingStationsMap.js";
-import BookingPage from "./components/Booking/BookingPage.js";
 import UserProfile from "./components/General/UserProfile.js";
 import StationDetailsPage from "./components/General/StationDetailsPage.js";
 import PaymentPage from "./components/General/PaymentPage.js";
@@ -22,12 +20,15 @@ import OperatorDashboard from "./components/ChargeOperators/OperatorDashboard.js
 import AddStationPage from "./components/ChargeOperators/AddStation.js";
 import EditUserPage from "./components/Admin/EditUsers.js";
 import AddStationAdmin from "./components/Admin/AddStationAdmin.js";
-import StationFinderPage from "./components/User/StationFinderPage.js";
 import BookingManagement from "./components/Admin/BookingManagement.js";
 import EditStationPage from "./components/Admin/EditStationPage.js";
 import ForgotPasswordPage from "./components/Auth/ForgetPassword.js";
 import PaymentSuccess from "./components/General/PaymentSuccess.js";
 import StationDetailsA from "./components/Admin/StationDetailsA.js";
+import HomePage from "./components/General/HomePage.js";
+import EVFindStations from "./components/User/EvFindStations.js";
+import StationDetailsBookingPage from "./components/Booking/BookingPage.js";
+import BookingPage from "./components/Booking/BookingPage.js";
 
 function App() {
   return (
@@ -52,7 +53,7 @@ function App() {
           <Route path="/signup/operator" element={<ChargingOperatorSignUp />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/map" element={<ChargingStationsMap />} />
-          <Route path="/book/station/:stationId" element={<BookingPage />} />
+
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/stationdetails/:stationId" element={<StationDetailsPage />} />
           <Route path="/payment" element={<PaymentPage />} />
@@ -78,7 +79,8 @@ function App() {
           {/* EV owner */}
           <Route path="/ev-owner/dashboard" element={<EVUserDashboard />} />
           <Route path="/signup/ev-owner" element={<SignUpPage />} />
-          <Route path="/ev-owner/station" element={<StationFinderPage />} />
+          <Route path="/ev-owner/station" element={<EVFindStations />} />
+         <Route path="/ev-owner/book/:stationId" element={<BookingPage />}/>
         </Routes>
       </Router>
     </UserSessionProvider>

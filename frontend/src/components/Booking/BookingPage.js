@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  MapPin, Zap, Clock, Calendar, ArrowLeft, 
-  BatteryCharging, AlertCircle, Loader,
-  CreditCard
+import {
+  MapPin,
+  Zap,
+  Clock,
+  Calendar,
+  ArrowLeft,
+  BatteryCharging,
+  AlertCircle,
+  Loader,
+  CreditCard,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { stationService, bookingService } from '../../Services/api';
@@ -25,16 +31,26 @@ export default function BookingPage() {
     paymentMethod: 'KHALTI', // CARD | ESEWA | KHALTI
   });
 
-  // NEW: card popup state
   const [showCardPopup, setShowCardPopup] = useState(false);
   const [cardPaymentUrl, setCardPaymentUrl] = useState('');
 
   const timeSlots = [
-    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
-    '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
+    '08:00',
+    '09:00',
+    '10:00',
+    '11:00',
+    '12:00',
+    '13:00',
+    '14:00',
+    '15:00',
+    '16:00',
+    '17:00',
+    '18:00',
+    '19:00',
+    '20:00',
   ];
 
-  // Load station securely (only owner's stations)
+  // 1) Load single station from /evowner/{id}
   useEffect(() => {
     const loadStation = async () => {
       if (!stationId) {
@@ -44,23 +60,29 @@ export default function BookingPage() {
 
       try {
         setLoading(true);
-        const response = await stationService.listStationsForOwner();
-        const stations = response?.data || response || [];
-        const foundStation = stations.find(s => s.id === parseInt(stationId));
+        // if stationService has a wrapper for this, use it; otherwise fetch directly
+        const res = await fetch(`/evowner/${stationId}`, {
+          credentials: 'include',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+          },
+        });
 
-        if (!foundStation) {
-          toast.error("Station not found or access denied");
+        if (!res.ok) {
+          toast.error('Station not found');
           navigate('/stations');
           return;
         }
 
-       setStation(foundStation);
-      toast.success(`Welcome to ${foundStation.name}`, {
-        icon: <Zap className="w-5 h-5" />,
-        toastId: `welcome-station-${foundStation.id}`,
-      });
+        const data = await res.json();
+        setStation(data);
+        toast.success(`Welcome to ${data.name}`, {
+          icon: <Zap className="w-5 h-5" />,
+          toastId: `welcome-station-${data.id}`,
+        });
       } catch (err) {
-        toast.error("Failed to load station");
+        console.error(err);
+        toast.error('Failed to load station');
         navigate('/stations');
       } finally {
         setLoading(false);
@@ -70,7 +92,7 @@ export default function BookingPage() {
     loadStation();
   }, [stationId, navigate]);
 
-  // Fetch bookings + apply 15-min buffer
+  // 2) Fetch bookings for a day to build blocked slots
   useEffect(() => {
     const fetchAvailability = async () => {
       if (!station || !formData.date) {
@@ -79,18 +101,19 @@ export default function BookingPage() {
       }
 
       try {
-        const response = await fetch(
-          `http://localhost:8080/stations/${stationId}/bookings?date=${formData.date}`,
+        const res = await fetch(
+          `/bookings/stations/${stationId}/bookings?date=${formData.date}`,
           {
+            credentials: 'include',
             headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
             },
           }
         );
 
-        if (!response.ok) throw new Error('Failed to fetch');
+        if (!res.ok) throw new Error('Failed to fetch availability');
 
-        const bookings = await response.json();
+        const bookings = await res.json();
         const blocked = new Set();
 
         bookings.forEach((booking) => {
@@ -102,15 +125,15 @@ export default function BookingPage() {
           current.setMinutes(0, 0, 0);
 
           while (current < bufferEnd) {
-            const isoKey = current.toISOString().slice(0, 16);
-            blocked.add(isoKey);
+            const key = current.toISOString().slice(0, 16);
+            blocked.add(key);
             current.setHours(current.getHours() + 1);
           }
         });
 
         setBookedSlots(Array.from(blocked));
       } catch (err) {
-        console.log('Availability check failed (will block on submit)');
+        console.log('Availability check failed, will rely on backend validation');
         setBookedSlots([]);
       }
     };
@@ -118,6 +141,7 @@ export default function BookingPage() {
     fetchAvailability();
   }, [station, formData.date, stationId]);
 
+  // 3) Submit booking + payment init
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.date || !formData.timeSlot) {
@@ -129,10 +153,10 @@ export default function BookingPage() {
 
     const [hours, minutes] = formData.timeSlot.split(':');
     const startTime = new Date(formData.date);
-    startTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    startTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
 
     const endTime = new Date(startTime);
-    endTime.setHours(startTime.getHours() + parseInt(formData.duration));
+    endTime.setHours(startTime.getHours() + parseInt(formData.duration, 10));
 
     const formatDateTime = (date) => {
       const pad = (n) => String(n).padStart(2, '0');
@@ -142,7 +166,7 @@ export default function BookingPage() {
     };
 
     const payload = {
-      stationId: parseInt(stationId),
+      stationId: parseInt(stationId, 10),
       startTime: formatDateTime(startTime),
       endTime: formatDateTime(endTime),
       connectorType: formData.connectorType,
@@ -151,36 +175,30 @@ export default function BookingPage() {
 
     try {
       const result = await bookingService.createBooking(payload);
-      console.log('createBooking result:', result);
-
       if (!result?.paymentUrl) {
-        toast.error('Unable to start payment. Please try again.', {
-          position: 'top-center',
-        });
+        toast.error('Unable to start payment. Please try again.');
         return;
       }
 
-      if (formData.paymentMethod === 'KHALTI' || formData.paymentMethod === 'ESEWA') {
-        // Redirect to Khalti / eSewa page
-        toast.info('Redirecting to payment...', {
-          position: 'top-center',
-          autoClose: 1500,
-        });
+      if (
+        formData.paymentMethod === 'KHALTI' ||
+        formData.paymentMethod === 'ESEWA'
+      ) {
+        toast.info('Redirecting to payment…', { autoClose: 1500 });
         setTimeout(() => {
           window.location.href = result.paymentUrl;
         }, 1200);
       } else if (formData.paymentMethod === 'CARD') {
-        // Show card popup
-        setCardPaymentUrl(result.paymentUrl); // hosted card page or client token URL
+        setCardPaymentUrl(result.paymentUrl);
         setShowCardPopup(true);
       } else {
-        toast.error('Unknown payment method', { position: 'top-center' });
+        toast.error('Unknown payment method');
       }
     } catch (err) {
       const msg =
         err.response?.data ||
         'Slot no longer available or payment could not be initialized.';
-      toast.error(msg, { position: 'top-center' });
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -191,7 +209,7 @@ export default function BookingPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader className="w-12 h-12 animate-spin text-emerald-600 mx-auto mb-4" />
-          <p className="text-lg text-gray-600">Loading station...</p>
+          <p className="text-lg text-gray-600">Loading station…</p>
         </div>
       </div>
     );
@@ -203,7 +221,7 @@ export default function BookingPage() {
     formData.connectorType === 'DC Fast'
       ? station.dcFastRate || 60
       : station.level2Rate || 40;
-  const estimatedKwh = parseInt(formData.duration) * 50;
+  const estimatedKwh = parseInt(formData.duration, 10) * 50;
   const totalCost = Math.round(rate * estimatedKwh);
 
   return (
@@ -218,21 +236,25 @@ export default function BookingPage() {
             <ArrowLeft className="w-5 h-5" /> Back
           </button>
           <h1 className="text-3xl font-bold text-gray-900">
-            Book Charging Slot
+            {station.name}
           </h1>
-          <p className="text-gray-600 mt-1">{station.name}</p>
+          <p className="text-gray-600 mt-1 flex items-center gap-1">
+            <MapPin className="w-4 h-4" />
+            {station.address}
+            {station.city && `, ${station.city}`}
+          </p>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Form */}
+          {/* Form column */}
           <div className="lg:col-span-2">
             <form
               onSubmit={handleSubmit}
               className="bg-white rounded-2xl shadow-xl p-8 space-y-8"
             >
-              {/* Charger Type */}
+              {/* Charger type */}
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                   <Zap className="w-7 h-7 text-emerald-600" /> Charger Type
@@ -246,10 +268,10 @@ export default function BookingPage() {
                         value="DC Fast"
                         checked={formData.connectorType === 'DC Fast'}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
+                          setFormData((prev) => ({
+                            ...prev,
                             connectorType: e.target.value,
-                          })
+                          }))
                         }
                         className="sr-only"
                       />
@@ -270,6 +292,7 @@ export default function BookingPage() {
                       </div>
                     </label>
                   )}
+
                   {station.level2Chargers > 0 && (
                     <label className="cursor-pointer">
                       <input
@@ -278,10 +301,10 @@ export default function BookingPage() {
                         value="Level 2"
                         checked={formData.connectorType === 'Level 2'}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
+                          setFormData((prev) => ({
+                            ...prev,
                             connectorType: e.target.value,
-                          })
+                          }))
                         }
                         className="sr-only"
                       />
@@ -305,7 +328,7 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              {/* Date & Duration */}
+              {/* Date + duration */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-lg font-semibold mb-3">
@@ -317,11 +340,11 @@ export default function BookingPage() {
                     min={new Date().toISOString().split('T')[0]}
                     value={formData.date}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         date: e.target.value,
                         timeSlot: '',
-                      })
+                      }))
                     }
                     className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:border-emerald-500 focus:outline-none text-lg"
                   />
@@ -333,7 +356,10 @@ export default function BookingPage() {
                   <select
                     value={formData.duration}
                     onChange={(e) =>
-                      setFormData({ ...formData, duration: e.target.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        duration: e.target.value,
+                      }))
                     }
                     className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:border-emerald-500 focus:outline-none text-lg"
                   >
@@ -345,7 +371,7 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              {/* Time Slots */}
+              {/* Time slots */}
               <div>
                 <label className="block text-lg font-semibold mb-4">
                   <Clock className="w-5 h-5 inline mr-2" /> Available Time Slots
@@ -356,15 +382,14 @@ export default function BookingPage() {
                       ? `${formData.date}T${slot}:00`
                       : null;
                     const slotKey = slotDateTime?.slice(0, 16);
-                    const isBlocked =
-                      slotKey && bookedSlots.includes(slotKey);
+                    const isBlocked = slotKey && bookedSlots.includes(slotKey);
 
                     let durationBlocked = false;
                     if (formData.date && slotDateTime) {
                       const start = new Date(slotDateTime);
                       const end = new Date(
                         start.getTime() +
-                          parseInt(formData.duration) * 3600000
+                          parseInt(formData.duration, 10) * 3600000
                       );
                       let check = new Date(start);
                       while (check < end) {
@@ -396,7 +421,10 @@ export default function BookingPage() {
                             );
                             return;
                           }
-                          setFormData({ ...formData, timeSlot: slot });
+                          setFormData((prev) => ({
+                            ...prev,
+                            timeSlot: slot,
+                          }));
                         }}
                         className={`py-4 rounded-xl font-medium text-lg transition-all relative
                           ${
@@ -409,7 +437,7 @@ export default function BookingPage() {
                       >
                         {slot}
                         {disabled && (
-                          <div className="absolute inset-0 rounded-xl bg-black opacity-10"></div>
+                          <div className="absolute inset-0 rounded-xl bg-black opacity-10" />
                         )}
                       </button>
                     );
@@ -432,7 +460,7 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              {/* Payment Method */}
+              {/* Payment method */}
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                   <CreditCard className="w-6 h-6 text-emerald-600" /> Payment
@@ -466,10 +494,10 @@ export default function BookingPage() {
                         value={m.id}
                         checked={formData.paymentMethod === m.id}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
+                          setFormData((prev) => ({
+                            ...prev,
                             paymentMethod: e.target.value,
-                          })
+                          }))
                         }
                         className="sr-only"
                       />
@@ -491,6 +519,7 @@ export default function BookingPage() {
                 </div>
               </div>
 
+              {/* Cancellation notice */}
               <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-5">
                 <div className="flex gap-4">
                   <AlertCircle className="w-8 h-8 text-amber-600 flex-shrink-0" />
@@ -499,30 +528,31 @@ export default function BookingPage() {
                       Free cancellation up to 30 minutes before
                     </p>
                     <p className="text-sm text-amber-800">
-                      After that, 50% charge applies
+                      After that, 50% charge applies.
                     </p>
                   </div>
                 </div>
               </div>
 
+              {/* Submit */}
               <button
                 type="submit"
                 disabled={submitting || !formData.date || !formData.timeSlot}
                 className="w-full py-6 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-bold text-xl rounded-2xl hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 {submitting ? (
-                  <>Processing...</>
+                  <>Processing…</>
                 ) : (
                   <>
                     <BatteryCharging className="w-7 h-7" />
-                    Pay & Confirm • Rs. {totalCost.toLocaleString()}
+                    Pay &amp; Confirm • Rs. {totalCost.toLocaleString()}
                   </>
                 )}
               </button>
             </form>
           </div>
 
-          {/* Summary */}
+          {/* Summary column */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-xl p-8 sticky top-24">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">
@@ -534,7 +564,8 @@ export default function BookingPage() {
                   <div>
                     <p className="font-bold">{station.name}</p>
                     <p className="text-gray-600 text-sm">
-                      {station.address}, {station.city}
+                      {station.address}
+                      {station.city && `, ${station.city}`}
                     </p>
                   </div>
                 </div>
@@ -542,7 +573,9 @@ export default function BookingPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Charger</span>
-                    <span className="font-bold">{formData.connectorType}</span>
+                    <span className="font-bold">
+                      {formData.connectorType}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Rate</span>
@@ -552,13 +585,15 @@ export default function BookingPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Est. Energy</span>
-                    <span className="font-bold">~{estimatedKwh} kWh</span>
+                    <span className="font-bold">
+                      ~{estimatedKwh} kWh
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Duration</span>
                     <span className="font-bold">
                       {formData.duration} hour
-                      {parseInt(formData.duration) > 1 ? 's' : ''}
+                      {parseInt(formData.duration, 10) > 1 ? 's' : ''}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -587,7 +622,7 @@ export default function BookingPage() {
         </div>
       </div>  
 
-      {/* CARD POPUP */}
+      {/* Card popup */}
       {showCardPopup && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
@@ -601,7 +636,7 @@ export default function BookingPage() {
 
             <h2 className="text-xl font-bold mb-4">Pay with Card / Bank</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Complete your payment securely. A new secure window will open for card details.
+              A secure payment window will open for your card details.
             </p>
 
             <button
@@ -611,7 +646,11 @@ export default function BookingPage() {
                   toast.error('Payment URL missing');
                   return;
                 }
-                window.open(cardPaymentUrl, '_blank', 'width=600,height=700'); // opens Stripe Checkout
+                window.open(
+                  cardPaymentUrl,
+                  '_blank',
+                  'width=600,height=700'
+                );
               }}
               className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition"
             >

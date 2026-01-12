@@ -14,6 +14,8 @@ public class UserCreateDTO {
     private String address;
     private String userType; // EV_OWNER, CHARGER_OPERATOR, ADMIN
     private String status;
+    private Double latitude;
+    private Double longitude;
     
     // EV Owner specific fields
     private String vehicleBrand;
@@ -29,10 +31,9 @@ public class UserCreateDTO {
     private String companyPan;
     private String companyLicenseNo;
     private String companyType;
-    private String stationCount;
     private String openingHours;
     private String closingHours;
-    private BigDecimal chargePerKwh;
+
     
     // Getters and Setters
     public String getFullname() {
@@ -195,13 +196,6 @@ public class UserCreateDTO {
         this.companyType = companyType;
     }
     
-    public String getStationCount() {
-        return stationCount;
-    }
-    
-    public void setStationCount(String stationCount) {
-        this.stationCount = stationCount;
-    }
     
     public String getOpeningHours() {
         return openingHours;
@@ -219,20 +213,29 @@ public class UserCreateDTO {
         this.closingHours = closingHours;
     }
     
-    public BigDecimal getChargePerKwh() {
-        return chargePerKwh;
-    }
     
-    public void setChargePerKwh(BigDecimal chargePerKwh) {
-        this.chargePerKwh = chargePerKwh;
-    }
-
 	public String getStatus() {
 		return status;
 	}
 
 	public void setStatus(String status) {
 		this.status = status;
+	}
+
+	public Double getLatitude() {
+		return latitude;
+	}
+
+	public void setLatitude(Double latitude) {
+		this.latitude = latitude;
+	}
+
+	public Double getLongitude() {
+		return longitude;
+	}
+
+	public void setLongitude(Double longitude) {
+		this.longitude = longitude;
 	}
     
     

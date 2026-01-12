@@ -205,446 +205,380 @@ export default function AdminDashboard() {
   }
 
    return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
-      {/* Sidebar */}
-      <aside
-        className={`${sidebarOpen ? "w-64" : "w-20"} bg-slate-950 border-r border-slate-800 transition-all duration-300 flex flex-col h-screen sticky top-0`}
-      >
-        {/* Brand */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 flex-shrink-0">
-          {sidebarOpen ? (
-            <>
-              <div className="flex items-center gap-3">
-                <div className="bg-emerald-500/90 p-2 rounded-lg shadow-md shadow-emerald-500/40">
-                  <Zap className="w-6 h-6 text-slate-950" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-semibold text-sm text-slate-50">
-                    EVCharge
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    Admin Console
-                  </span>
-                </div>
+  <div className="min-h-screen bg-slate-100 text-slate-900 flex">
+    {/* Sidebar */}
+    <aside
+      className={`${
+        sidebarOpen ? "w-64" : "w-20"
+      } bg-white border-r border-slate-200 transition-all duration-300 flex flex-col h-screen sticky top-0`}
+    >
+      {/* Brand */}
+      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 flex-shrink-0">
+        {sidebarOpen ? (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-500 p-2 rounded-lg shadow-sm shadow-emerald-200">
+                <Zap className="w-6 h-6 text-white" />
               </div>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-2 hover:bg-slate-800/70 rounded-lg"
-              >
-                <X className="w-5 h-5 text-slate-400" />
-              </button>
-            </>
-          ) : (
+              <div className="flex flex-col">
+                <span className="font-semibold text-sm text-slate-900">
+                  EVCharge
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  Admin Console
+                </span>
+              </div>
+            </div>
             <button
-              onClick={() => setSidebarOpen(true)}
-              className="mx-auto p-2 hover:bg-slate-800/70 rounded-lg"
+              onClick={() => setSidebarOpen(false)}
+              className="p-2 hover:bg-slate-100 rounded-lg"
             >
-              <Menu className="w-6 h-6 text-slate-200" />
+              <X className="w-5 h-5 text-slate-500" />
             </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="mx-auto p-2 hover:bg-slate-100 rounded-lg"
+          >
+            <Menu className="w-6 h-6 text-slate-700" />
+          </button>
+        )}
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {navigationItems.map((item) => (
+          <button
+            key={item.name}
+            onClick={() => navigate(item.path)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
+              item.current
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm"
+                : "text-slate-700 hover:bg-slate-100"
+            }`}
+          >
+            <item.icon
+              className={`w-5 h-5 ${
+                item.current ? "text-emerald-500" : "text-slate-400"
+              }`}
+            />
+            {sidebarOpen && <span>{item.name}</span>}
+          </button>
+        ))}
+      </nav>
+
+      {/* User menu */}
+      <div className="border-t border-slate-200 p-4 flex-shrink-0">
+        <div className="relative">
+          <button
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-100 transition-all ${
+              !sidebarOpen && "justify-center"
+            }`}
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold">
+              A
+            </div>
+            {sidebarOpen && (
+              <>
+                <div className="flex-1 text-left">
+                  <p className="font-medium text-slate-900 text-sm">Admin</p>
+                  <p className="text-[11px] text-slate-500">
+                    admin@bijuliyatra.com
+                  </p>
+                </div>
+                <ChevronDown
+                  className={`w-4 h-4 text-slate-500 transition-transform ${
+                    userMenuOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </>
+            )}
+          </button>
+
+          {userMenuOpen && sidebarOpen && (
+            <div className="absolute bottom-full left-4 right-4 mb-2 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50">
+              <button className="w-full px-4 py-3 text-left text-xs hover:bg-slate-50 flex items-center gap-3 text-slate-700">
+                <Settings className="w-4 h-4" /> Settings
+              </button>
+              <button
+                onClick={handleLogout}
+                className="w-full px-4 py-3 text-left text-xs hover:bg-rose-50 text-rose-600 flex items-center gap-3"
+              >
+                <LogOut className="w-4 h-4" /> Logout
+              </button>
+            </div>
           )}
         </div>
+      </div>
+    </aside>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navigationItems.map((item) => (
+    {/* Main */}
+    <div className="flex-1 flex flex-col">
+      {/* Top bar */}
+      <header className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-semibold text-slate-900">
+              Admin Overview
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              Monitor users, stations, and performance at a glance.
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-500">
+              <LayoutDashboard className="w-4 h-4 mr-2 text-slate-400" />
+              <input
+                placeholder="Search..."
+                className="bg-transparent outline-none text-slate-900 placeholder:text-slate-400 w-40"
+              />
+            </div>
             <button
-              key={item.name}
-              onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
-                item.current
-                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 shadow-[0_0_0_1px_rgba(16,185,129,0.4)]"
-                  : "text-slate-300 hover:bg-slate-800/70"
-              }`}
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50"
             >
-              <item.icon
-                className={`w-5 h-5 ${
-                  item.current ? "text-emerald-400" : "text-slate-400"
+              <RefreshCw
+                className={`w-4 h-4 text-slate-700 ${
+                  refreshing ? "animate-spin" : ""
                 }`}
               />
-              {sidebarOpen && <span>{item.name}</span>}
             </button>
-          ))}
-        </nav>
-
-        {/* User menu */}
-        <div className="border-t border-slate-800 p-4 flex-shrink-0">
-          <div className="relative">
-            <button
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800/80 transition-all ${
-                !sidebarOpen && "justify-center"
-              }`}
+            <button className="p-2.5 bg-white border border-slate-200 rounded-xl relative hover:bg-slate-50">
+              <Bell className="w-4 h-4 text-slate-700" />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full" />
+            </button>
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center text-slate-950 font-bold">
-                A
-              </div>
-              {sidebarOpen && (
-                <>
-                  <div className="flex-1 text-left">
-                    <p className="font-medium text-slate-50 text-sm">Admin</p>
-                    <p className="text-[11px] text-slate-400">
-                      admin@bijuliyatra.com
-                    </p>
-                  </div>
-                  <ChevronDown
-                    className={`w-4 h-4 text-slate-400 transition-transform ${
-                      userMenuOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </>
-              )}
-            </button>
-
-            {userMenuOpen && sidebarOpen && (
-              <div className="absolute bottom-full left-4 right-4 mb-2 bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
-                <button className="w-full px-4 py-3 text-left text-xs hover:bg-slate-800 flex items-center gap-3 text-slate-200">
-                  <Settings className="w-4 h-4" /> Settings
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="w-full px-4 py-3 text-left text-xs hover:bg-red-600/10 text-red-400 flex items-center gap-3"
-                >
-                  <LogOut className="w-4 h-4" /> Logout
-                </button>
-              </div>
-            )}
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+            </select>
           </div>
         </div>
-      </aside>
+      </header>
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col">
-        {/* Top bar */}
-        <header className="bg-slate-950/90 border-b border-slate-800 backdrop-blur">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div>
-              <h1 className="text-xl font-semibold text-slate-50">
-                Admin Overview
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Monitor users, stations, and performance at a glance.
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-400">
-                <span className="mr-2 text-slate-500">
-                  <LayoutDashboard className="w-4 h-4" />
-                </span>
-                <input
-                  placeholder="Search..."
-                  className="bg-transparent outline-none text-slate-100 placeholder:text-slate-500 w-40"
-                />
+      {/* Content */}
+      <main className="flex-1 overflow-y-auto bg-slate-100">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          {/* Error */}
+          {error && (
+            <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-rose-500" />
+                <p className="text-sm text-rose-700">{error}</p>
               </div>
               <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="p-2.5 bg-slate-900 border border-slate-700 rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50"
+                onClick={() => setError(null)}
+                className="text-rose-500 hover:text-rose-700 text-lg leading-none"
               >
-                <RefreshCw
-                  className={`w-4 h-4 text-slate-200 ${
-                    refreshing ? "animate-spin" : ""
-                  }`}
-                />
+                ×
               </button>
-              <button className="p-2.5 bg-slate-900 border border-slate-700 rounded-xl relative hover:bg-slate-800">
-                <Bell className="w-4 h-4 text-slate-200" />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full" />
-              </button>
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-medium text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="today">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="year">This Year</option>
-              </select>
             </div>
-          </div>
-        </header>
+          )}
 
-        {/* Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-950">
-          <div className="max-w-7xl mx-auto px-6 py-6">
-            {/* Error */}
-            {error && (
-              <div className="mb-6 p-4 bg-rose-950/40 border border-rose-600/60 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 text-rose-400" />
-                  <p className="text-sm text-rose-100">{error}</p>
+          {/* KPI cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-7">
+            {stats.map((stat) => (
+              <div
+                key={stat.key}
+                onClick={() =>
+                  stat.key === "users"
+                    ? handleUsers()
+                    : stat.key === "stations"
+                    ? handleManage()
+                    : null
+                }
+                className={`bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all ${
+                  stat.key === "users" || stat.key === "stations"
+                    ? "cursor-pointer"
+                    : ""
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`${stat.color} p-2.5 rounded-xl`}>
+                    <stat.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <span
+                    className={`text-xs font-semibold flex items-center ${
+                      stat.change.startsWith("+")
+                        ? "text-emerald-600"
+                        : "text-rose-600"
+                    }`}
+                  >
+                    <TrendingUp
+                      className={`w-4 h-4 mr-1 ${
+                        stat.change.startsWith("+") ? "" : "rotate-180"
+                      }`}
+                    />
+                    {stat.change}
+                  </span>
                 </div>
+                <p className="text-xs text-slate-500">{stat.label}</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">
+                  {stat.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Middle grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent bookings */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+              <div className="p-5 border-b border-slate-200 flex justify-between items-center">
+                <h2 className="text-sm font-semibold text-slate-900">
+                  Bookings Last 30 Days
+                </h2>
                 <button
-                  onClick={() => setError(null)}
-                  className="text-rose-300 hover:text-rose-100 text-lg leading-none"
+                  onClick={() => navigate("/admin/bookingmanagement")}
+                  className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
                 >
-                  ×
+                  View all →
                 </button>
               </div>
-            )}
-
-            {/* KPI cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-7">
-              {stats.map((stat) => (
-                <div
-                  key={stat.key}
-                  onClick={() =>
-                    stat.key === "users"
-                      ? handleUsers()
-                      : stat.key === "stations"
-                      ? handleManage()
-                      : null
-                  }
-                  className={`bg-slate-900 rounded-2xl border border-slate-800/80 p-5 shadow-lg shadow-black/40 hover:shadow-xl hover:border-emerald-500/40 transition-all ${
-                    stat.key === "users" || stat.key === "stations"
-                      ? "cursor-pointer"
-                      : ""
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`${stat.color} p-2.5 rounded-xl`}>
-                      <stat.icon className="w-6 h-6 text-white" />
-                    </div>
-                    <span
-                      className={`text-xs font-semibold flex items-center ${
-                        stat.change.startsWith("+")
-                          ? "text-emerald-400"
-                          : "text-rose-400"
-                      }`}
-                    >
-                      <TrendingUp
-                        className={`w-4 h-4 mr-1 ${
-                          stat.change.startsWith("+") ? "" : "rotate-180"
-                        }`}
-                      />
-                      {stat.change}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400">{stat.label}</p>
-                  <p className="text-2xl font-bold text-slate-50 mt-1">
-                    {stat.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {/* Middle grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Recent bookings */}
-              <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg shadow-black/40">
-                <div className="p-5 border-b border-slate-800 flex justify-between items-center">
-                  <h2 className="text-sm font-semibold text-slate-50">
-                    Bookings Last 30 Days
-                  </h2>
-                  <button
-                    onClick={() => navigate("/admin/bookingmanagement")}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
-                  >
-                    View all →
-                  </button>
-                </div>
-                <div className="p-5 space-y-3">
-                  {recentBookings.length === 0 ? (
-                    <div className="text-center py-10">
-                      <Calendar className="w-14 h-14 text-slate-700 mx-auto mb-3" />
-                      <p className="text-sm text-slate-400">
-                        No recent bookings found
-                      </p>
-                    </div>
-                  ) : (
-                    recentBookings.map((booking) => (
-                      <div
-                        key={booking.id}
-                        className="flex items-center justify-between p-4 bg-slate-900/80 rounded-xl border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-900 transition-colors"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold text-sm text-slate-50">
-                              {booking.user}
-                            </p>
-                            <span className="text-[11px] text-slate-500">
-                              • {booking.id}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-400 mt-1">
-                            {booking.station}
-                          </p>
-                          <p className="text-[11px] text-slate-500 mt-1">
-                            {booking.time}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-slate-50 text-sm">
-                            {booking.amount}
-                          </p>
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-[11px] font-medium mt-1 ${
-                              booking.status === "Completed"
-                                ? "bg-emerald-500/20 text-emerald-300"
-                                : booking.status === "In Progress" ||
-                                  booking.status === "Active"
-                                ? "bg-blue-500/20 text-blue-300"
-                                : booking.status === "Cancelled"
-                                ? "bg-rose-500/20 text-rose-300"
-                                : "bg-slate-700 text-slate-200"
-                            }`}
-                          >
-                            {booking.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Station status */}
-              <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg shadow-black/40">
-                <div className="p-5 border-b border-slate-800 flex justify-between items-center">
-                  <h2 className="text-sm font-semibold text-slate-50">
-                    Station Status
-                  </h2>
-                  <button
-                    onClick={handleManage}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
-                  >
-                    Manage stations →
-                  </button>
-                </div>
-                <div className="p-5 space-y-4 max-h-96 overflow-y-auto">
-                  {stations.length === 0 ? (
-                    <div className="text-center py-10">
-                      <MapPin className="w-14 h-14 text-slate-700 mx-auto mb-3" />
-                      <p className="text-sm text-slate-400">
-                        No stations available
-                      </p>
-                    </div>
-                  ) : (
-                    stations.slice(0, 5).map((station) => (
-                      <div
-                        key={station.id}
-                        className="p-4 bg-slate-900/80 rounded-xl border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-900 transition-colors"
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <p className="font-semibold text-sm text-slate-50">
-                              {station.name}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-1">
-                              {station.location}
-                            </p>
-                          </div>
-                          <span
-                            className={`px-3 py-1.5 rounded-full text-[11px] font-medium ${
-                              station.status === "Active"
-                                ? "bg-emerald-500/20 text-emerald-300"
-                                : station.status === "Maintenance"
-                                ? "bg-amber-500/20 text-amber-300"
-                                : "bg-slate-700 text-slate-200"
-                            }`}
-                          >
-                            {station.status}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-[11px] mb-3">
-                          <div>
-                            <p className="text-slate-400">Total chargers</p>
-                            <p className="font-semibold text-slate-50 text-sm">
-                              {station.chargers.total}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400">Available</p>
-                            <p className="font-semibold text-emerald-300 text-sm">
-                              {station.chargers.available}
-                            </p>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-[11px] mb-1">
-                            <span className="text-slate-400">Usage</span>
-                            <span className="font-semibold text-slate-50">
-                              {station.usage}%
-                            </span>
-                          </div>
-                          <div className="w-full bg-slate-800 rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full transition-all ${
-                                station.usage > 80
-                                  ? "bg-rose-500"
-                                  : station.usage > 50
-                                  ? "bg-amber-500"
-                                  : "bg-emerald-500"
-                              }`}
-                              style={{ width: `${station.usage}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Requests */}
-            <div className="mt-7 bg-slate-900 rounded-2xl border border-slate-800 shadow-lg shadow-black/40">
-              <div className="p-5 border-b border-slate-800 flex justify-between items-center">
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-50">
-                    Requests
-                  </h2>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Pending operator signup requests
-                  </p>
-                </div>
-              </div>
-              <div className="p-5 space-y-4 max-h-96 overflow-y-auto">
-                {pendingOperators.length === 0 ? (
+              <div className="p-5 space-y-3">
+                {recentBookings.length === 0 ? (
                   <div className="text-center py-10">
-                    <Users className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-                    <p className="text-sm text-slate-400">
-                      No pending operator requests
+                    <Calendar className="w-14 h-14 text-slate-300 mx-auto mb-3" />
+                    <p className="text-sm text-slate-500">
+                      No recent bookings found
                     </p>
                   </div>
                 ) : (
-                  pendingOperators.map((op) => (
+                  recentBookings.map((booking) => (
                     <div
-                      key={op.user_id}
-                      className="flex items-center justify-between p-4 bg-slate-900/80 rounded-xl border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-900 transition-colors"
+                      key={booking.id}
+                      className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/40 transition-colors"
                     >
                       <div>
-                        <p className="font-semibold text-sm text-slate-50">
-                          {op.fullname || "Operator"}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-1">
-                          {op.email || "No email"} •{" "}
-                          {op.phoneNumber || "No phone"}
-                        </p>
-                        <p className="text-[11px] text-slate-500 mt-1">
-                          Status:{" "}
-                          <span className="font-medium text-amber-300">
-                            Pending
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm text-slate-900">
+                            {booking.user}
+                          </p>
+                          <span className="text-[11px] text-slate-500">
+                            • {booking.id}
                           </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {booking.station}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          {booking.time}
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() =>
-                            handleOperatorDecision(op.user_id, "decline")
-                          }
-                          className="px-4 py-2 text-[11px] font-medium rounded-lg border border-rose-500/40 text-rose-300 hover:bg-rose-500/10"
+                      <div className="text-right">
+                        <p className="font-semibold text-slate-900 text-sm">
+                          {booking.amount}
+                        </p>
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-[11px] font-medium mt-1 ${
+                            booking.status === "Completed"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : booking.status === "In Progress" ||
+                                booking.status === "Active"
+                              ? "bg-blue-50 text-blue-700 border border-blue-200"
+                              : booking.status === "Cancelled"
+                              ? "bg-rose-50 text-rose-700 border border-rose-200"
+                              : "bg-slate-100 text-slate-700 border border-slate-200"
+                          }`}
                         >
-                          Decline
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleOperatorDecision(op.user_id, "accept")
-                          }
-                          className="px-4 py-2 text-[11px] font-medium rounded-lg bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+                          {booking.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Station status */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+              <div className="p-5 border-b border-slate-200 flex justify-between items-center">
+                <h2 className="text-sm font-semibold text-slate-900">
+                  Station Status
+                </h2>
+                <button
+                  onClick={handleManage}
+                  className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                >
+                  Manage stations →
+                </button>
+              </div>
+              <div className="p-5 space-y-4 max-h-96 overflow-y-auto">
+                {stations.length === 0 ? (
+                  <div className="text-center py-10">
+                    <MapPin className="w-14 h-14 text-slate-300 mx-auto mb-3" />
+                    <p className="text-sm text-slate-500">
+                      No stations available
+                    </p>
+                  </div>
+                ) : (
+                  stations.slice(0, 5).map((station) => (
+                    <div
+                      key={station.id}
+                      className="p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/40 transition-colors"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <p className="font-semibold text-sm text-slate-900">
+                            {station.name}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {station.location}
+                          </p>
+                        </div>
+                        <span
+                          className={`px-3 py-1.5 rounded-full text-[11px] font-medium border ${
+                            station.status === "Active"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : station.status === "Maintenance"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-slate-100 text-slate-700 border-slate-200"
+                          }`}
                         >
-                          Accept
-                        </button>
+                          {station.status}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-[11px] mb-3">
+                        <div>
+                          <p className="text-slate-500">Total chargers</p>
+                          <p className="font-semibold text-slate-900 text-sm">
+                            {station.chargers.total}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500">Available</p>
+                          <p className="font-semibold text-emerald-700 text-sm">
+                            {station.chargers.available}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[11px] mb-1">
+                          <span className="text-slate-500">Usage</span>
+                          <span className="font-semibold text-slate-900">
+                            {station.usage}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all ${
+                              station.usage > 80
+                                ? "bg-rose-500"
+                                : station.usage > 50
+                                ? "bg-amber-400"
+                                : "bg-emerald-500"
+                            }`}
+                            style={{ width: `${station.usage}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
                   ))
@@ -652,8 +586,74 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-        </main>
-      </div>
+
+          {/* Requests */}
+          <div className="mt-7 bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div className="p-5 border-b border-slate-200 flex justify-between items-center">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  Requests
+                </h2>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Pending operator signup requests
+                </p>
+              </div>
+            </div>
+            <div className="p-5 space-y-4 max-h-96 overflow-y-auto">
+              {pendingOperators.length === 0 ? (
+                <div className="text-center py-10">
+                  <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-sm text-slate-500">
+                    No pending operator requests
+                  </p>
+                </div>
+              ) : (
+                pendingOperators.map((op) => (
+                  <div
+                    key={op.user_id}
+                    className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/40 transition-colors"
+                  >
+                    <div>
+                      <p className="font-semibold text-sm text-slate-900">
+                        {op.fullname || "Operator"}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {op.email || "No email"} •{" "}
+                        {op.phoneNumber || "No phone"}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Status:{" "}
+                        <span className="font-medium text-amber-600">
+                          Pending
+                        </span>
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          handleOperatorDecision(op.user_id, "decline")
+                        }
+                        className="px-4 py-2 text-[11px] font-medium rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50"
+                      >
+                        Decline
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleOperatorDecision(op.user_id, "accept")
+                        }
+                        className="px-4 py-2 text-[11px] font-medium rounded-lg bg-emerald-500 text-white hover:bg-emerald-600"
+                      >
+                        Accept
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
-  );
+  </div>
+);
 }

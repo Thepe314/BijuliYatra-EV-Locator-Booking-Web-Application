@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { authService } from "../../Services/api";
 import { useUserSession } from "../Context/UserSessionContext";
 import { notify } from "../../Utils/notify";
+import evChargerImg from "../Assets/stations/ev-charger.jpg";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -124,42 +125,28 @@ export default function LoginPage() {
         password: formData.password,
       });
 
-      console.log("RAW login response:", data);
-
-      // CASE 1: Backend still returns token directly (no OTP)
+      // CASE 1: Backend returns token directly (no OTP)
       if (data.token) {
         const role = (data.role || "").toString();
         const status = (data.status || "").toString();
         const normalizedRole = role.replace(/^ROLE_/, "").toLowerCase();
         const statusLower = status.toLowerCase();
 
-        console.log("login role/status:", {
-          role,
-          status,
-          normalizedRole,
-          statusLower,
-        });
-
         if (normalizedRole === "charger_operator" && statusLower !== "active") {
-          console.log("Blocking operator login due to status:", statusLower);
-
           let msg;
 
           if (statusLower.trim() === "pending") {
             msg = "Your request is still in process.";
-            console.log("Showing pending toast");
             setApiError(msg);
             notify.info(msg);
           } else if (
             ["cancelled", "canceled", "rejected"].includes(statusLower.trim())
           ) {
             msg = "Your account failed to meet the requirements.";
-            console.log("Showing cancelled toast");
             setApiError(msg);
             notify.error(msg);
           } else {
             msg = "Your account is not active yet.";
-            console.log("Showing generic not-active toast");
             setApiError(msg);
             notify.error(msg);
           }
@@ -209,7 +196,6 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Login failed (component):", error);
-      console.log("error.response:", error?.response);
 
       if (error.response) {
         const status = error.response.status;
@@ -279,10 +265,8 @@ export default function LoginPage() {
     try {
       const data = await authService.verifyLoginOtp({
         email: otpEmail,
-          otpCode: otp.trim(),
+        otpCode: otp.trim(),
       });
-
-      console.log("OTP verification response:", data);
 
       if (!data.token) {
         const msg = "Verification failed: missing token.";
@@ -295,13 +279,6 @@ export default function LoginPage() {
       const status = (data.status || "").toString();
       const normalizedRole = role.replace(/^ROLE_/, "").toLowerCase();
       const statusLower = status.toLowerCase();
-
-      console.log("verify-otp role/status:", {
-        role,
-        status,
-        normalizedRole,
-        statusLower,
-      });
 
       if (normalizedRole === "charger_operator" && statusLower !== "active") {
         let msg;
@@ -374,79 +351,97 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4 py-10">
-      {/* Outer frame */}
-      <div className="w-full max-w-6xl bg-slate-950 rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
-        <div className="grid md:grid-cols-2">
-          {/* LEFT: brand / marketing panel */}
-          <div className="relative bg-gradient-to-b from-slate-950 to-slate-900 px-10 py-10 flex flex-col justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-3 mb-12">
-              <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-slate-950" />
-              </div>
-              <span className="text-base font-semibold text-white">BijuliYatra</span>
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-10">
+        {/* Outer frame */}
+        <div className="w-full max-w-6xl bg-white rounded-3xl overflow-hidden shadow-xl border border-slate-200">
+          <div className="grid md:grid-cols-2">
+            {/* LEFT: brand / marketing panel */}
+          {/* LEFT: brand / marketing panel with EV image */}
+      <div className="relative flex flex-col justify-between overflow-hidden">
+        {/* Background image */}
+        <img
+          src={evChargerImg}
+          alt="EV charging point"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+
+        {/* Light overlay so text is readable */}
+        <div className="absolute inset-0 bg-white/65" />
+
+        {/* Content on top */}
+        <div className="relative z-10 px-10 py-10 flex flex-col justify-between h-full">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-12">
+            <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center">
+              <Zap className="w-6 h-6 text-white" />
             </div>
-
-            {/* Hero text */}
-            <div>
-              <h1 className="text-3xl font-semibold text-white mb-4 leading-snug">
-                Power Your Journey{" "}
-                <br className="hidden sm:block" />
-                with Smart EV Charging
-              </h1>
-              <p className="text-sm text-slate-300 max-w-md mb-8">
-                Connect to thousands of charging stations across India. Monitor your
-                charging sessions, manage your stations, and drive the electric revolution.
-              </p>
-
-              {/* Stats row */}
-              <div className="flex flex-wrap gap-8 text-emerald-400 text-sm font-semibold">
-                <div>
-                  <div className="text-lg">5,000+</div>
-                  <div className="text-[11px] uppercase tracking-wide text-slate-300">
-                    Charging Stations
-                  </div>
-                </div>
-                <div>
-                  <div className="text-lg">50K+</div>
-                  <div className="text-[11px] uppercase tracking-wide text-slate-300">
-                    Active Users
-                  </div>
-                </div>
-                <div>
-                  <div className="text-lg">24/7</div>
-                  <div className="text-[11px] uppercase tracking-wide text-slate-300">
-                    Support
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer copy */}
-            <p className="mt-10 text-[11px] text-slate-500">
-              © {new Date().getFullYear()} BijuliYatra. All rights reserved.
-            </p>
+            <span className="text-base font-semibold text-slate-900">
+              BijuliYatra
+            </span>
           </div>
 
+          {/* Hero text */}
+          <div>
+            <h1 className="text-3xl font-semibold text-slate-900 mb-4 leading-snug">
+              Power Your Journey
+              <br className="hidden sm:block" />
+              with Smart EV Charging
+            </h1>
+            <p className="text-sm text-slate-700 max-w-md mb-8">
+              Connect to thousands of charging stations across India. Monitor
+              your charging sessions, manage your stations, and drive the
+              electric revolution.
+            </p>
+
+            {/* Stats row */}
+            <div className="flex flex-wrap gap-8 text-emerald-500 text-sm font-semibold">
+              <div>
+                <div className="text-lg">5,000+</div>
+                <div className="text-[11px] uppercase tracking-wide text-slate-600">
+                  Charging Stations
+                </div>
+              </div>
+              <div>
+                <div className="text-lg">50K+</div>
+                <div className="text-[11px] uppercase tracking-wide text-slate-600">
+                  Active Users
+                </div>
+              </div>
+              <div>
+                <div className="text-lg">24/7</div>
+                <div className="text-[11px] uppercase tracking-wide text-slate-600">
+                  Support
+                </div>
+              </div>
+            </div>
+          </div>
+
+      {/* Footer copy */}
+      <p className="mt-10 text-[11px] text-slate-500">
+        © {new Date().getFullYear()} BijuliYatra. All rights reserved.
+      </p>
+    </div>
+  </div>
+
+
           {/* RIGHT: login form panel */}
-          <div className="bg-slate-950 px-10 py-10 flex flex-col justify-center border-l border-slate-800">
+          <div className="bg-white px-10 py-10 flex flex-col justify-center border-l border-slate-200">
             <div className="w-full max-w-sm mx-auto">
-              <h2 className="text-2xl font-semibold text-white mb-1">
+              <h2 className="text-2xl font-semibold text-slate-900 mb-1">
                 Welcome Back
               </h2>
-              <p className="text-xs text-slate-400 mb-8">
+              <p className="text-xs text-slate-500 mb-8">
                 Sign in to access your account.
               </p>
 
               <form onSubmit={handleLogin} className="space-y-6">
                 {/* Email */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-2">
+                  <label className="block text-xs font-medium text-slate-700 mb-2">
                     Email or Phone
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                     <input
                       type="email"
                       name="email"
@@ -454,31 +449,32 @@ export default function LoginPage() {
                       onChange={handleChange}
                       onBlur={handleBlur}
                       placeholder="you@example.com"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      className="w-full bg-white border border-slate-300 rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     />
                   </div>
                   {touched.email && errors.email && (
-                    <p className="text-red-400 text-[11px] mt-1">{errors.email}</p>
+                    <p className="text-red-500 text-[11px] mt-1">
+                      {errors.email}
+                    </p>
                   )}
-          
                 </div>
 
                 {/* Password */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="block text-xs font-medium text-slate-300">
+                    <label className="block text-xs font-medium text-slate-700">
                       Password
                     </label>
                     <button
                       type="button"
                       onClick={handleForgotPassword}
-                      className="text-[11px] text-emerald-400 hover:text-emerald-300"
+                      className="text-[11px] text-emerald-500 hover:text-emerald-600"
                     >
                       Forgot password?
                     </button>
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                     <input
                       type={showPassword ? "text" : "password"}
                       name="password"
@@ -486,12 +482,12 @@ export default function LoginPage() {
                       onChange={handleChange}
                       onBlur={handleBlur}
                       placeholder="Enter your password"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-md pl-9 pr-9 py-2.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      className="w-full bg-white border border-slate-300 rounded-md pl-9 pr-9 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                     >
                       {showPassword ? (
                         <EyeOff className="w-4 h-4" />
@@ -501,18 +497,18 @@ export default function LoginPage() {
                     </button>
                   </div>
                   {touched.password && errors.password && (
-                    <p className="text-red-400 text-[11px] mt-1">
+                    <p className="text-red-500 text-[11px] mt-1">
                       {errors.password}
                     </p>
                   )}
                 </div>
 
-                {/* Remember / spacing */}
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                {/* Remember */}
+                <div className="flex items-center justify-between text-[11px] text-slate-600">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      className="h-3.5 w-3.5 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                      className="h-3.5 w-3.5 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500"
                     />
                     <span>Remember me</span>
                   </label>
@@ -524,44 +520,43 @@ export default function LoginPage() {
                   disabled={isSubmitting}
                   className={`w-full rounded-md py-2.5 text-sm font-semibold shadow-sm transition ${
                     isSubmitting
-                      ? "bg-emerald-500/60 cursor-not-allowed"
+                      ? "bg-emerald-500/70 cursor-not-allowed"
                       : "bg-emerald-500 hover:bg-emerald-600"
-                  }`}
+                  } text-white`}
                 >
                   {isSubmitting ? "Logging in..." : "Login"}
                 </button>
 
                 {apiError && (
-                  <p className="text-red-400 text-[11px] text-center">
+                  <p className="text-red-500 text-[11px] text-center">
                     {apiError}
                   </p>
                 )}
 
                 {/* Divider + OTP button */}
                 <div className="flex items-center gap-3 my-3">
-                  <div className="flex-1 h-px bg-slate-800" />
-                  <span className="text-[11px] text-slate-500">or</span>
-                  <div className="flex-1 h-px bg-slate-800" />
+                  <div className="flex-1 h-px bg-slate-200" />
+                  <span className="text-[11px] text-slate-400">or</span>
+                  <div className="flex-1 h-px bg-slate-200" />
                 </div>
 
                 <button
                   type="button"
                   onClick={() => {
-                    // optional: trigger OTP-only flow
                     notify.info("Use your email + password to receive OTP.");
                   }}
-                  className="w-full rounded-md bg-slate-800 border border-slate-700 py-2.5 text-xs font-medium text-slate-100 hover:bg-slate-700 transition"
+                  className="w-full rounded-md bg-white border border-slate-300 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
                 >
                   Continue with OTP
                 </button>
 
                 {/* Sign up links */}
-                <div className="mt-6 text-center text-[11px] text-slate-400 space-y-2">
+                <div className="mt-6 text-center text-[11px] text-slate-500 space-y-2">
                   <p>Don&apos;t have an account?</p>
                   <p>
                     <Link
                       to="/signup/ev-owner"
-                      className="text-emerald-400 hover:text-emerald-300 font-medium"
+                      className="text-emerald-500 hover:text-emerald-600 font-medium"
                     >
                       Sign up as EV Owner →
                     </Link>
@@ -569,7 +564,7 @@ export default function LoginPage() {
                   <p>
                     <Link
                       to="/signup/operator"
-                      className="text-emerald-400 hover:text-emerald-300 font-medium"
+                      className="text-emerald-500 hover:text-emerald-600 font-medium"
                     >
                       Sign up as Station Owner / Operator →
                     </Link>
@@ -581,7 +576,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* OTP Modal */}
+      {/* OTP Modal (kept light) */}
       {showOtpModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative">
@@ -617,7 +612,6 @@ export default function LoginPage() {
                     notify.info(
                       "Please wait a moment and check your inbox again."
                     );
-                    // you can call a "resend OTP" endpoint here later
                   }}
                 >
                   Resend
@@ -638,8 +632,8 @@ export default function LoginPage() {
                   disabled={isVerifyingOtp}
                   className={`w-1/2 py-2 rounded-xl font-semibold text-white transition ${
                     isVerifyingOtp
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700"
+                      ? "bg-emerald-400 cursor-not-allowed"
+                      : "bg-emerald-500 hover:bg-emerald-600"
                   }`}
                 >
                   {isVerifyingOtp ? "Verifying..." : "Verify"}
@@ -650,6 +644,5 @@ export default function LoginPage() {
         </div>
       )}
     </div>
-    
   );
 }

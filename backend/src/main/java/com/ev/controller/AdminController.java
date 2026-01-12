@@ -357,11 +357,8 @@ public class AdminController {
                     operator.setCompanyPan(dto.getCompanyPan());
                     operator.setCompanyLicenseNo(dto.getCompanyLicenseNo());
                     operator.setCompanyType(dto.getCompanyType());
-                    operator.setStationCount(dto.getStationCount());
-                    operator.setChargingType(dto.getChargingType());
-                    operator.setOpeningHours(dto.getOpeningHours());
-                    operator.setClosingHours(dto.getClosingHours());
-                    operator.setChargePerKwh(dto.getChargePerKwh());
+
+             
                     user = operator;
                     break;
 
@@ -384,6 +381,8 @@ public class AdminController {
             user.setAddress(dto.getAddress());
             user.setJoinDate(LocalDateTime.now());
             user.setStatus("ACTIVE");
+            user.setLatitude(dto.getLatitude());
+            user.setLongitude(dto.getLongitude());
 
             User savedUser = userRepository.save(user);
             UserResponseDTO responseDTO = convertToResponseDTO(savedUser);
@@ -424,6 +423,12 @@ public class AdminController {
             if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
                 user.setPassword(passwordEncoder.encode(dto.getPassword()));
             }
+            if (dto.getLatitude() != null) {
+                user.setLatitude(dto.getLatitude());
+            }
+            if (dto.getLongitude() != null) {
+                user.setLongitude(dto.getLongitude());
+            }
 
             // Update role-specific fields
             if (user instanceof EvOwner) {
@@ -441,11 +446,7 @@ public class AdminController {
                 if (dto.getCompanyPan() != null) operator.setCompanyPan(dto.getCompanyPan());
                 if (dto.getCompanyLicenseNo() != null) operator.setCompanyLicenseNo(dto.getCompanyLicenseNo());
                 if (dto.getCompanyType() != null) operator.setCompanyType(dto.getCompanyType());
-                if (dto.getStationCount() != null) operator.setStationCount(dto.getStationCount());
-                if (dto.getChargingType() != null) operator.setChargingType(dto.getChargingType());
-                if (dto.getOpeningHours() != null) operator.setOpeningHours(dto.getOpeningHours());
-                if (dto.getClosingHours() != null) operator.setClosingHours(dto.getClosingHours());
-                if (dto.getChargePerKwh() != null) operator.setChargePerKwh(dto.getChargePerKwh());
+
             }
 
             User updatedUser = userRepository.save(user);
@@ -501,6 +502,8 @@ public class AdminController {
         dto.setAddress(user.getAddress());
         dto.setJoinDate(user.getJoinDate());
         dto.setStatus(user.getStatus());
+        dto.setLatitude(user.getLatitude());
+        dto.setLongitude(user.getLongitude());
 
         // Determine user type and map specific fields
         if (user instanceof EvOwner) {
@@ -520,11 +523,9 @@ public class AdminController {
             dto.setCompanyPan(operator.getCompanyPan());
             dto.setCompanyLicenseNo(operator.getCompanyLicenseNo());
             dto.setCompanyType(operator.getCompanyType());
-            dto.setStationCount(operator.getStationCount());
-            dto.setChargingType(operator.getChargingType());
             dto.setOpeningHours(operator.getOpeningHours());
             dto.setClosingHours(operator.getClosingHours());
-            dto.setChargePerKwh(operator.getChargePerKwh());
+          
         } else if (user instanceof Admin) {
             dto.setUserType("ADMIN");
         }

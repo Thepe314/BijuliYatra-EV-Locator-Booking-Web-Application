@@ -200,39 +200,39 @@ export default function StationManagement() {
     new Set(stations.map((s) => s.rawCity).filter(Boolean))
   );
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
+   return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex">
       {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? 'w-64' : 'w-20'
-        } bg-slate-950 border-r border-slate-800 transition-all duration-300 flex flex-col h-screen sticky top-0`}
+        } bg-white border-r border-slate-200 transition-all duration-300 flex flex-col h-screen sticky top-0`}
       >
         {/* Brand */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 flex-shrink-0">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 flex-shrink-0">
           {sidebarOpen ? (
             <>
               <div className="flex items-center gap-3">
                 <div className="bg-emerald-500/90 p-2 rounded-lg shadow-md shadow-emerald-500/40">
-                  <Zap className="w-6 h-6 text-slate-950" />
+                  <Zap className="w-6 h-6 text-white" />
                 </div>
-                <span className="font-semibold text-sm text-slate-50">
+                <span className="font-semibold text-sm text-slate-900">
                   BijuliYatra
                 </span>
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="p-1.5 hover:bg-slate-800/70 rounded-lg"
+                className="p-1.5 hover:bg-slate-100 rounded-lg"
               >
-                <X className="w-5 h-5 text-slate-400" />
+                <X className="w-5 h-5 text-slate-500" />
               </button>
             </>
           ) : (
             <button
               onClick={() => setSidebarOpen(true)}
-              className="mx-auto p-2 hover:bg-slate-800/70 rounded-lg"
+              className="mx-auto p-2 hover:bg-slate-100 rounded-lg"
             >
-              <Menu className="w-6 h-6 text-slate-200" />
+              <Menu className="w-6 h-6 text-slate-700" />
             </button>
           )}
         </div>
@@ -247,13 +247,13 @@ export default function StationManagement() {
                 onClick={() => navigate(item.path)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
                   isCurrent
-                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 shadow-[0_0_0_1px_rgba(16,185,129,0.4)]'
-                    : 'text-slate-300 hover:bg-slate-800/70'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-[0_0_0_1px_rgba(16,185,129,0.25)]'
+                    : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 <item.icon
                   className={`w-5 h-5 ${
-                    isCurrent ? 'text-emerald-400' : 'text-slate-400'
+                    isCurrent ? 'text-emerald-500' : 'text-slate-500'
                   }`}
                 />
                 {sidebarOpen && <span>{item.name}</span>}
@@ -263,29 +263,29 @@ export default function StationManagement() {
         </nav>
 
         {/* User */}
-        <div className="border-t border-slate-800 p-4 flex-shrink-0">
+        <div className="border-t border-slate-200 p-4 flex-shrink-0">
           <div className="relative">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800/80 transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-100 transition-all ${
                 !sidebarOpen && 'justify-center'
               }`}
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center text-slate-950 font-bold">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold">
                 AU
               </div>
               {sidebarOpen && (
                 <>
                   <div className="flex-1 text-left">
-                    <p className="font-medium text-slate-50 text-sm">
+                    <p className="font-medium text-slate-900 text-sm">
                       Admin User
                     </p>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-slate-500">
                       admin@bijuliyatra.com
                     </p>
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 text-slate-400 transition-transform ${
+                    className={`w-4 h-4 text-slate-500 transition-transform ${
                       userMenuOpen ? 'rotate-180' : ''
                     }`}
                   />
@@ -294,13 +294,13 @@ export default function StationManagement() {
             </button>
 
             {userMenuOpen && sidebarOpen && (
-              <div className="absolute bottom-full left-4 right-4 mb-2 bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
-                <button className="w-full px-4 py-3 text-left text-xs hover:bg-slate-800 flex items-center gap-3 text-slate-200">
+              <div className="absolute bottom-full left-4 right-4 mb-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50">
+                <button className="w-full px-4 py-3 text-left text-xs hover:bg-slate-50 flex items-center gap-3 text-slate-700">
                   <Settings className="w-4 h-4" /> Settings
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="w-full px-4 py-3 text-left text-xs hover:bg-rose-600/10 text-rose-400 flex items-center gap-3"
+                  className="w-full px-4 py-3 text-left text-xs hover:bg-rose-50 text-rose-600 flex items-center gap-3"
                 >
                   <LogOut className="w-4 h-4" /> Logout
                 </button>
@@ -313,76 +313,69 @@ export default function StationManagement() {
       {/* Main */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="bg-slate-950/90 border-b border-slate-800 backdrop-blur">
+        <header className="bg-white/90 border-b border-slate-200 backdrop-blur">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 className="text-lg font-semibold text-slate-50">
+            <h1 className="text-lg font-semibold text-slate-900">
               Stations Management
             </h1>
             <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-400 w-60">
+              <div className="hidden md:flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-500 w-60">
                 <input
                   placeholder="Search..."
-                  className="bg-transparent outline-none text-slate-100 placeholder:text-slate-500 w-full"
+                  className="bg-transparent outline-none text-slate-900 placeholder:text-slate-400 w-full"
                 />
               </div>
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-medium flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50"
+                className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium flex items-center gap-2 hover:bg-slate-100 disabled:opacity-50"
               >
                 <RefreshCw
-                  className={`w-4 h-4 text-slate-100 ${
+                  className={`w-4 h-4 text-slate-700 ${
                     refreshing ? 'animate-spin' : ''
                   }`}
                 />
                 Refresh
               </button>
-              {/* <button
-                onClick={goToAdd}
-                className="bg-emerald-500 text-slate-950 px-5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 hover:bg-emerald-400 shadow-md shadow-emerald-500/30"
-              >
-                <Plus className="w-4 h-4" />
-                Add Station Manually
-              </button> */}
             </div>
           </div>
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-950">
+        <main className="flex-1 overflow-y-auto bg-slate-50">
           <div className="max-w-7xl mx-auto px-6 py-6">
             {/* Error */}
             {error && (
-              <div className="mb-6 p-4 bg-rose-950/40 border border-rose-600/60 rounded-xl flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-rose-300 mt-0.5" />
-                <p className="text-sm text-rose-100 flex-1">{error}</p>
+              <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-rose-500 mt-0.5" />
+                <p className="text-sm text-rose-800 flex-1">{error}</p>
                 <button
                   onClick={() => setError(null)}
-                  className="text-rose-300 hover:text-rose-100 text-lg leading-none"
+                  className="text-rose-500 hover:text-rose-700 text-lg leading-none"
                 >
                   ×
                 </button>
               </div>
             )}
 
-            {/* Filters (user-style) */}
-            <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5 mb-6 shadow-lg shadow-black/40">
+            {/* Filters */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6 shadow-sm">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <input
                     type="text"
                     placeholder="Search by station name or address..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="all">All Status</option>
                   <option value="Active">Active</option>
@@ -393,7 +386,7 @@ export default function StationManagement() {
                 <select
                   value={filterCity}
                   onChange={(e) => setFilterCity(e.target.value)}
-                  className="px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="all">All Cities</option>
                   {uniqueCities.map((c) => (
@@ -406,40 +399,40 @@ export default function StationManagement() {
             </div>
 
             {/* Table card */}
-            <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg shadow-black/40 overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               {filteredStations.length === 0 ? (
                 <div className="p-16 text-center">
-                  <Loader className="w-10 h-10 text-emerald-400 animate-spin mx-auto mb-4" />
-                  <p className="text-sm text-slate-400">
+                  <Loader className="w-10 h-10 text-emerald-500 animate-spin mx-auto mb-4" />
+                  <p className="text-sm text-slate-500">
                     No stations found. Try adjusting filters or adding a new station.
                   </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
-                    <thead className="bg-slate-900 border-b border-slate-800">
+                    <thead className="bg-slate-50 border-b border-slate-200">
                       <tr>
-                        <th className="px-6 py-4 text-left font-semibold text-slate-400 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left font-semibold text-slate-500 uppercase tracking-wider">
                           Station
                         </th>
-                        <th className="px-6 py-4 text-left font-semibold text-slate-400 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left font-semibold text-slate-500 uppercase tracking-wider">
                           City
                         </th>
-                        <th className="px-6 py-4 text-left font-semibold text-slate-400 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left font-semibold text-slate-500 uppercase tracking-wider">
                           Owner
                         </th>
-                        <th className="px-6 py-4 text-left font-semibold text-slate-400 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left font-semibold text-slate-500 uppercase tracking-wider">
                           Connectors
                         </th>
-                        <th className="px-6 py-4 text-left font-semibold text-slate-400 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left font-semibold text-slate-500 uppercase tracking-wider">
                           Status
                         </th>
-                        <th className="px-6 py-4 text-right font-semibold text-slate-400 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-right font-semibold text-slate-500 uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800">
+                    <tbody className="divide-y divide-slate-200">
                       {filteredStations.map((station) => {
                         const usage = getUsagePercentage(station);
                         const [addrCity] = station.address
@@ -458,16 +451,16 @@ export default function StationManagement() {
                         return (
                           <tr
                             key={station.id}
-                            className="hover:bg-slate-900/70 transition-colors"
+                            className="hover:bg-slate-50 transition-colors"
                           >
                             {/* Station */}
                             <td className="px-6 py-4">
                               <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center mt-0.5">
-                                  <MapPin className="w-4 h-4 text-emerald-400" />
+                                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center mt-0.5">
+                                  <MapPin className="w-4 h-4 text-emerald-500" />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-semibold text-slate-50">
+                                  <p className="text-sm font-semibold text-slate-900">
                                     {station.name}
                                   </p>
                                   <p className="text-[11px] text-slate-500 mt-1">
@@ -478,18 +471,18 @@ export default function StationManagement() {
                             </td>
 
                             {/* City */}
-                            <td className="px-6 py-4 text-[11px] text-slate-300 align-top">
+                            <td className="px-6 py-4 text-[11px] text-slate-700 align-top">
                               {addrCity || '-'}
                             </td>
 
                             {/* Owner */}
-                            <td className="px-6 py-4 text-[11px] text-slate-300 align-top">
+                            <td className="px-6 py-4 text-[11px] text-slate-700 align-top">
                               {station.operatorName || 'Platform Station'}
                             </td>
 
                             {/* Connectors */}
-                            <td className="px-6 py-4 text-[11px] text-slate-300 align-top">
-                              <p className="text-sm font-semibold text-slate-50">
+                            <td className="px-6 py-4 text-[11px] text-slate-700 align-top">
+                              <p className="text-sm font-semibold text-slate-900">
                                 {connectorLabel}
                               </p>
                               <p className="text-[11px] text-slate-500 mt-1">
@@ -502,10 +495,10 @@ export default function StationManagement() {
                               <span
                                 className={`inline-flex px-3 py-1 rounded-full text-[11px] font-medium ${
                                   station.status === 'Active'
-                                    ? 'bg-emerald-500/20 text-emerald-200'
+                                    ? 'bg-emerald-50 text-emerald-700'
                                     : station.status === 'Maintenance'
-                                    ? 'bg-amber-500/20 text-amber-200'
-                                    : 'bg-slate-700 text-slate-200'
+                                    ? 'bg-amber-50 text-amber-700'
+                                    : 'bg-slate-100 text-slate-700'
                                 }`}
                               >
                                 {station.status === 'Active'
@@ -524,21 +517,21 @@ export default function StationManagement() {
                               <div className="inline-flex gap-1.5">
                                 <button
                                   onClick={() => handleViewDetails(station.id)}
-                                  className="px-3 py-1.5 rounded-lg bg-slate-800 text-[11px] text-slate-100 hover:bg-slate-700"
+                                  className="px-3 py-1.5 rounded-lg bg-slate-100 text-[11px] text-slate-800 hover:bg-slate-200"
                                 >
                                   View
                                 </button>
                                 <button
                                   onClick={() => handleEdit(station.id)}
-                                  className="p-2 rounded-lg hover:bg-slate-800"
+                                  className="p-2 rounded-lg hover:bg-slate-100"
                                 >
-                                  <Edit className="w-4 h-4 text-slate-200" />
+                                  <Edit className="w-4 h-4 text-slate-700" />
                                 </button>
                                 <button
                                   onClick={() => handleDelete(station.id)}
-                                  className="p-2 rounded-lg hover:bg-rose-600/10"
+                                  className="p-2 rounded-lg hover:bg-rose-50"
                                 >
-                                  <Trash2 className="w-4 h-4 text-rose-400" />
+                                  <Trash2 className="w-4 h-4 text-rose-500" />
                                 </button>
                               </div>
                             </td>
@@ -555,4 +548,5 @@ export default function StationManagement() {
       </div>
     </div>
   );
+
 }
