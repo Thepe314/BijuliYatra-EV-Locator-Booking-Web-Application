@@ -55,6 +55,13 @@ public class Booking {
     private LocalDateTime bookedAt = LocalDateTime.now();
 
     private LocalDateTime completedAt;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentMethod paymentMethod;
+
+    public PaymentMethod getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
 
     // Constructors
     public Booking() {}

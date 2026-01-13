@@ -5,6 +5,7 @@ import com.ev.dto.BookingResponseDTO;
 import com.ev.model.*;
 import com.ev.repository.BookingRepository;
 import com.ev.repository.ChargingStationRepository;
+import com.ev.repository.PaymentRepository;
 import com.ev.repository.UserRepository;
 
 import com.stripe.exception.StripeException;
@@ -36,6 +37,9 @@ public class BookingController {
     @Autowired private ChargingStationRepository stationRepo;
     @Autowired private UserRepository userRepository;
     
+    @Autowired
+    private PaymentRepository paymentRepo;
+    
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
 
@@ -43,8 +47,32 @@ public class BookingController {
     private String stripeCurrency;
     
     
-    private String createStripeCheckoutUrl(Long bookingId, long amountInRs) throws StripeException {
-        long minRs = 100; // or 80, but must be >= Stripe minimum
+    private void handlePaymentSuccess(Long bookingId, String gatewayPaymentIdFromCallback) {
+        Booking booking = bookingRepo.findById(bookingId)
+            .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+
+        // Find latest payment for this booking
+        List<Payment> payments = paymentRepo.findByBookingId(bookingId);
+        if (payments.isEmpty()) {
+            throw new RuntimeException("No payment found for booking " + bookingId);
+        }
+
+        Payment payment = payments.get(payments.size() - 1); // naive: last one
+
+        payment.setStatus(PaymentStatus.SUCCESS);
+        if (gatewayPaymentIdFromCallback != null) {
+            payment.setGatewayPaymentId(gatewayPaymentIdFromCallback);
+        }
+        payment.setUpdatedAt(LocalDateTime.now());
+        paymentRepo.save(payment);
+
+        booking.setStatus(BookingStatus.CONFIRMED);
+        bookingRepo.save(booking);
+    }
+
+    
+    private Session createStripeCheckoutSession(Long bookingId, long amountInRs) throws StripeException {
+        long minRs = 100;
         if (amountInRs < minRs) {
             amountInRs = minRs;
         }
@@ -75,8 +103,7 @@ public class BookingController {
                 .putMetadata("bookingId", String.valueOf(bookingId))
                 .build();
 
-        Session session = Session.create(params);
-        return session.getUrl();
+        return Session.create(params);
     }
 
 
@@ -258,7 +285,7 @@ public class BookingController {
             
             double totalAmount = Math.round(rate * estimatedKwh);
 
-            // 8. Create booking as PENDING (not confirmed until payment success)
+         // 8. Create booking as PENDING (not confirmed until payment success)
             Booking booking = new Booking();
             booking.setEvOwner(evOwner);
             booking.setStation(station);
@@ -269,27 +296,42 @@ public class BookingController {
             booking.setActualKwh(0.0);
             booking.setTotalAmount(totalAmount);
             booking.setStatus(BookingStatus.IN_PROGRESS);
-            Booking saved = bookingRepo.save(booking);
 
+            // convert String -> enum once
+            PaymentMethod methodEnum = PaymentMethod.valueOf(paymentMethod.toUpperCase());
+            booking.setPaymentMethod(methodEnum);
+
+            Booking saved = bookingRepo.save(booking);
+            
+            
          // 9. INIT PAYMENT WITH GATEWAY
             String paymentUrl;
+            String gatewayPaymentId = null;
 
-            if ("CARD".equalsIgnoreCase(paymentMethod)) {
+            if (methodEnum == PaymentMethod.CARD) {
                 long amountLong = (long) totalAmount;
-                paymentUrl = createStripeCheckoutUrl(saved.getId(), amountLong);
-            } else if ("KHALTI".equalsIgnoreCase(paymentMethod)) {
-                // TODO: plug real Khalti integration here
+                Session session = createStripeCheckoutSession(saved.getId(), amountLong);
+                paymentUrl = session.getUrl();
+                gatewayPaymentId = session.getId();
+            } else if (methodEnum == PaymentMethod.KHALTI) {
                 paymentUrl = "https://khalti.com/mock-payment?bookingId=" + saved.getId();
-            } else if ("ESEWA".equalsIgnoreCase(paymentMethod)) {
-                // TODO: plug real eSewa integration here
+            } else if (methodEnum == PaymentMethod.ESEWA) {
                 paymentUrl = "https://esewa.com/mock-payment?bookingId=" + saved.getId();
             } else {
                 return ResponseEntity.badRequest().body("Unsupported payment method");
             }
+            
+         // Create Payment row (PENDING)
+            Payment payment = new Payment();
+            payment.setBooking(saved);
+            payment.setUser(evOwner);
+            payment.setAmount(totalAmount);
+            payment.setCurrency("NPR");
+            payment.setPaymentMethod(methodEnum);
+            payment.setStatus(PaymentStatus.PENDING);
+            payment.setGatewayPaymentId(gatewayPaymentId);
 
-            if (paymentUrl == null || paymentUrl.isEmpty()) {
-                return ResponseEntity.status(502).body("Unable to start payment");
-            }
+            paymentRepo.save(payment);
 
             // 10. Return bookingId + paymentUrl for redirect
             return ResponseEntity.ok(Map.of(
@@ -362,6 +404,30 @@ public class BookingController {
 
         return ResponseEntity.ok("Booking confirmed");
     }
-
+    
+    
+    //Payment success
+    
+    @PostMapping("/{bookingId}/payment-success")
+    public ResponseEntity<?> markPaymentSuccess(
+            @PathVariable Long bookingId,
+            @RequestParam(required = false) String gatewayPaymentId
+    ) {
+        System.out.println(">>> /bookings/" + bookingId + "/payment-success called, gatewayPaymentId=" + gatewayPaymentId);
+        try {
+            handlePaymentSuccess(bookingId, gatewayPaymentId);
+            System.out.println(">>> payment-success OK for booking " + bookingId);
+            return ResponseEntity.ok("Payment and booking marked as success");
+        } catch (EntityNotFoundException ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(404).body("Booking not found");
+        } catch (RuntimeException ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(400).body(ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(500).body("Failed to process payment success");
+        }
+    }
    
 }

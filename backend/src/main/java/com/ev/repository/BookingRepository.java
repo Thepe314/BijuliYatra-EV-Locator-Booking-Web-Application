@@ -19,6 +19,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // Find all bookings for a user (EV Owner)
     List<Booking> findByEvOwnerOrderByStartTimeDesc(User evOwner);
 
+    
+ // EV Owner bookings: earliest bookedAt first
+    List<Booking> findByEvOwnerOrderByBookedAtAsc(User evOwner);
+
+    // Admin: earliest bookedAt first, with pagination
+    Page<Booking> findAllByOrderByBookedAtAsc(Pageable pageable);
+    
+    
     // Find active bookings (now or future) for a station
     List<Booking> findByStationAndStartTimeLessThanEqualAndEndTimeGreaterThanEqualAndStatusNot(
         ChargingStations station,

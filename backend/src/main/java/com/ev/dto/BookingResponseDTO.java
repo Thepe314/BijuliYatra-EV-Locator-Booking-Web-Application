@@ -16,11 +16,12 @@ public class BookingResponseDTO {
     private Double totalAmount;
     private String status;
     private String vehicleName;
+    private LocalDateTime bookedAt;
     
     private String evOwnerName;
     private String evOwnerPhone;
     private String evOwnerEmail;
-
+    private String paymentMethod;  
     // Constructors
     public BookingResponseDTO() {}
     
@@ -38,8 +39,13 @@ public class BookingResponseDTO {
         this.evOwnerName = booking.getEvOwner().getFullname();
         this.evOwnerPhone = booking.getEvOwner().getPhoneNumber();
         this.evOwnerEmail = booking.getEvOwner().getEmail();
-        
+        this.bookedAt = booking.getBookedAt();
+        this.paymentMethod = booking.getPaymentMethod() != null
+                ? booking.getPaymentMethod().name()  // e.g. "CARD", "KHALTI", "ESEWA"
+                : null;
     }
+        
+    
 
 	public Long getId() {
 		return id;
@@ -143,6 +149,22 @@ public class BookingResponseDTO {
 
 	public void setEvOwnerEmail(String evOwnerEmail) {
 		this.evOwnerEmail = evOwnerEmail;
+	}
+
+	public LocalDateTime getBookedAt() {
+		return bookedAt;
+	}
+
+	public void setBookedAt(LocalDateTime bookedAt) {
+		this.bookedAt = bookedAt;
+	}
+
+	public String getPaymentMethod() {
+		return paymentMethod;
+	}
+
+	public void setPaymentMethod(String paymentMethod) {
+		this.paymentMethod = paymentMethod;
 	}
 
 	

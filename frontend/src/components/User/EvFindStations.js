@@ -380,11 +380,11 @@ export default function EVFindStations() {
                         <div>
                           <p className="mb-0.5">Rates</p>
                           <p className="font-medium text-slate-900">
-                            L2: ₹
+                            L2: NPR
                             {s.level2Rate != null
                               ? s.level2Rate.toFixed(1)
                               : '-'}{' '}
-                            /kWh • DC: ₹
+                            /kWh • DC: NPR
                             {s.dcFastRate != null
                               ? s.dcFastRate.toFixed(1)
                               : '-'}{' '}

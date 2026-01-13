@@ -32,8 +32,7 @@ console.log('booking stationId', stationId);
     paymentMethod: 'KHALTI', // CARD | ESEWA | KHALTI
   });
 
-  const [showCardPopup, setShowCardPopup] = useState(false);
-  const [cardPaymentUrl, setCardPaymentUrl] = useState('');
+
 
   const timeSlots = [
     '08:00',
@@ -255,9 +254,12 @@ console.log('booking stationId', stationId);
         console.error('Khalti init failed', e);
         toast.error('Failed to initialize Khalti payment');
       }
-    } else if (formData.paymentMethod === 'CARD') {
-      setCardPaymentUrl(result.paymentUrl);
-      setShowCardPopup(true);
+        } else if (formData.paymentMethod === 'CARD') {
+      // Stripe Checkout full-page redirect
+      toast.info('Redirecting to secure card payment…', { autoClose: 1200 });
+      setTimeout(() => {
+        window.location.href = result.paymentUrl; // Stripe Checkout URL
+      }, 1000);
     } else if (formData.paymentMethod === 'ESEWA') {
       toast.error('eSewa temporarily disabled for testing');
     } else {
@@ -698,44 +700,7 @@ const totalCost = Math.round(rate * estimatedKwh);
           </div>
         </div>
       </div>  
-
-      {/* Card popup */}
-      {showCardPopup && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
-            <button
-              type="button"
-              className="absolute right-4 top-3 text-gray-400 hover:text-gray-600 text-xl"
-              onClick={() => setShowCardPopup(false)}
-            >
-              ×
-            </button>
-
-            <h2 className="text-xl font-bold mb-4">Pay with Card / Bank</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              A secure payment window will open for your card details.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (!cardPaymentUrl) {
-                  toast.error('Payment URL missing');
-                  return;
-                }
-                window.open(
-                  cardPaymentUrl,
-                  '_blank',
-                  'width=600,height=700'
-                );
-              }}
-              className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition"
-            >
-              Open Secure Card Payment
-            </button>
-          </div>
-        </div>
-      )}
+     
     </div>
   );
 }

@@ -59,6 +59,7 @@ function App() {
           <Route path="/signup/operator" element={<ChargingOperatorSignUp />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/map" element={<ChargingStationsMap />} />
+          <Route path="/payment-success/:bookingId" element={<PaymentSuccess />} />
 
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/stationdetails/:stationId" element={<StationDetailsPage />} />

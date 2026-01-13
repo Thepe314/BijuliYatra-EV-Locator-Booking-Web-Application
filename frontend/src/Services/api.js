@@ -534,6 +534,16 @@ getActiveBookingsCount: async (stationIds) => {
   });
   return response;
 },
+
+markPaymentSuccess: async (bookingId, gatewayPaymentId) => {
+    const res = await api.post(
+      `/bookings/${bookingId}/payment-success`,
+      null,
+      { params: { gatewayPaymentId } }
+    );
+    return res.data;
+  },
+
 };
 
 // Dashboard/Analytics Services

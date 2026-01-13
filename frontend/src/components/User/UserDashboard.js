@@ -258,7 +258,7 @@ export default function EVUserDashboard() {
             <div className="lg:col-span-2 bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Next Booking
+                  Latest Booking
                 </h2>
                 {upcomingBookings[0] && (
                   <span className="text-xs font-medium px-3 py-1 rounded-full bg-emerald-50 text-emerald-700">
@@ -377,7 +377,7 @@ export default function EVUserDashboard() {
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm">
               <div className="flex items-center justify-between px-5 py-4 border-b">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Recent Bookings
+                Past Bookings
                 </h2>
                 <button
                   onClick={() => setActiveTab('past')}
