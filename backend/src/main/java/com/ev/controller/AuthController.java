@@ -219,6 +219,8 @@ public class AuthController {
                 body.put("redirect", redirectUrl);
                 body.put("userId", existingUser.getUser_id());
                 body.put("status", existingUser.getStatus());
+                body.put("email", existingUser.getEmail());
+                body.put("fullname", existingUser.getFullname());
 
                 return ResponseEntity.ok(body);
             }
@@ -314,6 +316,8 @@ public class AuthController {
         body.put("redirect", redirectUrl);
         body.put("userId", existingUser.getUser_id());
         body.put("status", existingUser.getStatus());
+        body.put("email", existingUser.getEmail());
+        body.put("fullname", existingUser.getFullname());
         
         System.out.println("otpEnabled = " + otpEnabled);
 

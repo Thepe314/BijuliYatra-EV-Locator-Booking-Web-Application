@@ -20,6 +20,7 @@ import {
   Book
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import notify from '../../Utils/notify';
 
 export default function StationManagement() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -125,15 +126,14 @@ export default function StationManagement() {
     navigate(`/admin/stationdetails/${id}`);
   };
 
-  const handleLogout = async () => {
-    try {
-      await authService.logout();
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      navigate('/login');
-    }
-  };
+   const handleLogout = async () => {
+   try {
+     await authService.logout();
+   } catch (err) {}
+   notify.logout();
+   navigate("/login");
+ };
+
 
   const handleDelete = async (stationId) => {
     if (

@@ -7,6 +7,7 @@ import {
 import { userService, authService } from '../../Services/api';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
+import notify from '../../Utils/notify';
 
 export default function UserManagement() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -167,13 +168,12 @@ const [newUser, setNewUser] = useState({
   const evOwners = users.filter(u => u.role === 'EV_OWNER').length;
   const chargerOps = users.filter(u => u.role === 'CHARGER_OPERATOR').length;
 
-  const handleLogout = async () => {
-    try { 
-      await authService.logout(); 
-    } catch (err) {
-      console.error(err);
-    }
-    navigate('/login');
+    const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (err) {}
+    notify.logout();
+    navigate("/login");
   };
 
    const navigationItems = [

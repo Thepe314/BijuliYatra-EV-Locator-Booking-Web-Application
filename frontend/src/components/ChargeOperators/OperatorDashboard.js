@@ -32,6 +32,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { stationService, authService, bookingService } from "../../Services/api";
 import { toast, ToastContainer } from "react-toastify";
+import notify from "../../Utils/notify";
 
 import station1 from '../Assets/stations/Station-1.jpg';
 import station2 from '../Assets/stations/Station-2.jpg';
@@ -223,29 +224,30 @@ setStationData(transformedStations);
   };
 
   const handleLogout = async () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to log out from your operator account?"
-    );
-    if (!confirmed) return;
+  const confirmed = window.confirm(
+    'Are you sure you want to log out from your operator account?'
+  );
+  if (!confirmed) return;
 
-    try {
-      await authService.logout();
+  try {
+    await authService.logout();
 
-      toast.success("You have been logged out.", {
-        icon: "🔒",
-      });
+    // use notify.logout helper
+    notify.logout('You have been logged out.', {
+      icon: '🔒',
+    });
 
-      setTimeout(() => {
-        navigate("/login", { replace: true });
-      }, 800);
-    } catch (err) {
-      console.error("Logout failed:", err);
-      toast.error("Logout failed. Please close the browser tab.", {
-        icon: "⚠️",
-      });
-      navigate("/login", { replace: true });
-    }
-  };
+    setTimeout(() => {
+      navigate('/login', { replace: true });
+    }, 800);
+  } catch (err) {
+    console.error('Logout failed:', err);
+    notify.error('Logout failed. Please close the browser tab.', {
+      icon: '⚠️',
+    });
+    navigate('/login', { replace: true });
+  }
+};
 
   // Aggregated metrics
   const totalRevenue = stationData.reduce(
@@ -784,7 +786,7 @@ setStationData(transformedStations);
                         : b.estimatedKwh}
                     </td>
                     <td className="px-4 py-3 text-gray-700">
-                      $
+                      NPR
                       {b.totalAmount?.toFixed
                         ? b.totalAmount.toFixed(2)
                         : b.totalAmount}
@@ -1019,89 +1021,97 @@ setStationData(transformedStations);
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <ToastContainer position="top-right" autoClose={3000} theme="colored" />
+    // Wrapper
+<div className="min-h-screen bg-slate-50 flex">
+  <ToastContainer position="top-right" autoClose={3000} theme="colored" />
 
-      {/* LEFT SIDEBAR - BijuliYatra logo + nav */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-          <div className="bg-emerald-500 p-2 rounded-xl">
-            <Zap className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-900">BijuliYatra</p>
-            <p className="text-[11px] text-slate-500">Operator Portal</p>
-          </div>
-        </div>
+  {/* LEFT SIDEBAR - BijuliYatra logo + nav */}
+  <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
+  {/* Brand */}
+  <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+    <div className="bg-emerald-500 p-2 rounded-xl">
+      <Zap className="w-7 h-7 text-white" />
+    </div>
+    <div>
+      <p className="text-base font-semibold text-slate-900">BijuliYatra</p>
+      <p className="text-xs text-slate-500">Operator Portal</p>
+    </div>
+  </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 text-sm">
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
-              activeTab === "overview"
-                ? "bg-emerald-50 text-emerald-700 font-medium"
-                : "text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            <Activity className="w-4 h-4" />
-            Dashboard
-          </button>
-          <button
-            onClick={() => setActiveTab("stations")}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
-              activeTab === "stations"
-                ? "bg-emerald-50 text-emerald-700 font-medium"
-                : "text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            <MapPin className="w-4 h-4" />
-            Stations
-          </button>
-          <button
-            onClick={() => setActiveTab("bookings")}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
-              activeTab === "bookings"
-                ? "bg-emerald-50 text-emerald-700 font-medium"
-                : "text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            Bookings
-          </button>
-          <button
-            onClick={() => setActiveTab("analytics")}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
-              activeTab === "analytics"
-                ? "bg-emerald-50 text-emerald-700 font-medium"
-                : "text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            Analytics
-          </button>
-          <button
-            onClick={() => setActiveTab("settings")}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
-              activeTab === "settings"
-                ? "bg-emerald-50 text-emerald-700 font-medium"
-                : "text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            <SettingsIcon className="w-4 h-4" />
-            Settings
-          </button>
-        </nav>
+  {/* Scrollable nav with bigger text/icons */}
+  <nav className="flex-1 px-3 py-4 space-y-1 text-base overflow-y-auto">
+    <button
+      onClick={() => setActiveTab("overview")}
+      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
+        activeTab === "overview"
+          ? "bg-emerald-50 text-emerald-700 font-medium"
+          : "text-slate-600 hover:bg-slate-50"
+      }`}
+    >
+      <Activity className="w-5 h-5" />
+      Dashboard
+    </button>
 
-        <div className="px-3 py-4 border-top border-slate-100">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-rose-600 hover:bg-rose-50"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
-        </div>
-      </aside>
+    <button
+      onClick={() => setActiveTab("stations")}
+      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
+        activeTab === "stations"
+          ? "bg-emerald-50 text-emerald-700 font-medium"
+          : "text-slate-600 hover:bg-slate-50"
+      }`}
+    >
+      <MapPin className="w-5 h-5" />
+      Stations
+    </button>
+
+    <button
+      onClick={() => setActiveTab("bookings")}
+      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
+        activeTab === "bookings"
+          ? "bg-emerald-50 text-emerald-700 font-medium"
+          : "text-slate-600 hover:bg-slate-50"
+      }`}
+    >
+      <Users className="w-5 h-5" />
+      Bookings
+    </button>
+
+    <button
+      onClick={() => setActiveTab("analytics")}
+      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
+        activeTab === "analytics"
+          ? "bg-emerald-50 text-emerald-700 font-medium"
+          : "text-slate-600 hover:bg-slate-50"
+      }`}
+    >
+      <TrendingUp className="w-5 h-5" />
+      Analytics
+    </button>
+
+    <button
+      onClick={() => setActiveTab("settings")}
+      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
+        activeTab === "settings"
+          ? "bg-emerald-50 text-emerald-700 font-medium"
+          : "text-slate-600 hover:bg-slate-50"
+      }`}
+    >
+      <SettingsIcon className="w-5 h-5" />
+      Settings
+    </button>
+  </nav>
+
+  {/* Sticky logout at bottom */}
+  <div className="px-3 py-4 border-t border-slate-100 sticky bottom-0 bg-white">
+    <button
+      onClick={handleLogout}
+      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-rose-600 hover:bg-rose-50"
+    >
+      <LogOut className="w-5 h-5" />
+      Logout
+    </button>
+  </div>
+</aside>
 
       {/* RIGHT MAIN AREA */}
       <div className="flex-1 flex flex-col">

@@ -11,6 +11,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+
+.toast-logout-blue {
+  background-color: #1d4ed8 !important; /* blue-700 */
+  color: #ffffff !important;
+}
+
 .leaflet-container {
   width: 100%;
   height: 100%;

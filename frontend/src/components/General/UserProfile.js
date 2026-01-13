@@ -15,6 +15,8 @@ import { useNavigate } from 'react-router-dom';
 import { userService } from '../../Services/api';
 import { MapContainer, TileLayer, Marker, useMapEvent } from 'react-leaflet';
 import * as L from 'leaflet';
+import { authService } from '../../Services/api';
+import { toast } from 'react-toastify';
 import 'leaflet/dist/leaflet.css';
 
 const homeIcon = L.icon({
@@ -196,6 +198,18 @@ export default function UserProfile() {
     profileData.latitude && profileData.longitude
       ? [profileData.latitude, profileData.longitude]
       : [27.7, 85.32]; // default center if no saved location
+
+
+       const handleLogout = async () => {
+          try {
+            await authService.logout();
+            toast.info('You have been logged out.');
+          } catch (err) {
+            toast.error('Logout failed. Please try again.');
+          } finally {
+            navigate('/login');
+          }
+        };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -531,9 +545,13 @@ export default function UserProfile() {
                 <button className="w-full py-2 border border-slate-200 rounded-lg hover:bg-slate-50">
                   Refer &amp; Earn
                 </button>
-                <button className="w-full py-2 border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-50">
-                  Logout
-                </button>
+            
+                 <button
+              onClick={handleLogout}
+             className="w-full py-2 border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-50"
+            >
+              Logout
+            </button>
               </div>
             </div>
           </div>

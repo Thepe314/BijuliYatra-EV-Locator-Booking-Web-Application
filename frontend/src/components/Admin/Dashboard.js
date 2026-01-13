@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { userService, stationService, authService, bookingService } from '../../Services/api';
+import { notify } from "../../Utils/notify";
 
 export default function AdminDashboard() {
   const [timeRange, setTimeRange] = useState('week');
@@ -188,10 +189,14 @@ export default function AdminDashboard() {
     setPendingOperators((prev) => prev.filter((op) => op.user_id !== operatorId));
   };
 
+
   const handleLogout = async () => {
-    try { await authService.logout(); } catch (err) {}
-    navigate('/login');
-  };
+  try {
+    await authService.logout();
+  } catch (err) {}
+  notify.logout();
+  navigate("/login");
+};
 
   if (loading) {
     return (

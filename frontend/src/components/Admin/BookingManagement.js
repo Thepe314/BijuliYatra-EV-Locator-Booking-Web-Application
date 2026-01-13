@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Zap,Search, MapPin, Clock, Battery, Eye, XCircle,Users,Settings } from 'lucide-react';
+import { Zap,Search, MapPin, Clock, Battery, Eye, XCircle,Users,Settings,LogOut} from 'lucide-react';
 import { bookingService } from '../../Services/api';
 import { useNavigate } from "react-router-dom";
+import { authService } from '../../Services/api';
+import notify from '../../Utils/notify';
 
 export default function BookingManagement() {
     const navigate = useNavigate();
@@ -11,6 +13,7 @@ export default function BookingManagement() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Load bookings from backend
   useEffect(() => {
@@ -70,6 +73,13 @@ export default function BookingManagement() {
     };
   }, []);
 
+     const handleLogout = async () => {
+     try {
+       await authService.logout();
+     } catch (err) {}
+     notify.logout();
+     navigate("/login");
+   };
   
 
   // Derived stats from bookings
@@ -227,18 +237,53 @@ export default function BookingManagement() {
         </button>
       </nav>
 
-      {/* User */}
-      <div className="border-t border-slate-200 p-4 flex-shrink-0">
-        <div className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-100 transition-all">
-          <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-            AU
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-slate-900">Admin User</p>
-            <p className="text-[11px] text-slate-500">Administrator</p>
-          </div>
-        </div>
+     {/* User */}
+<div className="border-t border-slate-200 p-4 flex-shrink-0">
+  <div className="relative">
+    {/* Avatar row (click to toggle menu) */}
+    <button
+      type="button"
+      onClick={() => setUserMenuOpen((open) => !open)}
+      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-100 transition-all"
+    >
+      <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+        AU
       </div>
+      <div className="flex-1 text-left">
+        <p className="text-sm font-medium text-slate-900">Admin User</p>
+        <p className="text-[11px] text-slate-500">Administrator</p>
+      </div>
+      {/* small chevron indicator */}
+      <span className="text-slate-400 text-xs">▴▾</span>
+    </button>
+
+    {/* Dropdown / up-box */}
+    {userMenuOpen && (
+      <div className="absolute bottom-full left-3 right-3 mb-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50">
+        <button
+          type="button"
+          onClick={() => {
+            setUserMenuOpen(false);
+            navigate("/admin/settings");
+          }}
+          className="w-full px-4 py-3 text-left text-xs hover:bg-slate-50 flex items-center gap-3 text-slate-700"
+        >
+          <Settings className="w-4 h-4" />
+          <span>Settings</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full px-4 py-3 text-left text-xs hover:bg-rose-50 text-rose-600 flex items-center gap-3"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Logout</span>
+        </button>
+      </div>
+    )}
+  </div>
+</div>
+
     </aside>
 
     {/* Main */}

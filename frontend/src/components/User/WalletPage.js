@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowDownCircle,
   ArrowUpCircle,
@@ -6,84 +6,69 @@ import {
   Wallet,
   CreditCard,
   ArrowRight,
+  Zap
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { paymentService } from '../../Services/api';
 
-const transactions = [
+// Static payment methods for Methods tab
+const PAYMENT_METHODS = [
   {
-    id: 1,
-    type: 'debit',
-    title: 'Charging Session - PowerHub CP',
-    datetime: 'Jan 11, 2026 • 10:31 AM',
-    amount: -934.5,
+    id: 'CARD',
+    label: 'Card (Stripe)',
+    description: 'Pay using Visa, Mastercard and other supported cards via Stripe.',
+    badge: 'Recommended',
+    color: 'from-slate-900 to-slate-700',
   },
   {
-    id: 2,
-    type: 'credit',
-    title: 'Wallet Top-up',
-    datetime: 'Jan 10, 2026 • 3:15 PM',
-    amount: 2000,
+    id: 'ESEWA',
+    label: 'eSewa',
+    description: 'Instant wallet payments via eSewa for users in Nepal.',
+    color: 'from-emerald-500 to-emerald-600',
   },
   {
-    id: 3,
-    type: 'debit',
-    title: 'Charging Session - ChargeZone',
-    datetime: 'Jan 9, 2026 • 4:32 PM',
-    amount: -525,
-  },
-  {
-    id: 4,
-    type: 'credit',
-    title: 'Cashback Credit',
-    datetime: 'Jan 9, 2026 • 4:35 PM',
-    amount: 26.25,
-  },
-  {
-    id: 5,
-    type: 'debit',
-    title: 'Charging Session - EV Point',
-    datetime: 'Jan 7, 2026 • 11:05 AM',
-    amount: -680,
-  },
-  {
-    id: 6,
-    type: 'credit',
-    title: 'Referral Bonus',
-    datetime: 'Jan 5, 2026 • 9:00 AM',
-    amount: 100,
-  },
-];
-
-const cards = [
-  {
-    id: 1,
-    brand: 'VISA',
-    masked: '•••• 4242',
-    holder: 'Rajesh Kumar',
-    expiry: '12/28',
-    color: 'from-blue-500 to-blue-700',
-    isDefault: true,
-  },
-  {
-    id: 2,
-    brand: 'MASTERCARD',
-    masked: '•••• 8765',
-    holder: 'Rajesh Kumar',
-    expiry: '09/27',
-    color: 'from-orange-500 to-red-500',
-    isDefault: false,
+    id: 'KHALTI',
+    label: 'Khalti',
+    description: 'Pay using Khalti wallet with QR and one-tap flows.',
+    color: 'from-violet-500 to-indigo-600',
   },
 ];
 
 export default function WalletPage() {
   const [activeTab, setActiveTab] = useState('wallet');
   const [selectedMethod, setSelectedMethod] = useState('esewa');
+  const [transactions, setTransactions] = useState([]);
+  const [loadingTx, setLoadingTx] = useState(true);
+  const [selectedTx, setSelectedTx] = useState(null);
   const navigate = useNavigate();
 
   const balance = 1250;
   const thisMonthSpend = 3245.75;
   const cashback = 162.29;
   const quickTopups = [500, 100, 200, 5000];
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await paymentService.listMyPayments();
+       console.log('listMyPayments data =', data);
+        // [{id, type, title, datetime, amount, paymentMethod?}, ...]
+        setTransactions(data);
+      } catch (e) {
+        console.error('Failed to load transactions', e);
+      } finally {
+        setLoadingTx(false);
+      }
+    })();
+  }, []);
+
+  if (loadingTx) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-sm text-gray-500">Loading wallet…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -92,7 +77,7 @@ export default function WalletPage() {
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="bg-emerald-500 p-2 rounded-lg">
-              <Wallet className="w-5 h-5 text-white" />
+               <Zap className="w-5 h-5 text-white" />
             </div>
             <span className="font-semibold text-slate-900">BijuliYatra</span>
           </div>
@@ -119,7 +104,7 @@ export default function WalletPage() {
 
       {/* Tabs + content */}
       <div className="max-w-6xl mx-auto px-6 pb-10 space-y-6">
-        {/* Tabs bar styled like the reference */}
+        {/* Tabs bar */}
         <div className="bg-white rounded-xl shadow-sm border flex items-center">
           <button
             onClick={() => setActiveTab('wallet')}
@@ -159,18 +144,31 @@ export default function WalletPage() {
             thisMonthSpend={thisMonthSpend}
             cashback={cashback}
             quickTopups={quickTopups}
-            transactions={transactions.slice(0, 4)}
+            transactions={transactions.slice(0, 4)} // recent 4
             selectedMethod={selectedMethod}
             setSelectedMethod={setSelectedMethod}
+            onSelectTx={setSelectedTx}
           />
         )}
 
-        {activeTab === 'methods' && <PaymentMethodsTab cards={cards} />}
+        {activeTab === 'methods' && (
+          <PaymentMethodsTab methods={PAYMENT_METHODS} />
+        )}
 
         {activeTab === 'transactions' && (
-          <TransactionsTab transactions={transactions} />
+          <TransactionsTab
+            transactions={transactions}
+            onSelectTx={setSelectedTx}
+          />
         )}
       </div>
+
+      {selectedTx && (
+        <TransactionDetailsModal
+          tx={selectedTx}
+          onClose={() => setSelectedTx(null)}
+        />
+      )}
     </div>
   );
 }
@@ -184,6 +182,7 @@ function WalletTab({
   transactions,
   selectedMethod,
   setSelectedMethod,
+  onSelectTx,
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -272,7 +271,7 @@ function WalletTab({
               <ArrowRight className="w-3 h-3" />
             </button>
           </div>
-          <TransactionList transactions={transactions} />
+          <TransactionList transactions={transactions} onSelectTx={onSelectTx} />
         </div>
       </div>
 
@@ -312,10 +311,10 @@ function WalletTab({
           <CreditCard className="w-5 h-5 text-emerald-600" />
           <div>
             <p className="text-sm font-semibold text-gray-800">
-              Manage saved cards
+              Manage saved payment methods
             </p>
             <p className="text-xs text-gray-500">
-              Add or remove bank cards and UPI accounts.
+              Configure card (Stripe), eSewa, and Khalti for faster checkout.
             </p>
           </div>
         </div>
@@ -325,68 +324,62 @@ function WalletTab({
 }
 
 /* Payment Methods tab */
-function PaymentMethodsTab({ cards }) {
+function PaymentMethodsTab({ methods }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">
-          Manage your saved payment methods.
+          Choose and manage how you pay for charging sessions.
         </p>
-        <button className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700">
-          <PlusCircle className="w-4 h-4" />
-          Add Card
-        </button>
+        <span className="text-[11px] px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+          Secure payments
+        </span>
       </div>
 
       <div className="flex flex-wrap gap-4">
-        {cards.map((card) => (
+        {methods.map((m) => (
           <div
-            key={card.id}
-            className={`relative flex-1 min-w-[260px] max-w-sm rounded-2xl text-white p-5 bg-gradient-to-r ${card.color}`}
+            key={m.id}
+            className={`relative flex-1 min-w-[240px] max-w-sm rounded-2xl text-white p-5 bg-gradient-to-r ${m.color}`}
           >
-            {card.isDefault && (
+            {m.badge && (
               <span className="absolute top-3 right-4 text-[11px] bg-white/20 px-2 py-1 rounded-full">
-                Default
+                {m.badge}
               </span>
             )}
             <p className="text-xs uppercase tracking-wide opacity-80">
-              {card.brand}
+              {m.id === 'CARD' ? 'Stripe Card' : m.label}
             </p>
-            <p className="mt-4 text-xl font-semibold">{card.masked}</p>
-            <div className="mt-6 flex items-end justify-between text-xs">
-              <div>
-                <p className="opacity-80">Card Holder</p>
-                <p className="font-semibold">{card.holder}</p>
-              </div>
-              <div>
-                <p className="opacity-80">Expires</p>
-                <p className="font-semibold">{card.expiry}</p>
-              </div>
+            <p className="mt-3 text-lg font-semibold">{m.label}</p>
+            <p className="mt-2 text-xs opacity-90">{m.description}</p>
+            <div className="mt-5 flex items-center justify-between text-[11px] opacity-80">
+              <span>Tap to configure in settings</span>
+              <span>Fast &amp; secure</span>
             </div>
           </div>
         ))}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border p-4">
-        <p className="text-sm font-semibold text-gray-800 mb-3">Card Actions</p>
+        <p className="text-sm font-semibold text-gray-800 mb-3">
+          Linked methods
+        </p>
         <div className="space-y-2">
-          {cards.map((card) => (
+          {methods.map((m) => (
             <div
-              key={card.id}
+              key={m.id}
               className="flex items-center justify-between px-3 py-2 rounded-lg border border-slate-100 hover:bg-slate-50"
             >
               <div className="flex items-center gap-2 text-sm text-gray-700">
                 <CreditCard className="w-4 h-4 text-emerald-600" />
-                <span>
-                  {card.brand} {card.masked}
-                </span>
+                <span>{m.label}</span>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <button className="text-gray-500 hover:text-gray-700">
-                  Edit
+                  Make default
                 </button>
                 <button className="text-red-500 hover:text-red-600">
-                  Delete
+                  Disconnect
                 </button>
               </div>
             </div>
@@ -398,12 +391,14 @@ function PaymentMethodsTab({ cards }) {
 }
 
 /* Transactions tab */
-function TransactionsTab({ transactions }) {
+function TransactionsTab({ transactions, onSelectTx }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="space-y-1">
-          <h2 className="text-sm font-semibold text-gray-800">All Transactions</h2>
+          <h2 className="text-sm font-semibold text-gray-800">
+            All Transactions
+          </h2>
           <p className="text-xs text-gray-500">
             View your complete wallet transaction history.
           </p>
@@ -413,17 +408,32 @@ function TransactionsTab({ transactions }) {
         </button>
       </div>
 
-      <TransactionList transactions={transactions} />
+      <TransactionList transactions={transactions} onSelectTx={onSelectTx} />
     </div>
   );
 }
 
+/* Helper to pretty-print payment method */
+function formatPaymentMethod(method) {
+  if (!method) return 'N/A';
+  const m = method.toUpperCase();
+  if (m === 'ESEWA') return 'Paid via eSewa';
+  if (m === 'KHALTI') return 'Paid via Khalti';
+  if (m === 'CARD' || m === 'STRIPE') return 'Paid via Card (Stripe)';
+  return `Paid via ${method}`;
+}
+
 /* Reusable transaction list */
-function TransactionList({ transactions }) {
+function TransactionList({ transactions, onSelectTx }) {
   return (
     <div className="divide-y divide-gray-100">
       {transactions.map((tx) => (
-        <div key={tx.id} className="flex items-center justify-between py-3">
+        <button
+          key={tx.id}
+          type="button"
+          onClick={() => onSelectTx && onSelectTx(tx)}
+          className="w-full flex items-center justify-between py-3 text-left hover:bg-slate-50 px-1"
+        >
           <div className="flex items-center gap-3">
             <div
               className={`w-8 h-8 rounded-lg flex items-center justify-center ${
@@ -441,6 +451,9 @@ function TransactionList({ transactions }) {
             <div>
               <p className="text-sm font-medium text-gray-900">{tx.title}</p>
               <p className="text-[11px] text-gray-500">{tx.datetime}</p>
+              <p className="text-[11px] text-gray-400">
+                {formatPaymentMethod(tx.paymentMethod)}
+              </p>
             </div>
           </div>
           <div className="text-right">
@@ -455,8 +468,88 @@ function TransactionList({ transactions }) {
             </p>
             <p className="text-[11px] text-gray-400 mt-0.5">Completed</p>
           </div>
-        </div>
+        </button>
       ))}
+    </div>
+  );
+}
+
+/* Modal: transaction details */
+function TransactionDetailsModal({ tx, onClose }) {
+  if (!tx) return null;
+
+  const methodLabel = formatPaymentMethod(tx.paymentMethod);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative">
+        <button
+          type="button"
+          className="absolute right-4 top-3 text-gray-400 hover:text-gray-600 text-2xl"
+          onClick={onClose}
+        >
+          ×
+        </button>
+
+        <h2 className="text-xl font-semibold text-slate-900 mb-2">
+          Transaction Details
+        </h2>
+        <p className="text-xs text-slate-500 mb-4">ID {tx.id}</p>
+
+        <div className="space-y-3 text-sm">
+          <div>
+            <p className="text-[11px] text-slate-500 mb-0.5">Title</p>
+            <p className="font-medium text-slate-900">{tx.title}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[11px] text-slate-500 mb-0.5">Type</p>
+              <p className="font-medium text-slate-900">
+                {tx.type === 'debit' ? 'Debit (money out)' : 'Credit (money in)'}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] text-slate-500 mb-0.5">Amount</p>
+              <p
+                className={`font-semibold ${
+                  tx.amount < 0 ? 'text-red-500' : 'text-emerald-600'
+                }`}
+              >
+                {tx.amount < 0
+                  ? `- NPR${Math.abs(tx.amount).toFixed(2)}`
+                  : `+ NPR${tx.amount.toFixed(2)}`}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[11px] text-slate-500 mb-0.5">
+              Date &amp; Time
+            </p>
+            <p className="font-medium text-slate-900">{tx.datetime}</p>
+          </div>
+
+          <div>
+            <p className="text-[11px] text-slate-500 mb-0.5">
+              Payment Method
+            </p>
+            <p className="font-medium text-slate-900">{methodLabel}</p>
+          </div>
+
+          {/* Add more fields here if your PaymentDTO includes them (e.g. bookingId) */}
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

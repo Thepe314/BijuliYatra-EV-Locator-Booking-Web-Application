@@ -124,8 +124,9 @@ export default function LoginPage() {
         email: formData.email,
         password: formData.password,
       });
+      console.log("login data =", data);
 
-      // CASE 1: Backend returns token directly (no OTP)
+      // CASE 1: token directly
       if (data.token) {
         const role = (data.role || "").toString();
         const status = (data.status || "").toString();
@@ -159,11 +160,23 @@ export default function LoginPage() {
           localStorage.setItem("userId", data.userId.toString());
         if (data.role) localStorage.setItem("userRole", data.role);
 
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            userId: data.userId,
+            role: data.role,
+            email: data.email || null,
+            fullname: data.fullname || null,
+          })
+        );
+
         if (login) {
           login({
             token: data.token,
             userId: data.userId,
             role: data.role,
+            email: data.email,
+            fullname: data.fullname,
           });
         }
 
@@ -181,7 +194,7 @@ export default function LoginPage() {
         return;
       }
 
-      // CASE 2: OTP flow – backend responded with "OTP sent" and no token
+      // CASE 2: OTP flow
       if (data.message && data.message.toLowerCase().includes("otp")) {
         setOtp("");
         setOtpEmail(formData.email);
@@ -304,6 +317,15 @@ export default function LoginPage() {
       if (data.userId)
         localStorage.setItem("userId", data.userId.toString());
       if (data.role) localStorage.setItem("userRole", data.role);
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          userId: data.userId,
+          role: data.role,
+          email: data.email,
+          fullname: data.fullname,
+        })
+      );
 
       if (login) {
         login({
@@ -351,93 +373,85 @@ export default function LoginPage() {
   };
 
   return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-10">
-        {/* Outer frame */}
-        <div className="w-full max-w-6xl bg-white rounded-3xl overflow-hidden shadow-xl border border-slate-200">
-          <div className="grid md:grid-cols-2">
-            {/* LEFT: brand / marketing panel */}
-          {/* LEFT: brand / marketing panel with EV image */}
-      <div className="relative flex flex-col justify-between overflow-hidden">
-        {/* Background image */}
-        <img
-          src={evChargerImg}
-          alt="EV charging point"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-10 font-[Inter,sans-serif]">
+      {/* Outer frame */}
+      <div className="w-full max-w-6xl bg-white rounded-3xl overflow-hidden shadow-xl border border-slate-200">
+        <div className="grid md:grid-cols-2">
+          {/* LEFT: brand / marketing panel */}
+          <div className="relative flex flex-col justify-between overflow-hidden">
+            <img
+              src={evChargerImg}
+              alt="EV charging point"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-white/65" />
 
-        {/* Light overlay so text is readable */}
-        <div className="absolute inset-0 bg-white/65" />
+            <div className="relative z-10 px-10 py-10 flex flex-col justify-between h-full">
+              {/* Logo */}
+              <div className="flex items-center gap-3 mb-12">
+                <div className="h-11 w-11 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <Zap className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-lg font-semibold text-slate-900">
+                  BijuliYatra
+                </span>
+              </div>
 
-        {/* Content on top */}
-        <div className="relative z-10 px-10 py-10 flex flex-col justify-between h-full">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-12">
-            <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
+              {/* Hero text */}
+              <div>
+                <h1 className="text-4xl font-semibold text-slate-900 mb-5 leading-snug">
+                  Power Your Journey
+                  <br className="hidden sm:block" />
+                  with Smart EV Charging
+                </h1>
+                <p className="text-base text-slate-700 max-w-md mb-8">
+                  Connect to thousands of charging stations across India.
+                  Monitor your charging sessions, manage your stations, and
+                  drive the electric revolution.
+                </p>
+
+                <div className="flex flex-wrap gap-8 text-emerald-500 text-sm font-semibold">
+                  <div>
+                    <div className="text-xl">5,000+</div>
+                    <div className="text-[12px] uppercase tracking-wide text-slate-600">
+                      Charging Stations
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xl">50K+</div>
+                    <div className="text-[12px] uppercase tracking-wide text-slate-600">
+                      Active Users
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xl">24/7</div>
+                    <div className="text-[12px] uppercase tracking-wide text-slate-600">
+                      Support
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="mt-10 text-[12px] text-slate-500">
+                © {new Date().getFullYear()} BijuliYatra. All rights reserved.
+              </p>
             </div>
-            <span className="text-base font-semibold text-slate-900">
-              BijuliYatra
-            </span>
           </div>
-
-          {/* Hero text */}
-          <div>
-            <h1 className="text-3xl font-semibold text-slate-900 mb-4 leading-snug">
-              Power Your Journey
-              <br className="hidden sm:block" />
-              with Smart EV Charging
-            </h1>
-            <p className="text-sm text-slate-700 max-w-md mb-8">
-              Connect to thousands of charging stations across India. Monitor
-              your charging sessions, manage your stations, and drive the
-              electric revolution.
-            </p>
-
-            {/* Stats row */}
-            <div className="flex flex-wrap gap-8 text-emerald-500 text-sm font-semibold">
-              <div>
-                <div className="text-lg">5,000+</div>
-                <div className="text-[11px] uppercase tracking-wide text-slate-600">
-                  Charging Stations
-                </div>
-              </div>
-              <div>
-                <div className="text-lg">50K+</div>
-                <div className="text-[11px] uppercase tracking-wide text-slate-600">
-                  Active Users
-                </div>
-              </div>
-              <div>
-                <div className="text-lg">24/7</div>
-                <div className="text-[11px] uppercase tracking-wide text-slate-600">
-                  Support
-                </div>
-              </div>
-            </div>
-          </div>
-
-      {/* Footer copy */}
-      <p className="mt-10 text-[11px] text-slate-500">
-        © {new Date().getFullYear()} BijuliYatra. All rights reserved.
-      </p>
-    </div>
-  </div>
-
 
           {/* RIGHT: login form panel */}
           <div className="bg-white px-10 py-10 flex flex-col justify-center border-l border-slate-200">
             <div className="w-full max-w-sm mx-auto">
-              <h2 className="text-2xl font-semibold text-slate-900 mb-1">
-                Welcome Back
+              <h2 className="text-3xl font-semibold text-slate-900 mb-2">
+                Welcome back
               </h2>
-              <p className="text-xs text-slate-500 mb-8">
+              <p className="text-sm text-slate-500 mb-8">
                 Sign in to access your account.
               </p>
 
               <form onSubmit={handleLogin} className="space-y-6">
                 {/* Email */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Email or Phone
                   </label>
                   <div className="relative">
@@ -449,11 +463,11 @@ export default function LoginPage() {
                       onChange={handleChange}
                       onBlur={handleBlur}
                       placeholder="you@example.com"
-                      className="w-full bg-white border border-slate-300 rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      className="w-full bg-white border border-slate-300 rounded-md pl-9 pr-3 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     />
                   </div>
                   {touched.email && errors.email && (
-                    <p className="text-red-500 text-[11px] mt-1">
+                    <p className="text-red-500 text-xs mt-1">
                       {errors.email}
                     </p>
                   )}
@@ -462,13 +476,13 @@ export default function LoginPage() {
                 {/* Password */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="block text-xs font-medium text-slate-700">
+                    <label className="block text-sm font-medium text-slate-700">
                       Password
                     </label>
                     <button
                       type="button"
                       onClick={handleForgotPassword}
-                      className="text-[11px] text-emerald-500 hover:text-emerald-600"
+                      className="text-xs text-emerald-500 hover:text-emerald-600"
                     >
                       Forgot password?
                     </button>
@@ -482,7 +496,7 @@ export default function LoginPage() {
                       onChange={handleChange}
                       onBlur={handleBlur}
                       placeholder="Enter your password"
-                      className="w-full bg-white border border-slate-300 rounded-md pl-9 pr-9 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      className="w-full bg-white border border-slate-300 rounded-md pl-9 pr-9 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     />
                     <button
                       type="button"
@@ -497,18 +511,18 @@ export default function LoginPage() {
                     </button>
                   </div>
                   {touched.password && errors.password && (
-                    <p className="text-red-500 text-[11px] mt-1">
+                    <p className="text-red-500 text-xs mt-1">
                       {errors.password}
                     </p>
                   )}
                 </div>
 
                 {/* Remember */}
-                <div className="flex items-center justify-between text-[11px] text-slate-600">
+                <div className="flex items-center justify-between text-xs text-slate-600">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      className="h-3.5 w-3.5 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500"
+                      className="h-4 w-4 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500"
                     />
                     <span>Remember me</span>
                   </label>
@@ -518,7 +532,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full rounded-md py-2.5 text-sm font-semibold shadow-sm transition ${
+                  className={`w-full rounded-md py-3 text-sm font-semibold shadow-sm transition ${
                     isSubmitting
                       ? "bg-emerald-500/70 cursor-not-allowed"
                       : "bg-emerald-500 hover:bg-emerald-600"
@@ -528,15 +542,15 @@ export default function LoginPage() {
                 </button>
 
                 {apiError && (
-                  <p className="text-red-500 text-[11px] text-center">
+                  <p className="text-red-500 text-xs text-center mt-1">
                     {apiError}
                   </p>
                 )}
 
                 {/* Divider + OTP button */}
-                <div className="flex items-center gap-3 my-3">
+                <div className="flex items-center gap-3 my-4">
                   <div className="flex-1 h-px bg-slate-200" />
-                  <span className="text-[11px] text-slate-400">or</span>
+                  <span className="text-xs text-slate-400">or</span>
                   <div className="flex-1 h-px bg-slate-200" />
                 </div>
 
@@ -545,13 +559,13 @@ export default function LoginPage() {
                   onClick={() => {
                     notify.info("Use your email + password to receive OTP.");
                   }}
-                  className="w-full rounded-md bg-white border border-slate-300 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                  className="w-full rounded-md bg-white border border-slate-300 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
                 >
                   Continue with OTP
                 </button>
 
                 {/* Sign up links */}
-                <div className="mt-6 text-center text-[11px] text-slate-500 space-y-2">
+                <div className="mt-6 text-center text-xs text-slate-500 space-y-2">
                   <p>Don&apos;t have an account?</p>
                   <p>
                     <Link
@@ -576,11 +590,11 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* OTP Modal (kept light) */}
+      {/* OTP Modal */}
       {showOtpModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative">
-            <h2 className="text-xl font-semibold text-slate-900 mb-2 text-center">
+            <h2 className="text-2xl font-semibold text-slate-900 mb-2 text-center">
               Verify your login
             </h2>
             <p className="text-sm text-slate-600 mb-4 text-center">
@@ -598,7 +612,7 @@ export default function LoginPage() {
                     const value = e.target.value.replace(/\D/g, "");
                     setOtp(value);
                   }}
-                  className="tracking-[0.5em] text-center text-lg font-semibold px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:outline-none w-40"
+                  className="tracking-[0.5em] text-center text-2xl font-semibold px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:outline-none w-44"
                   placeholder="••••••"
                 />
               </div>

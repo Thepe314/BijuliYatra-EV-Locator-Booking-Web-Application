@@ -12,6 +12,11 @@ public class LoginRequest {
 	    @Column(unique = true, nullable = false)
 	    private String email;
 
+	    
+	    private String fullname;
+	    
+	    
+	    
 
 		public String getPassword() {
 			return password;
@@ -40,6 +45,16 @@ public class LoginRequest {
 
 		public void setEmail(String email) {
 			this.email = email;
+		}
+
+
+		public String getFullname() {
+			return fullname;
+		}
+
+
+		public void setFullname(String fullname) {
+			this.fullname = fullname;
 		}
 
 	    

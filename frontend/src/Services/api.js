@@ -1,6 +1,7 @@
 // Enhanced API Services - api.js or services/api.js
 import axios from 'axios';
 
+
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || "http://localhost:8080",
   headers: {
@@ -51,32 +52,43 @@ api.interceptors.response.use(
 
 // Auth Services
 export const authService = {
-  login: async (credentials) => {
-    const response = await api.post("/auth/login", credentials);
-    const data = response.data;
+ login: async (credentials) => {
+  const response = await api.post("/auth/login", credentials);
+  const data = response.data;
 
-    if (data.token) {
-      localStorage.setItem("authToken", data.token);
+  if (data.token) {
+    localStorage.setItem("authToken", data.token);
 
-      try {
-        const parts = data.token.split(".");
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
-          if (payload.userId) {
-            localStorage.setItem("userId", payload.userId.toString());
-          }
-          if (payload.role) {
-            localStorage.setItem("userRole", payload.role);
-          }
+    try {
+      const parts = data.token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload.userId) {
+          localStorage.setItem("userId", payload.userId.toString());
         }
-      } catch (e) {
-        console.error("Failed to decode JWT payload:", e);
-        // do not throw – let login continue
-      }
-    }
+        if (payload.role) {
+          localStorage.setItem("userRole", payload.role);
+        }
 
-    return data;
-  },
+     
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            userId: payload.userId ?? data.userId ?? null,
+            role:  payload.role   ?? data.role   ?? null,
+            email: data.email ?? null,
+            fullname: data.fullname ?? null,
+          })
+        );
+      }
+    } catch (e) {
+      console.error("Failed to decode JWT payload:", e);
+    }
+  }
+
+  return data;
+},
+
 
   signupEvOwner: async (userData) => {
     const response = await api.post("/auth/signup/ev-owner", userData);
@@ -89,20 +101,25 @@ export const authService = {
   },
 
   logout: async () => {
-    
-    localStorage.removeItem("jwtToken");
+  try {
+    // Tell backend to invalidate refresh token / session (if your API supports it)
+    await api.post("/auth/logout");
+  } catch (error) {
+    console.error("Logout error:", error);
+    // still continue with client cleanup
+  } finally {
+    // Clear all auth-related data you set on login
+    localStorage.removeItem("authToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("userId");
     localStorage.removeItem("userRole");
+    localStorage.removeItem("user");
 
-    try {
-     
-      await api.post("/auth/logout");
-    } catch (error) {
-      console.error("Logout error:", error);
-    
-    }
-  },
+    // Option A: hard redirect (full reload, clean state)
+    window.location.href = "/login"; // or "/"
+    // Option B (React Router): use navigate("/login") from component instead
+  }
+},
 
   refresh: async () => {
     const refreshToken = localStorage.getItem("refreshToken");
@@ -544,6 +561,21 @@ markPaymentSuccess: async (bookingId, gatewayPaymentId) => {
     return res.data;
   },
 
+
+  
+};
+export const paymentService = {
+  // GET /payments/my -> current user's payments
+  async listMyPayments() {
+    const res = await api.get('/payments/my');
+    return res.data;
+  },
+
+  // (optional) GET /payments/:id
+  async getPaymentById(id) {
+    const res = await api.get(`/payments/${id}`);
+    return res.data;
+  },
 };
 
 // Dashboard/Analytics Services
@@ -597,5 +629,7 @@ export const vehicleService = {
 export const favoriteService = {
   getMyFavorites: () => api.get('/evowner/favorites')
 };
+
+
 
 export { api };

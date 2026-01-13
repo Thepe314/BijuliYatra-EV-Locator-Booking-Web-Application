@@ -1,20 +1,32 @@
 // src/pages/OperatorEditStation.jsx
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, NavLink } from 'react-router-dom';
+import {
+  useParams,
+  useNavigate,
+  NavLink,
+  useLocation,
+} from 'react-router-dom';
 import {
   MapPin,
-  Save,
   ArrowLeft,
   AlertCircle,
   CheckCircle,
   Zap,
+  LayoutDashboard,
+  PlugZap,
+  CalendarClock,
+  BarChart3,
+  Settings,
+  LogOut,
 } from 'lucide-react';
+
 import { stationService } from '../../Services/api';
 import StationLocationPicker from '../../Services/StationLocationPicker';
 
 export default function OperatorEditStation() {
   const { id: stationId } = useParams();
   const navigate = useNavigate();
+  const loc = useLocation();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -128,50 +140,49 @@ export default function OperatorEditStation() {
     return Object.keys(newErrors).length === 0;
   };
 
-const handleMapLocationChange = async ({ lat, lng }) => {
-  // update coords + label immediately
-  setFormData((prev) => ({
-    ...prev,
-    latitude: lat,
-    longitude: lng,
-    location: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-  }));
-
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`
-    );
-    const data = await res.json();
-    const addr = data.address || {};
-
+  const handleMapLocationChange = async ({ lat, lng }) => {
     setFormData((prev) => ({
       ...prev,
       latitude: lat,
       longitude: lng,
       location: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-      address: [
-        addr.road,
-        addr.neighbourhood,
-        addr.suburb,
-        addr.village,
-        addr.town,
-      ]
-        .filter(Boolean)
-        .join(', ') || prev.address,
-      city:
-        addr.city ||
-        addr.town ||
-        addr.village ||
-        addr.municipality ||
-        prev.city,
-      state: addr.state || prev.state,
-      zipCode: addr.postcode || prev.zipCode,
     }));
-  } catch (err) {
-    console.error('Reverse geocoding failed', err);
-    // keep coords but leave existing address fields
-  }
-};
+
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`
+      );
+      const data = await res.json();
+      const addr = data.address || {};
+
+      setFormData((prev) => ({
+        ...prev,
+        latitude: lat,
+        longitude: lng,
+        location: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+        address:
+          [
+            addr.road,
+            addr.neighbourhood,
+            addr.suburb,
+            addr.village,
+            addr.town,
+          ]
+            .filter(Boolean)
+            .join(', ') || prev.address,
+        city:
+          addr.city ||
+          addr.town ||
+          addr.village ||
+          addr.municipality ||
+          prev.city,
+        state: addr.state || prev.state,
+        zipCode: addr.postcode || prev.zipCode,
+      }));
+    } catch (err) {
+      console.error('Reverse geocoding failed', err);
+    }
+  };
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -233,110 +244,158 @@ const handleMapLocationChange = async ({ lat, lng }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-sm text-slate-600">Loading station...</div>
+        <div className="text-base text-slate-600">Loading station...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-100 text-slate-900 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-          <div className="bg-emerald-500 p-2 rounded-xl">
-            <Zap className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-900">BijuliYatra</p>
-            <p className="text-[11px] text-slate-500">Operator Portal</p>
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-screen sticky top-0">
+        {/* Brand */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="bg-emerald-500 p-2 rounded-lg shadow-sm shadow-emerald-200">
+              <Zap className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-semibold text-base text-slate-900">
+                BijuliYatra
+              </span>
+              <span className="text-xs text-slate-500">Operator Portal</span>
+            </div>
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 text-sm">
+       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto text-base">
+          <NavLink
+            to="/admin/dashboard"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                isActive
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`
+            }
+          >
+            <LayoutDashboard
+              className={`w-5 h-5 ${
+                loc.pathname === '/admin/dashboard'
+                  ? 'text-emerald-500'
+                  : 'text-slate-400'
+              }`}
+            />
+            <span>Dashboard</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/stationmanagement"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                isActive
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`
+            }
+          >
+            <PlugZap
+              className={`w-5 h-5 ${
+                loc.pathname.startsWith('/admin/stationmanagement')
+                  ? 'text-emerald-500'
+                  : 'text-slate-400'
+              }`}
+            />
+            <span>Stations</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/bookingmanagement"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                isActive
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`
+            }
+          >
+            <CalendarClock
+              className={`w-5 h-5 ${
+                loc.pathname.startsWith('/admin/bookingmanagement')
+                  ? 'text-emerald-500'
+                  : 'text-slate-400'
+              }`}
+            />
+            <span>Bookings</span>
+          </NavLink>
+
           <NavLink
             to="/operator/dashboard"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg ${
+              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 isActive
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'text-slate-600 hover:bg-slate-50'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
+                  : 'text-slate-700 hover:bg-slate-100'
               }`
             }
           >
-            <span>Dashboard</span>
-          </NavLink>
-          <NavLink
-            to="/operator/stations"
-            className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg ${
-                isActive
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`
-            }
-          >
-            <span>Stations</span>
-          </NavLink>
-          <NavLink
-            to="/operator/bookings"
-            className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg ${
-                isActive
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`
-            }
-          >
-            <span>Bookings</span>
-          </NavLink>
-          <NavLink
-            to="/operator/analytics"
-            className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg ${
-                isActive
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`
-            }
-          >
+            <BarChart3
+              className={`w-5 h-5 ${
+                loc.pathname.startsWith('/operator/dashboard')
+                  ? 'text-emerald-500'
+                  : 'text-slate-400'
+              }`}
+            />
             <span>Analytics</span>
           </NavLink>
+
           <NavLink
             to="/operator/settings"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg ${
+              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 isActive
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'text-slate-600 hover:bg-slate-50'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
+                  : 'text-slate-700 hover:bg-slate-100'
               }`
             }
           >
+            <Settings
+              className={`w-5 h-5 ${
+                loc.pathname.startsWith('/operator/settings')
+                  ? 'text-emerald-500'
+                  : 'text-slate-400'
+              }`}
+            />
             <span>Settings</span>
           </NavLink>
         </nav>
 
-        <button
-          type="button"
-          onClick={() => navigate('/logout')}
-          className="m-3 mt-auto text-xs text-slate-500 hover:text-slate-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50"
-        >
-          Logout
-        </button>
+        {/* Logout */}
+        <div className="border-t border-slate-200 p-4 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => navigate('/logout')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-100 text-sm text-slate-600 hover:text-slate-800"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Logout</span>
+          </button>
+        </div>
       </aside>
 
-      {/* Main column */}
+      {/* Main content */}
       <div className="flex-1 flex flex-col">
         <header className="h-16 bg-white border-b border-slate-200 flex items-center">
           <div className="max-w-5xl w-full mx-auto px-6 flex items-center justify-between">
             <button
-              onClick={() => navigate('/admin/dashboard')}
-              className="inline-flex items-center gap-2 text-sm text-slate-700 hover:text-slate-900"
+              onClick={() => navigate('/admin/stationmanagement')}
+              className="inline-flex items-center gap-2 text-base text-slate-700 hover:text-slate-900"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to stations</span>
             </button>
-            <div className="text-right-font">
-              <p className="text-xs text-slate-500 mb-0.5">
+            <div className="text-right">
+              <p className="text-sm text-slate-500 mb-0.5">
                 Editing station #{stationId}
               </p>
             </div>
@@ -358,7 +417,7 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                 <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
               )}
               <p
-                className={`text-xs sm:text-sm font-medium ${
+                className={`text-sm font-medium ${
                   notification.type === 'success'
                     ? 'text-emerald-800'
                     : 'text-rose-800'
@@ -376,7 +435,7 @@ const handleMapLocationChange = async ({ lat, lng }) => {
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Station details + map */}
                 <section>
-                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-emerald-500" />
                     Station Details
                   </h2>
@@ -385,126 +444,126 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                     {/* Left: text fields */}
                     <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-base font-medium text-slate-700 mb-1">
                           Name *
                         </label>
                         <input
                           name="name"
                           value={formData.name}
                           onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                             errors.name
                               ? 'border-rose-500'
                               : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
                           }`}
                         />
                         {errors.name && (
-                          <p className="text-xs text-rose-600 mt-1">
+                          <p className="text-sm text-rose-600 mt-1">
                             {errors.name}
                           </p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-base font-medium text-slate-700 mb-1">
                           Location label *
                         </label>
                         <input
                           name="location"
                           value={formData.location}
                           onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                             errors.location
                               ? 'border-rose-500'
                               : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
                           }`}
                         />
                         {errors.location && (
-                          <p className="text-xs text-rose-600 mt-1">
+                          <p className="text-sm text-rose-600 mt-1">
                             {errors.location}
                           </p>
                         )}
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-base font-medium text-slate-700 mb-1">
                           Address *
                         </label>
                         <input
                           name="address"
                           value={formData.address}
                           onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                             errors.address
                               ? 'border-rose-500'
                               : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
                           }`}
                         />
                         {errors.address && (
-                          <p className="text-xs text-rose-600 mt-1">
+                          <p className="text-sm text-rose-600 mt-1">
                             {errors.address}
                           </p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-base font-medium text-slate-700 mb-1">
                           City *
                         </label>
                         <input
                           name="city"
                           value={formData.city}
                           onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                             errors.city
                               ? 'border-rose-500'
                               : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
                           }`}
                         />
                         {errors.city && (
-                          <p className="text-xs text-rose-600 mt-1">
+                          <p className="text-sm text-rose-600 mt-1">
                             {errors.city}
                           </p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-base font-medium text-slate-700 mb-1">
                           State *
                         </label>
                         <input
                           name="state"
                           value={formData.state}
                           onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                             errors.state
                               ? 'border-rose-500'
                               : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
                           }`}
                         />
                         {errors.state && (
-                          <p className="text-xs text-rose-600 mt-1">
+                          <p className="text-sm text-rose-600 mt-1">
                             {errors.state}
                           </p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-base font-medium text-slate-700 mb-1">
                           ZIP code *
                         </label>
                         <input
                           name="zipCode"
                           value={formData.zipCode}
                           onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                             errors.zipCode
                               ? 'border-rose-500'
                               : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
                           }`}
                         />
                         {errors.zipCode && (
-                          <p className="text-xs text-rose-600 mt-1">
+                          <p className="text-sm text-rose-600 mt-1">
                             {errors.zipCode}
                           </p>
                         )}
@@ -513,7 +572,7 @@ const handleMapLocationChange = async ({ lat, lng }) => {
 
                     {/* Right: map */}
                     <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-slate-800">
+                      <h3 className="text-base font-medium text-slate-800">
                         Map location (click to change)
                       </h3>
                       <div className="w-full h-56 rounded-xl overflow-hidden border border-slate-200">
@@ -530,7 +589,7 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                         />
                       </div>
                       {formData.latitude && formData.longitude && (
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-xs text-slate-500">
                           Selected: {formData.latitude.toFixed(6)},{' '}
                           {formData.longitude.toFixed(6)}
                         </p>
@@ -541,12 +600,12 @@ const handleMapLocationChange = async ({ lat, lng }) => {
 
                 {/* Capacity & pricing */}
                 <section>
-                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900 mb-4">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-4">
                     Capacity & Pricing
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-base font-medium text-slate-700 mb-1">
                         Level 2 chargers *
                       </label>
                       <input
@@ -555,21 +614,21 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                         name="level2Chargers"
                         value={formData.level2Chargers}
                         onChange={handleChange}
-                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                           errors.level2Chargers
                             ? 'border-rose-500'
                             : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
                         }`}
                       />
                       {errors.level2Chargers && (
-                        <p className="text-xs text-rose-600 mt-1">
+                        <p className="text-sm text-rose-600 mt-1">
                           {errors.level2Chargers}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-base font-medium text-slate-700 mb-1">
                         DC fast chargers *
                       </label>
                       <input
@@ -578,21 +637,21 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                         name="dcFastChargers"
                         value={formData.dcFastChargers}
                         onChange={handleChange}
-                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                           errors.dcFastChargers
                             ? 'border-rose-500'
                             : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
                         }`}
                       />
                       {errors.dcFastChargers && (
-                        <p className="text-xs text-rose-600 mt-1">
+                        <p className="text-sm text-rose-600 mt-1">
                           {errors.dcFastChargers}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-base font-medium text-slate-700 mb-1">
                         Total slots
                       </label>
                       <input
@@ -601,12 +660,12 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                         name="totalSlots"
                         value={formData.totalSlots}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border rounded-lg text-sm outline-none border-slate-300"
+                        className="w-full px-3 py-2 border rounded-lg text-base outline-none border-slate-300"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-base font-medium text-slate-700 mb-1">
                         Available slots
                       </label>
                       <input
@@ -615,12 +674,12 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                         name="availableSlots"
                         value={formData.availableSlots}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border rounded-lg text-sm outline-none border-slate-300"
+                        className="w-full px-3 py-2 border rounded-lg text-base outline-none border-slate-300"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-base font-medium text-slate-700 mb-1">
                         Level 2 rate (per kWh) *
                       </label>
                       <input
@@ -630,21 +689,21 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                         name="level2Rate"
                         value={formData.level2Rate}
                         onChange={handleChange}
-                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                           errors.level2Rate
                             ? 'border-rose-500'
                             : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
                         }`}
                       />
                       {errors.level2Rate && (
-                        <p className="text-xs text-rose-600 mt-1">
+                        <p className="text-sm text-rose-600 mt-1">
                           {errors.level2Rate}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-base font-medium text-slate-700 mb-1">
                         DC fast rate (per kWh) *
                       </label>
                       <input
@@ -654,14 +713,14 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                         name="dcFastRate"
                         value={formData.dcFastRate}
                         onChange={handleChange}
-                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                           errors.dcFastRate
                             ? 'border-rose-500'
                             : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
                         }`}
                       />
                       {errors.dcFastRate && (
-                        <p className="text-xs text-rose-600 mt-1">
+                        <p className="text-sm text-rose-600 mt-1">
                           {errors.dcFastRate}
                         </p>
                       )}
@@ -680,14 +739,14 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                       />
                       <label
                         htmlFor="peakPricing"
-                        className="text-sm text-slate-700"
+                        className="text-base text-slate-700"
                       >
                         Enable peak pricing
                       </label>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-base font-medium text-slate-700 mb-1">
                         Peak multiplier
                       </label>
                       <input
@@ -697,19 +756,19 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                         name="peakMultiplier"
                         value={formData.peakMultiplier}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border rounded-lg text-sm outline-none border-slate-300"
+                        className="w-full px-3 py-2 border rounded-lg text-base outline-none border-slate-300"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-base font-medium text-slate-700 mb-1">
                         Status *
                       </label>
                       <select
                         name="status"
                         value={formData.status}
                         onChange={handleChange}
-                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                           errors.status
                             ? 'border-rose-500'
                             : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
@@ -720,7 +779,7 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                         <option value="offline">Offline</option>
                       </select>
                       {errors.status && (
-                        <p className="text-xs text-rose-600 mt-1">
+                        <p className="text-sm text-rose-600 mt-1">
                           {errors.status}
                         </p>
                       )}
@@ -730,12 +789,12 @@ const handleMapLocationChange = async ({ lat, lng }) => {
 
                 {/* Operator & notes */}
                 <section>
-                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900 mb-4">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-4">
                     Operator & Notes
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-base font-medium text-slate-700 mb-1">
                         Operator ID *
                       </label>
                       <input
@@ -743,20 +802,20 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                         name="operatorId"
                         value={formData.operatorId}
                         onChange={handleChange}
-                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none ${
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
                           errors.operatorId
                             ? 'border-rose-500'
                             : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
                         }`}
                       />
                       {errors.operatorId && (
-                        <p className="text-xs text-rose-600 mt-1">
+                        <p className="text-sm text-rose-600 mt-1">
                           {errors.operatorId}
                         </p>
                       )}
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-base font-medium text-slate-700 mb-1">
                         Notes
                       </label>
                       <textarea
@@ -764,7 +823,7 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                         value={formData.notes}
                         onChange={handleChange}
                         rows={3}
-                        className="w-full px-3 py-2 border rounded-lg text-sm outline-none border-slate-300 resize-none"
+                        className="w-full px-3 py-2 border rounded-lg text-base outline-none border-slate-300 resize-none"
                         placeholder="Internal notes about this station"
                       />
                     </div>
@@ -775,15 +834,15 @@ const handleMapLocationChange = async ({ lat, lng }) => {
                 <div className="flex gap-4 pt-2 justify-end">
                   <button
                     type="button"
-                    onClick={() => navigate('/operator/stations')}
-                    className="px-4 py-2 bg-slate-100 text-slate-800 rounded-lg hover:bg-slate-200 text-sm font-medium"
+                    onClick={() => navigate('/admin/stationmanagement')}
+                    className="px-4 py-2 bg-slate-100 text-slate-800 rounded-lg hover:bg-slate-200 text-base font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium disabled:opacity-50"
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-medium disabled:opacity-50"
                   >
                     {saving ? 'Saving…' : 'Save Changes'}
                   </button>

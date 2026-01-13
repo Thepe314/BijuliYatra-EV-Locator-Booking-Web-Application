@@ -35,10 +35,9 @@ export const UserSessionProvider = ({ children }) => {
     return Date.now() < payload.exp * 1000;
   }, []);
 
-  // now “user” is just an object with userId/role/email…we don’t hard‑require email
   const isValidUserData = useCallback((data) => {
-    return !!data && (data.userId != null || data.email || data.username);
-  }, []);
+  return !!data && (data.userId != null || data.email || data.fullname);
+}, []);
 
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
@@ -72,29 +71,30 @@ export const UserSessionProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [isTokenValid]);
 
-  // UPDATED signature: pass a single object { token, userId, role, email? }
-  const login = ({ token, userId, role, email, username }) => {
-    if (!token || !isTokenValid(token)) {
-      console.error("UserSessionContext.login: invalid or expired token");
-      return;
-    }
+ const login = ({ token, userId, role, email, fullname }) => {
+  if (!token || !isTokenValid(token)) {
+    console.error("UserSessionContext.login: invalid or expired token");
+    return;
+  }
 
-    const userData = {
-      userId: userId ?? null,
-      role: role ?? null,
-      email: email ?? null,
-      username: username ?? null,
-    };
-
-    if (!isValidUserData(userData)) {
-      console.error("UserSessionContext.login: invalid user data", userData);
-      return;
-    }
-
-    localStorage.setItem(TOKEN_STORAGE_KEY, token);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
-    setUser(userData);
+  const userData = {
+    userId: userId ?? null,
+    role: role ?? null,
+    email: email ?? null,
+    fullname: fullname ?? null,
   };
+
+  if (!isValidUserData(userData)) {
+    console.error("UserSessionContext.login: invalid user data", userData);
+    return;
+  }
+
+  localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  // optional: either rely on LoginPage’s write or keep this in sync:
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+
+  setUser(userData);
+};
 
   const logout = () => {
     localStorage.removeItem(TOKEN_STORAGE_KEY);

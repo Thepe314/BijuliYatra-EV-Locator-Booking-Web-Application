@@ -11,6 +11,7 @@ const baseOptions = {
   theme: "colored",
 };
 
+
 export const notify = {
   success(message, options = {}) {
     toast.success(message, { ...baseOptions, ...options });
@@ -23,6 +24,14 @@ export const notify = {
   },
   warning(message, options = {}) {
     toast.warning(message, { ...baseOptions, ...options });
+  },
+
+    logout(message = "You have been logged out.", options = {}) {
+    toast.success(message, {
+      ...baseOptions,
+      className: "toast-logout-blue",
+      ...options,
+    });
   },
 };
 

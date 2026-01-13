@@ -1,12 +1,55 @@
-// src/pages/EVUserDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Calendar, Clock, MapPin, Zap, Star, Car, CreditCard, 
-  Bell, User, ChevronRight
+import {
+  Calendar, MapPin, Zap,
+  Bell, User
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { authService, bookingService, stationService } from '../../Services/api';
+import notify from '../../Utils/notify';
+
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+} from 'react-leaflet';
+import L from 'leaflet';
+
+// same marker icon as StationLocationPicker
+const markerIcon = new L.Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+function NearbyStationsMap({ userLat, userLng, stations }) {
+  if (!userLat || !userLng) return null;
+
+  return (
+    <MapContainer
+      center={[userLat, userLng]}
+      zoom={13}
+      style={{ width: '100%', height: '100%' }}
+    >
+      <TileLayer
+        attribution="© OpenStreetMap contributors, © CARTO"
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+      />
+      {/* User location */}
+      <Marker position={[userLat, userLng]} icon={markerIcon} />
+      {/* Nearby stations */}
+      {stations.map((st) =>
+        st.latitude && st.longitude ? (
+          <Marker
+            key={st.id}
+            position={[st.latitude, st.longitude]}
+            icon={markerIcon}
+          />
+        ) : null
+      )}
+    </MapContainer>
+  );
+}
 
 export default function EVUserDashboard() {
   const [activeTab, setActiveTab] = useState('upcoming');
@@ -27,6 +70,9 @@ export default function EVUserDashboard() {
     favorites: 0,
   });
 
+  const [latestBooking, setLatestBooking] = useState(null);
+  const [userLocation, setUserLocation] = useState({ lat: null, lng: null });
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,11 +84,14 @@ export default function EVUserDashboard() {
         const storedUserRaw = localStorage.getItem('user');
         const storedUser = JSON.parse(storedUserRaw || 'null');
 
+        console.log('storedUser parsed =', storedUser);
+
         let profile = null;
 
         // 2) if we have userId, fetch full profile
         if (storedUser?.userId && authService.getUserByIdE) {
           profile = await authService.getUserByIdE(storedUser.userId);
+          localStorage.setItem('user', JSON.stringify(profile));
           setUser(profile);
         } else {
           setUser(storedUser);
@@ -52,23 +101,32 @@ export default function EVUserDashboard() {
         // 3) bookings
         const bookingsRes = await bookingService.listBookings();
         const allBookings = bookingsRes.data || bookingsRes || [];
-        const now = new Date();
 
+        // latest by id
+        let latest = null;
+        if (allBookings.length > 0) {
+          latest = allBookings.reduce((acc, b) =>
+            !acc || (b.id ?? 0) > (acc.id ?? 0) ? b : acc
+          );
+        }
+        setLatestBooking(latest);
+
+        // upcoming bookings (same criteria)
+        const now = new Date();
         const upcoming = allBookings.filter(
           (b) =>
             new Date(b.endTime) > now &&
             b.status !== 'cancelled' &&
             b.status !== 'completed'
         );
-        const past = allBookings.filter(
-          (b) => new Date(b.endTime) <= now || b.status === 'completed'
-        );
-
-        // sort past bookings newest → oldest
-        past.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
-
         setUpcomingBookings(upcoming);
+
+        // past bookings: everything except latest
+        const past = allBookings
+          .filter((b) => !latest || b.id !== latest.id)
+          .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
         setPastBookings(past);
+
         setVehicles([]);
         setFavoriteStations([]);
 
@@ -90,9 +148,10 @@ export default function EVUserDashboard() {
           favorites: 0,
         });
 
-        // 4) nearby stations: take 2 from backend using user location or default
+        // 4) nearby stations + user location
         const lat = profile?.latitude ?? 27.7172;
         const lng = profile?.longitude ?? 85.3240;
+        setUserLocation({ lat, lng });
 
         try {
           const stationsRes = await stationService.listNearbyStations({
@@ -105,8 +164,6 @@ export default function EVUserDashboard() {
           console.error('Failed to load nearby stations', e);
           setNearbyStations([]);
         }
-
-        toast.success('Dashboard loaded', { toastId: 'dashboard-loaded' });
       } catch (err) {
         console.error('Failed to load dashboard:', err);
       } finally {
@@ -117,13 +174,12 @@ export default function EVUserDashboard() {
     loadDashboardData();
   }, []);
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-NP', {
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleDateString('en-NP', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
-  };
 
   const formatTime = (start, end) => {
     const s = new Date(start).toLocaleTimeString('en-NP', {
@@ -164,16 +220,14 @@ export default function EVUserDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await authService.logout();
-      toast.info('You have been logged out.');
-    } catch (err) {
-      toast.error('Logout failed. Please try again.');
-    } finally {
-      navigate('/login');
-    }
-  };
+   const handleLogout = async () => {
+   try {
+     await authService.logout();
+   } catch (err) {}
+   notify.logout();
+   navigate("/login");
+ };
+ 
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -227,7 +281,7 @@ export default function EVUserDashboard() {
                   EV Owner Dashboard
                 </p>
                 <h1 className="text-2xl md:text-3xl font-semibold text-white">
-                  Welcome back, {user?.name || user?.fullName || user?.username || 'EV Driver'}!
+                  Welcome back, {user?.fullname || user?.fullName || user?.username || 'EV Driver'}!
                 </h1>
                 <p className="text-emerald-100 text-sm mt-1">
                   Ready to charge your EV?
@@ -252,22 +306,22 @@ export default function EVUserDashboard() {
             </div>
           </section>
 
-          {/* Top row: Next booking + Nearby stations */}
+          {/* Top row: Latest booking + Nearby stations */}
           <section className="px-6 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Next booking */}
+            {/* Latest booking */}
             <div className="lg:col-span-2 bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-semibold text-slate-900">
                   Latest Booking
                 </h2>
-                {upcomingBookings[0] && (
+                {latestBooking && (
                   <span className="text-xs font-medium px-3 py-1 rounded-full bg-emerald-50 text-emerald-700">
-                    Confirmed
+                    {latestBooking.status || 'Confirmed'}
                   </span>
                 )}
               </div>
 
-              {upcomingBookings[0] ? (
+              {latestBooking ? (
                 <>
                   <div className="flex items-start gap-3 mb-4">
                     <div className="mt-1">
@@ -275,11 +329,11 @@ export default function EVUserDashboard() {
                     </div>
                     <div>
                       <p className="font-semibold text-slate-900">
-                        {upcomingBookings[0].stationName || 'Unknown Station'}
+                        {latestBooking.stationName || 'Unknown Station'}
                       </p>
                       <p className="text-xs text-slate-500 flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
-                        {upcomingBookings[0].address || 'Location not available'}
+                        {latestBooking.address || 'Location not available'}
                       </p>
                     </div>
                   </div>
@@ -288,24 +342,24 @@ export default function EVUserDashboard() {
                     <div>
                       <p className="text-slate-500">Date & time</p>
                       <p className="font-medium text-slate-900">
-                        {formatDate(upcomingBookings[0].startTime)} •{' '}
+                        {formatDate(latestBooking.startTime)} •{' '}
                         {formatTime(
-                          upcomingBookings[0].startTime,
-                          upcomingBookings[0].endTime
+                          latestBooking.startTime,
+                          latestBooking.endTime
                         )}
                       </p>
                     </div>
                     <div>
                       <p className="text-slate-500">Connector Type</p>
                       <p className="font-medium text-slate-900">
-                        {upcomingBookings[0].connectorType || '—'} •{' '}
-                        {upcomingBookings[0].power} kW
+                        {latestBooking.connectorType || '—'} •{' '}
+                        {latestBooking.power} kW
                       </p>
                     </div>
                     <div>
                       <p className="text-slate-500">Estimated Cost</p>
                       <p className="font-medium text-slate-900">
-                        Rs. {upcomingBookings[0].totalAmount?.toLocaleString() || '—'}
+                        Rs. {latestBooking.totalAmount?.toLocaleString() || '—'}
                       </p>
                     </div>
                   </div>
@@ -318,7 +372,7 @@ export default function EVUserDashboard() {
                   </button>
                 </>
               ) : (
-                <p className="text-sm text-slate-500">No upcoming bookings.</p>
+                <p className="text-sm text-slate-500">No bookings yet.</p>
               )}
             </div>
 
@@ -336,9 +390,12 @@ export default function EVUserDashboard() {
                 </button>
               </div>
 
-              {/* small map placeholder; plug in your StationLocator here */}
-              <div className="mb-4 h-28 rounded-xl bg-emerald-50 flex items-center justify-center text-xs text-emerald-600">
-                Map view
+              <div className="mb-4 h-28 rounded-xl overflow-hidden">
+                <NearbyStationsMap
+                  userLat={userLocation.lat}
+                  userLng={userLocation.lng}
+                  stations={nearbyStations}
+                />
               </div>
 
               <div className="space-y-3 text-sm">
@@ -356,7 +413,7 @@ export default function EVUserDashboard() {
                     </div>
                     <button
                       className="text-xs font-medium text-emerald-600"
-                      onClick={() => navigate(`/ev-owner/station/${st.id}`)}
+                      onClick={() => navigate(`/ev-owner/book/${st.id}`)}
                     >
                       Book now
                     </button>
@@ -372,15 +429,15 @@ export default function EVUserDashboard() {
             </div>
           </section>
 
-          {/* Recent bookings */}
+          {/* Past bookings */}
           <section className="px-6 pb-6">
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm">
               <div className="flex items-center justify-between px-5 py-4 border-b">
                 <h2 className="text-base font-semibold text-slate-900">
-                Past Bookings
+                  Past Bookings
                 </h2>
                 <button
-                  onClick={() => setActiveTab('past')}
+                  onClick={() => navigate('/ev-owner/bookings')}
                   className="text-xs font-medium text-emerald-600"
                 >
                   View all
@@ -394,7 +451,9 @@ export default function EVUserDashboard() {
                   >
                     <div>
                       <p className="font-medium text-slate-900">
-                        {booking.station?.name || booking.stationName || 'Unknown Station'}
+                        {booking.station?.name ||
+                          booking.stationName ||
+                          'Unknown Station'}
                       </p>
                       <p className="text-xs text-slate-500">
                         {formatDate(booking.startTime)} •{' '}
@@ -464,3 +523,7 @@ export default function EVUserDashboard() {
     </div>
   );
 }
+
+
+
+
