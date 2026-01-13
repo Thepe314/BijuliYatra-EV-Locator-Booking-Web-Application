@@ -227,6 +227,13 @@ export default function BookingManagement() {
           <Clock className="w-5 h-5 text-emerald-500" />
           <span>Bookings</span>
         </button>
+        <button
+          onClick={() => navigate("/admin/requestmanagement")}
+         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-100"
+        >
+          <Users className="w-5 h-5 text-emerald-500" />
+          <span>Requests</span>
+        </button>
 
         <button
           onClick={() => navigate("/admin/settings")}

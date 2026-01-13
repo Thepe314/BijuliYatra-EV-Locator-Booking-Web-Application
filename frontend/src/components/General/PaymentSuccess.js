@@ -1,45 +1,50 @@
-import { useEffect } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import { bookingService } from '../../Services/api';
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { bookingService } from "../../Services/api";
 
 export default function PaymentSuccess() {
-  const { bookingId } = useParams();      // /payment-success/:bookingId
-  const location = useLocation();
-  const navigate = useNavigate();
+ const location = useLocation();
+const navigate = useNavigate();
 
-  const searchParams = new URLSearchParams(location.search);
+const rawParams = new URLSearchParams(location.search);
+const rawBookingId = rawParams.get("bookingId"); // "80?data=..."
 
-  // Stripe
-  const sessionId = searchParams.get('session_id');
-  // Khalti
-  const pidx = searchParams.get('pidx');
-  // eSewa
-  const esewaData = searchParams.get('data');
+const bookingId = rawBookingId ? rawBookingId.split("?")[0] : null; // "80"
 
-  const gatewayRef = sessionId || pidx || esewaData || null;
+const sessionId = rawParams.get("session_id"); // Stripe
+const pidx = rawParams.get("pidx");            // Khalti
+const esewaGatewayId = bookingId ? `BK-${bookingId}` : null;
 
-  useEffect(() => {
-    const confirm = async () => {
-      if (!bookingId) {
-        toast.error('Missing booking id');
-        navigate('/ev-owner/station');
-        return;
-      }
+const gatewayRef = sessionId || pidx || esewaGatewayId || null;
 
-      try {
-        await bookingService.markPaymentSuccess(bookingId, gatewayRef);
-        toast.success('Payment successful. Booking confirmed!');
-        setTimeout(() => {
-          navigate('/ev-owner/station');
-        }, 2000);
-      } catch (e) {
-        toast.error('Payment succeeded but verification failed.');
-      }
-    };
+console.log("=== PAYMENT-SUCCESS ROUTE ===");
+console.log("location.search =", location.search);
+console.log("rawBookingId =", rawBookingId);
+console.log("bookingId (clean) =", bookingId);
+console.log("gatewayRef to send =", gatewayRef);
+console.log("================================");
+useEffect(() => {
+  const confirm = async () => {
+    if (!bookingId) {
+      toast.error("Missing booking id");
+      navigate("/ev-owner/station");
+      return;
+    }
 
-    confirm();
-  }, [bookingId, gatewayRef, navigate]);
+    try {
+      await bookingService.markPaymentSuccess(bookingId, gatewayRef);
+      toast.success("Payment successful. Booking confirmed!");
+      setTimeout(() => {
+        navigate("/ev-owner/station");
+      }, 2000);
+    } catch (e) {
+      toast.error("Payment succeeded but verification failed.");
+    }
+  };
+
+  confirm();
+}, [bookingId, gatewayRef, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

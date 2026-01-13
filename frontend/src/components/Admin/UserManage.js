@@ -181,6 +181,7 @@ const [newUser, setNewUser] = useState({
     { name: 'Stations', icon: Building2, path: '/admin/stationmanagement' },
     { name: 'Users', icon: Users, path: '/admin/usermanagement',current: true  },
     { name: 'Bookings', icon: Book, path: '/admin/bookingmanagement' },
+     { name: "Requests", icon: Users, path: "/admin/requestmanagement" },
     { name: 'Settings', icon: Settings, path: '/admin/settings' },
   ];
   

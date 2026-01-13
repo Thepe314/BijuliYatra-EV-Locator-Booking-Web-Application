@@ -32,6 +32,8 @@ import EVOwnerBookingsList from "./components/User/EVOwnerBookingsList.js";
 import KhaltiReturnPage from "./Services/KhaltiReturnPage.js";
 import WalletPage from "./components/User/WalletPage.js";
 import OperatorEditStation from "./components/ChargeOperators/OperatorEditStation.js";
+import RequestManagement from "./components/Admin/RequestManagement.js";
+import PaymentFailed from "./components/General/PaymentFailed.js";
 
 function App() {
   return (
@@ -59,7 +61,7 @@ function App() {
           <Route path="/signup/operator" element={<ChargingOperatorSignUp />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/map" element={<ChargingStationsMap />} />
-          <Route path="/payment-success/:bookingId" element={<PaymentSuccess />} />
+          
 
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/stationdetails/:stationId" element={<StationDetailsPage />} />
@@ -71,6 +73,7 @@ function App() {
            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
            <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-failed" element={<PaymentFailed />} />
 
           {/* Admin */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -78,6 +81,7 @@ function App() {
           <Route path="/admin/editStation/:id" element={<EditStationPage />} />
           <Route path="/admin/addstation" element={<AddStationAdmin />} />
              <Route path="/admin/stationdetails/:stationId" element={<StationDetailsA />} />
+             <Route path="/admin/requestmanagement" element={<RequestManagement />} />
 
           {/* Operator */}
           <Route path="/operator/dashboard" element={<OperatorDashboard />} />

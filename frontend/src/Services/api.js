@@ -456,12 +456,12 @@ export const bookingService = {
   //Admin
   listBookingsAdmin: async (filters = {}) => {
   try {
-    const response = await api.get("/admin/bookings", { 
+    const response = await api.get("/admin/bookings", {
       params: {
-        page: filters.page || 0,
-        size: filters.limit || 10,
-        sort: filters.sort || 'createdAt,desc'
-      }
+        page: filters.page ?? 0,
+        size: filters.limit ?? 10,
+        sort: filters.sort ?? "bookedAt,desc",
+      },
     });
     return response.data;
   } catch (error) {
@@ -469,6 +469,7 @@ export const bookingService = {
     throw error;
   }
 },
+
 
 listBookingsEv: async (filters = {}) => {
     try {
@@ -551,17 +552,17 @@ getActiveBookingsCount: async (stationIds) => {
   });
   return response;
 },
-
 markPaymentSuccess: async (bookingId, gatewayPaymentId) => {
-    const res = await api.post(
-      `/bookings/${bookingId}/payment-success`,
-      null,
-      { params: { gatewayPaymentId } }
-    );
-    return res.data;
-  },
-
-
+  const url = `/bookings/${bookingId}/payment-success`;
+  console.log("=== markPaymentSuccess CALL ===");
+  console.log("URL =", url);
+  console.log("gatewayPaymentId param =", gatewayPaymentId);
+  console.log("================================");
+  const res = await api.post(url, null, {
+    params: gatewayPaymentId ? { gatewayPaymentId } : {},
+  });
+  return res.data;
+},
   
 };
 export const paymentService = {

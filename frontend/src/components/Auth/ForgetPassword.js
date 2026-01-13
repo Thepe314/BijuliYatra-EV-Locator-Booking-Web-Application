@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
       const backendMessage = err.response?.data?.message;
       const msg =
         backendMessage ||
-        "Unable to send reset code. Please check your email and try again.";
+        "Unable to send OTP. Please check your email and try again.";
       setError(msg);
       notify.error(msg);
     } finally {
@@ -152,13 +152,13 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  // === RENDER STEPS ===
+  // === RENDER STEPS (UI only changed to light style) ===
   const renderEmailStep = () => (
     <div className="w-full max-w-md">
-      <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-10">
+      <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-slate-100 p-10">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-2xl mb-4">
-            <Mail className="w-8 h-8 text-emerald-600" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 rounded-2xl mb-4">
+            <Mail className="w-8 h-8 text-emerald-500" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">
             Forgot Password?
@@ -184,7 +184,7 @@ export default function ForgotPasswordPage() {
               onChange={(e) => setEmail(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleEmailSubmit()}
               placeholder="you@example.com"
-              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-white"
             />
           </div>
 
@@ -198,13 +198,13 @@ export default function ForgotPasswordPage() {
           <button
             onClick={handleEmailSubmit}
             disabled={loading}
-            className={`w-full py-3 rounded-xl font-semibold transition-all transform shadow-lg ${
+            className={`w-full py-3 rounded-xl font-semibold transition-all shadow-md ${
               loading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-emerald-500 to-cyan-600 text-white hover:from-emerald-600 hover:to-cyan-700 hover:scale-[1.02] hover:shadow-xl"
+                ? "bg-slate-300 text-slate-600 cursor-not-allowed"
+                : "bg-emerald-500 text-white hover:bg-emerald-600"
             }`}
           >
-            {loading ? "Sending..." : "Send Reset Code"}
+            {loading ? "Sending..." : "Send OTP "}
           </button>
 
           <button
@@ -221,10 +221,10 @@ export default function ForgotPasswordPage() {
 
   const renderSentStep = () => (
     <div className="w-full max-w-md">
-      <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-10">
+      <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-slate-100 p-10">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-2xl mb-4">
-            <Mail className="w-8 h-8 text-emerald-600" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 rounded-2xl mb-4">
+            <Mail className="w-8 h-8 text-emerald-500" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">
             Check your inbox
@@ -275,7 +275,7 @@ export default function ForgotPasswordPage() {
                   value={digit}
                   onChange={(e) => handleCodeChange(index, e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleCodeSubmit()}
-                  className="w-12 h-14 text-center text-xl font-bold border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                  className="w-11 h-12 text-center text-lg font-semibold border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-white"
                 />
               ))}
             </div>
@@ -291,10 +291,10 @@ export default function ForgotPasswordPage() {
           <button
             onClick={handleCodeSubmit}
             disabled={loading}
-            className={`w-full py-3 rounded-xl font-semibold transition-all transform shadow-lg ${
+            className={`w-full py-3 rounded-xl font-semibold transition-all shadow-md ${
               loading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-emerald-500 to-cyan-600 text-white hover:from-emerald-600 hover:to-cyan-700 hover:scale-[1.02] hover:shadow-xl"
+                ? "bg-slate-300 text-slate-600 cursor-not-allowed"
+                : "bg-emerald-500 text-white hover:bg-emerald-600"
             }`}
           >
             {loading ? "Verifying..." : "Verify Code"}
@@ -326,13 +326,13 @@ export default function ForgotPasswordPage() {
 
   const renderResetStep = () => (
     <div className="w-full max-w-md">
-      <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-10">
+      <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-slate-100 p-10">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-2xl mb-4">
-            <Zap className="w-8 h-8 text-emerald-600" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 rounded-2xl mb-4">
+            <Zap className="w-8 h-8 text-emerald-500" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Reset password
+            Create new password
           </h2>
           <p className="text-slate-600">
             Choose a strong password for your BijuliYatra account.
@@ -353,10 +353,10 @@ export default function ForgotPasswordPage() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Enter new password"
-              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-white"
             />
             <p className="text-xs text-slate-500 mt-1">
-              Must be at least 8 characters
+              Must be at least 8 characters.
             </p>
           </div>
 
@@ -374,7 +374,7 @@ export default function ForgotPasswordPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handlePasswordReset()}
               placeholder="Confirm new password"
-              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-white"
             />
           </div>
 
@@ -388,10 +388,10 @@ export default function ForgotPasswordPage() {
           <button
             onClick={handlePasswordReset}
             disabled={loading}
-            className={`w-full py-3 rounded-xl font-semibold transition-all transform shadow-lg ${
+            className={`w-full py-3 rounded-xl font-semibold transition-all shadow-md ${
               loading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-emerald-500 to-cyan-600 text-white hover:from-emerald-600 hover:to-cyan-700 hover:scale-[1.02] hover:shadow-xl"
+                ? "bg-slate-300 text-slate-600 cursor-not-allowed"
+                : "bg-emerald-500 text-white hover:bg-emerald-600"
             }`}
           >
             {loading ? "Resetting..." : "Reset Password"}
@@ -403,10 +403,10 @@ export default function ForgotPasswordPage() {
 
   const renderSuccessStep = () => (
     <div className="w-full max-w-md">
-      <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-10">
+      <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-slate-100 p-10">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-100 rounded-3xl mb-6">
-            <CheckCircle className="w-12 h-12 text-emerald-600" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-50 rounded-3xl mb-6">
+            <CheckCircle className="w-12 h-12 text-emerald-500" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-3">
             Password reset!
@@ -418,7 +418,7 @@ export default function ForgotPasswordPage() {
 
           <button
             onClick={() => navigate("/login")}
-            className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 transition"
+            className="w-full py-3 rounded-xl font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition shadow-md"
           >
             Back to Login
           </button>
@@ -428,23 +428,74 @@ export default function ForgotPasswordPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" />
-      </div>
-
-      <div className="absolute top-6 left-6 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-sky-50 to-white flex items-center justify-center px-4">
+      {/* Top-left brand for small screens */}
+      <div className="absolute top-6 left-6 z-10 lg:hidden">
         <div className="flex items-center space-x-2">
-          <Zap className="w-8 h-8 text-emerald-500" />
-          <span className="text-xl font-bold text-white">BijuliYatra</span>
+          <Zap className="w-7 h-7 text-emerald-500" />
+          <span className="text-lg font-semibold text-slate-900">
+            BijuliYatra
+          </span>
         </div>
       </div>
 
-      {step === "email" && renderEmailStep()}
-      {step === "sent" && renderSentStep()}
-      {step === "reset" && renderResetStep()}
-      {step === "success" && renderSuccessStep()}
+      {/* Main 2-column card */}
+      <div className="relative w-full max-w-5xl grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] rounded-3xl overflow-hidden shadow-2xl bg-white/60 backdrop-blur-2xl border border-white">
+        {/* LEFT: marketing / illustration area */}
+        <div className="relative hidden lg:flex flex-col justify-between px-10 py-10 bg-gradient-to-b from-emerald-100 via-white to-sky-100">
+          <div>
+            <div className="flex items-center gap-3 mb-10">
+              <div className="flex items-center justify-center w-11 h-11 rounded-2xl bg-emerald-500 shadow-md shadow-emerald-400/40">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-2xl font-semibold text-slate-900">
+                BijuliYatra
+              </span>
+            </div>
+
+            <div className="space-y-4 max-w-md">
+              <h1 className="text-3xl font-semibold text-slate-900 leading-snug">
+                Power your journey with smart EV charging
+              </h1>
+              <p className="text-sm text-slate-700">
+                Connect to thousands of charging stations, monitor your
+                sessions, manage bookings, and drive the electric revolution.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-10 grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-emerald-600 font-semibold">5,000+</p>
+              <p className="text-slate-700 text-xs">Charging stations</p>
+            </div>
+            <div>
+              <p className="text-emerald-600 font-semibold">50K+</p>
+              <p className="text-slate-700 text-xs">Active users</p>
+            </div>
+            <div>
+              <p className="text-emerald-600 font-semibold">24/7</p>
+              <p className="text-slate-700 text-xs">Support</p>
+            </div>
+          </div>
+
+          <p className="mt-6 text-[11px] text-slate-500">
+            © 2026 BijuliYatra. All rights reserved.
+          </p>
+        </div>
+
+        {/* RIGHT: step content */}
+        <div className="relative flex items-center justify-center px-6 py-10 lg:px-10 bg-white/70 backdrop-blur-xl">
+          <p className="absolute top-5 right-7 text-[11px] tracking-wide uppercase text-slate-400">
+            Authentication Screens Design
+          </p>
+
+          {step === "email" && renderEmailStep()}
+          {step === "sent" && renderSentStep()}
+          {step === "reset" && renderResetStep()}
+          {step === "success" && renderSuccessStep()}
+        </div>
+      </div>
     </div>
   );
-};
+}

@@ -129,79 +129,99 @@ console.log('booking stationId', stationId);
   }, [station, formData.date, stationId]);
 
   // 3) Submit booking + payment init
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.date || !formData.timeSlot) {
-      toast.warn('Please select date and time');
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    console.log("Submitting booking/payment payload:", payload);
+    const res = await bookingService.initEsewaPayment(payload);
+    console.log("eSewa init response:", res);
+    // redirect to eSewa / success URL...
+  } catch (err) {
+    console.error("Error while init eSewa payment:", err);
+    toast.error("Failed to start payment");
+  }
+  setSubmitting(true);
+
+  const [hours, minutes] = formData.timeSlot.split(":");
+  const startTime = new Date(formData.date);
+  startTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+
+  const endTime = new Date(startTime);
+  endTime.setHours(startTime.getHours() + parseInt(formData.duration, 10));
+
+  const formatDateTime = (date) => {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+      date.getDate()
+    )}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+  };
+
+  const payload = {
+    stationId: parseInt(stationId, 10),
+    startTime: formatDateTime(startTime),
+    endTime: formatDateTime(endTime),
+    connectorType: formData.connectorType,
+    paymentMethod: formData.paymentMethod,
+  };
+
+  try {
+    const result = await bookingService.createBooking(payload);
+    console.log("createBooking result:", result);
+
+    const bookingId = result.bookingId;
+    const paymentUrl = result.paymentUrl;
+
+    if (!bookingId) {
+      toast.error("Missing booking ID from server");
+      setSubmitting(false);
       return;
     }
 
-    setSubmitting(true);
-
-    const [hours, minutes] = formData.timeSlot.split(':');
-    const startTime = new Date(formData.date);
-    startTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-
-    const endTime = new Date(startTime);
-    endTime.setHours(startTime.getHours() + parseInt(formData.duration, 10));
-
-    const formatDateTime = (date) => {
-      const pad = (n) => String(n).padStart(2, '0');
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-        date.getDate()
-      )}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
-    };
-
-    const payload = {
-      stationId: parseInt(stationId, 10),
-      startTime: formatDateTime(startTime),
-      endTime: formatDateTime(endTime),
-      connectorType: formData.connectorType,
-      paymentMethod: formData.paymentMethod,
-    };
-
-    try {
-  const result = await bookingService.createBooking(payload);
-  if (!result?.paymentUrl) {
-    toast.error('Unable to start payment. Please try again.');
-    return;
-  }
-
-    // 1) eSewa path (NEW)
-    if (formData.paymentMethod === 'ESEWA') {
-      const bookingId = result.id || result.bookingId;
-      if (!bookingId) {
-        toast.error('Missing booking ID for eSewa payment');
+    // CARD: Stripe Checkout redirect
+    if (formData.paymentMethod === "CARD") {
+      if (!paymentUrl) {
+        toast.error("Unable to start payment. Please try again.");
+        setSubmitting(false);
         return;
       }
+      toast.info("Redirecting to secure card payment…", { autoClose: 1200 });
+      setTimeout(() => {
+        window.location.href = paymentUrl; // Stripe Checkout URL
+      }, 1000);
+      return;
+    }
 
+    // ESEWA
+    if (formData.paymentMethod === "ESEWA") {
       try {
-        const initRes = await fetch('http://localhost:4000/payments/esewa/init', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const initRes = await fetch("http://localhost:4000/payments/esewa/init", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ bookingId, amount: totalCost }),
         });
 
         if (!initRes.ok) {
-          toast.error('Failed to initialize eSewa payment');
+          toast.error("Failed to initialize eSewa payment");
+          setSubmitting(false);
           return;
         }
 
         const { esewa, formUrl } = await initRes.json();
         if (!esewa || !formUrl) {
-          toast.error('Invalid eSewa init response');
+          toast.error("Invalid eSewa init response");
+          setSubmitting(false);
           return;
         }
 
-        toast.info('Redirecting to eSewa…', { autoClose: 1200 });
+        toast.info("Redirecting to eSewa…", { autoClose: 1200 });
 
-        const form = document.createElement('form');
-        form.method = 'POST';
+        const form = document.createElement("form");
+        form.method = "POST";
         form.action = formUrl;
 
         Object.entries(esewa).forEach(([key, value]) => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
+          const input = document.createElement("input");
+          input.type = "hidden";
           input.name = key;
           input.value = value;
           form.appendChild(input);
@@ -211,69 +231,59 @@ console.log('booking stationId', stationId);
         form.submit();
         return;
       } catch (e) {
-        console.error('eSewa init failed', e);
-        toast.error('Failed to initialize eSewa payment');
+        console.error("eSewa init failed", e);
+        toast.error("Failed to initialize eSewa payment");
+        setSubmitting(false);
         return;
       }
     }
 
-    // 2) Khalti + Card logic
-    if (formData.paymentMethod === 'KHALTI') {
-      const bookingId = result.id || result.bookingId;
-      if (!bookingId) {
-        toast.error('Missing booking ID for Khalti payment');
-        return;
-      }
-
+    // KHALTI
+    if (formData.paymentMethod === "KHALTI") {
       try {
-        const initRes = await fetch(
-          'http://localhost:4000/payments/khalti/init',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId, amount: totalCost }),
-          }
-        );
+        const initRes = await fetch("http://localhost:4000/payments/khalti/init", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bookingId, amount: totalCost }),
+        });
 
         if (!initRes.ok) {
-          toast.error('Failed to initialize Khalti payment');
+          toast.error("Failed to initialize Khalti payment");
+          setSubmitting(false);
           return;
         }
 
-        const { paymentUrl } = await initRes.json();
-        if (!paymentUrl) {
-          toast.error('Invalid Khalti init response');
+        const { paymentUrl: khaltiUrl } = await initRes.json();
+        if (!khaltiUrl) {
+          toast.error("Invalid Khalti init response");
+          setSubmitting(false);
           return;
         }
 
-        toast.info('Redirecting to Khalti…', { autoClose: 1500 });
+        toast.info("Redirecting to Khalti…", { autoClose: 1500 });
         setTimeout(() => {
-          window.location.href = paymentUrl; // test-pay.khalti.com/?pidx=...
+          window.location.href = khaltiUrl; // test-pay.khalti.com/?pidx=...
         }, 1200);
+        return;
       } catch (e) {
-        console.error('Khalti init failed', e);
-        toast.error('Failed to initialize Khalti payment');
+        console.error("Khalti init failed", e);
+        toast.error("Failed to initialize Khalti payment");
+        setSubmitting(false);
+        return;
       }
-        } else if (formData.paymentMethod === 'CARD') {
-      // Stripe Checkout full-page redirect
-      toast.info('Redirecting to secure card payment…', { autoClose: 1200 });
-      setTimeout(() => {
-        window.location.href = result.paymentUrl; // Stripe Checkout URL
-      }, 1000);
-    } else if (formData.paymentMethod === 'ESEWA') {
-      toast.error('eSewa temporarily disabled for testing');
-    } else {
-      toast.error('Unknown payment method');
     }
+
+    toast.error("Unknown payment method");
   } catch (err) {
     const msg =
       err.response?.data ||
-      'Slot no longer available or payment could not be initialized.';
+      "Slot no longer available or payment could not be initialized.";
     toast.error(msg);
   } finally {
     setSubmitting(false);
   }
-  };
+};
+
 
   if (loading) {
     return (

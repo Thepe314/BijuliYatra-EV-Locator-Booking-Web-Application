@@ -43,6 +43,7 @@ function generateEsewaSignature(totalAmountStr, transactionUuid) {
 
 app.post('/payments/esewa/init', (req, res) => {
   const { bookingId, amount } = req.body;
+  console.log("Received eSewa init request body:", req.body);
 
   if (!bookingId || !amount) {
     return res.status(400).json({ message: 'bookingId and amount required' });
@@ -57,33 +58,31 @@ app.post('/payments/esewa/init', (req, res) => {
   const amountStr = amountNum.toString();
   const totalAmountStr = totalAmountNum.toString();
 
-  // transaction_uuid must be alphanumeric + hyphen
   const transactionUuid = `BK-${bookingId}`.replace(/[^a-zA-Z0-9-]/g, '');
-
   const signature = generateEsewaSignature(totalAmountStr, transactionUuid);
 
   const payload = {
-  amount: amountStr,
-  tax_amount: taxAmount.toString(),
-  product_service_charge: serviceCharge.toString(),
-  product_delivery_charge: deliveryCharge.toString(),
-  product_code: ESEWA_PRODUCT_CODE,
-  total_amount: totalAmountStr,
-  transaction_uuid: transactionUuid,
-  success_url: `${ESEWA_SUCCESS_URL}/${bookingId}`,   
-  failure_url: `${ESEWA_FAILURE_URL}/${bookingId}`,   
-  signed_field_names: 'total_amount,transaction_uuid,product_code',
-  signature,
-};
+    amount: amountStr,
+    tax_amount: taxAmount.toString(),
+    product_service_charge: serviceCharge.toString(),
+    product_delivery_charge: deliveryCharge.toString(),
+    product_code: ESEWA_PRODUCT_CODE,
+    total_amount: totalAmountStr,
+    transaction_uuid: transactionUuid,
+    success_url: `${ESEWA_SUCCESS_URL}?bookingId=${bookingId}`,
+    failure_url: `${ESEWA_FAILURE_URL}?bookingId=${bookingId}`,
+    signed_field_names: 'total_amount,transaction_uuid,product_code',
+    signature,
+  };
 
   console.log('--- eSewa debug ---');
-  console.log('amount         =', payload.amount);
-  console.log('total_amount   =', payload.total_amount);
+  console.log('amount           =', payload.amount);
+  console.log('total_amount     =', payload.total_amount);
   console.log('transaction_uuid =', payload.transaction_uuid);
-  console.log('product_code   =', payload.product_code);
-  console.log('success_url    =', payload.success_url);
-  console.log('failure_url    =', payload.failure_url);
-  console.log('signature      =', payload.signature);
+  console.log('product_code     =', payload.product_code);
+  console.log('success_url      =', payload.success_url);
+  console.log('failure_url      =', payload.failure_url);
+  console.log('signature        =', payload.signature);
   console.log('-------------------');
 
   res.json({ esewa: payload, formUrl: ESEWA_FORM_URL });

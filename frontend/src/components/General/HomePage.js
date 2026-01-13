@@ -118,25 +118,50 @@ export default function HomePage() {
             {/* Right mock image/card */}
             <div className="relative">
               <div className="rounded-3xl bg-white border border-emerald-100 shadow-xl overflow-hidden">
-                <div className="aspect-video w-full bg-emerald-50 flex items-center justify-center">
-                  {/* Placeholder for hero image – swap with real image later */}
-                  <span className="text-xs text-emerald-700/70">
-                    Charging station mockup / illustration
-                  </span>
-                </div>
-                <div className="p-4 flex justify-between text-xs text-slate-700 border-t border-slate-100">
-                  <div>
-                    <div className="font-medium text-emerald-600">
-                      Available now
-                    </div>
-                    <div className="text-[11px] text-slate-500">
-                      3 ports free
+                {/* Fake map */}
+                <div className="aspect-video w-full relative bg-gradient-to-br from-emerald-50 via-sky-50 to-slate-100">
+                  {/* Subtle grid */}
+                  <div className="absolute inset-6 border border-white/70 rounded-2xl" />
+                  <div className="absolute left-1/2 top-6 bottom-6 border-l border-white/70" />
+                  <div className="absolute top-1/2 left-6 right-6 border-t border-white/70" />
+
+                  {/* Pins */}
+                  <div className="absolute left-[35%] top-[40%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="relative">
+                      <div className="h-6 w-6 rounded-full bg-emerald-500 shadow-lg shadow-emerald-400/50 flex items-center justify-center text-[11px] text-white">
+                        ⚡
+                      </div>
+                      <div className="absolute inset-0 rounded-full border border-emerald-500/40 animate-ping" />
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium text-slate-800">
-                      Nearby stations
+
+                  <div className="absolute left-[65%] top-[30%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="h-4 w-4 rounded-full bg-emerald-400 shadow shadow-emerald-300 flex items-center justify-center text-[9px] text-white">
+                      ⚡
                     </div>
+                  </div>
+
+                  <div className="absolute left-[55%] top-[65%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="h-4 w-4 rounded-full bg-emerald-400 shadow shadow-emerald-300 flex items-center justify-center text-[9px] text-white">
+                      ⚡
+                    </div>
+                  </div>
+
+                  {/* Bottom label */}
+                  <div className="absolute left-4 bottom-4 rounded-full bg-white/90 px-3 py-1 text-[11px] text-slate-700 shadow-sm flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    Kathmandu • 12 stations nearby
+                  </div>
+                </div>
+
+                {/* Caption row */}
+                <div className="p-4 flex justify-between text-xs text-slate-700 border-t border-slate-100">
+                  <div>
+                    <div className="font-medium text-emerald-600">Available now</div>
+                    <div className="text-[11px] text-slate-500">3 ports free</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-slate-800">Nearby stations</div>
                     <div className="text-[11px] text-emerald-600">
                       All with fast charging
                     </div>

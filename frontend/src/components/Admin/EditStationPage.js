@@ -18,6 +18,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Users
 } from 'lucide-react';
 
 import { stationService } from '../../Services/api';
@@ -328,9 +329,29 @@ export default function OperatorEditStation() {
             />
             <span>Bookings</span>
           </NavLink>
+          <NavLink
+            to="/admin/bookingmanagement"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                isActive
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`
+            }
+          >
+            <Users
+              className={`w-5 h-5 ${
+                loc.pathname.startsWith("/admin/requestmanagement")
+                  ? 'text-emerald-500'
+                  : 'text-slate-400'
+              }`}
+            />
+            <span>Request</span>
+          </NavLink>
+         
 
           <NavLink
-            to="/operator/dashboard"
+            to="/admin/dashboard"
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 isActive
@@ -341,7 +362,7 @@ export default function OperatorEditStation() {
           >
             <BarChart3
               className={`w-5 h-5 ${
-                loc.pathname.startsWith('/operator/dashboard')
+                loc.pathname.startsWith('/admin/dashboard')
                   ? 'text-emerald-500'
                   : 'text-slate-400'
               }`}
