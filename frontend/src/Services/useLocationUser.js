@@ -1,4 +1,3 @@
-// src/components/Services/useUserLocation.js
 import { useEffect, useState } from 'react';
 
 export default function useUserLocation() {

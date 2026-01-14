@@ -6,8 +6,6 @@ import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useNavigate } from 'react-router-dom';
 
-
-
 // Haversine distance in km between two lat/lng points
 function distanceKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -29,7 +27,7 @@ const stationIcon = L.icon({
   iconAnchor: [12, 41],
 });
 
-// simple round user marker (human-ish dot)
+// simple round user marker
 const userIcon = L.divIcon({
   className: 'user-location-icon',
   html: `
@@ -56,9 +54,9 @@ export default function EVFindStations() {
   const [connectorFilter, setConnectorFilter] = useState([]); // "Level 2" | "DC Fast"
   const [powerFilter, setPowerFilter] = useState([]); // '50' | '100' | '120' | '150+'
   const [sortBy, setSortBy] = useState('price');
+  const [userLocation, setUserLocation] = useState(null); // { lat, lng }
   const [detailStation, setDetailStation] = useState(null);
   const [activeStationForMap, setActiveStationForMap] = useState(null);
-  const userLocation = useUserLocation();   // shared origin
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -75,12 +73,27 @@ export default function EVFindStations() {
     };
 
     loadStations();
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+        },
+        (err) => {
+          console.warn('Geolocation error', err);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
   }, []);
 
   // Attach distance (if possible) to each station
   const stationsWithDistance = stations.map((s) => {
     let dist = null;
-    if (userLocation.lat && userLocation.lng && s.latitude && s.longitude) {
+    if (userLocation && s.latitude && s.longitude) {
       dist = distanceKm(
         userLocation.lat,
         userLocation.lng,
@@ -144,10 +157,7 @@ export default function EVFindStations() {
 
   // polyline between user and active station
   const polylinePositions =
-    userLocation.lat &&
-    userLocation.lng &&
-    activeStationForMap?.latitude &&
-    activeStationForMap?.longitude
+    userLocation && activeStationForMap?.latitude && activeStationForMap?.longitude
       ? [
           [userLocation.lat, userLocation.lng],
           [activeStationForMap.latitude, activeStationForMap.longitude],
@@ -182,7 +192,124 @@ export default function EVFindStations() {
         {/* Main finder layout */}
         <main className="flex min-h-[540px] bg-emerald-50/30">
           {/* Filters sidebar */}
-          {/* ... your sidebar JSX unchanged ... */}
+          <aside className="w-72 border-r bg-white px-5 py-5 hidden md:block">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <SlidersHorizontal className="w-4 h-4 text-emerald-500" />
+                <span>Filters</span>
+              </div>
+              <button
+                className="text-xs text-emerald-600"
+                onClick={() => {
+                  setCity('');
+                  setConnectorFilter([]);
+                  setPowerFilter([]);
+                  setSortBy('price');
+                }}
+              >
+                Clear all
+              </button>
+            </div>
+
+            {/* City */}
+            <div className="mb-5">
+              <label className="block text-xs font-medium text-slate-500 mb-1">
+                City
+              </label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Enter city"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
+            </div>
+
+            {/* Distance visual */}
+            <div className="mb-5">
+              <div className="flex justify-between text-[11px] text-slate-500 mb-1">
+                <span>Distance: 20 km</span>
+                <span>50 km</span>
+              </div>
+              <div className="h-1 rounded-full bg-slate-200 relative">
+                <div className="absolute left-0 h-1 rounded-full bg-emerald-500 w-1/3" />
+                <div className="absolute left-1/3 -top-1.5 h-4 w-4 rounded-full bg-white border border-emerald-500 shadow-sm" />
+              </div>
+              <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>1 km</span>
+                <span>50 km</span>
+              </div>
+            </div>
+
+            {/* Connector type */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-slate-500 mb-2">
+                Connector Type
+              </p>
+              {['Level 2', 'DC Fast'].map((label) => (
+                <label
+                  key={label}
+                  className="flex items-center gap-2 text-xs text-slate-600 mb-1"
+                >
+                  <input
+                    type="checkbox"
+                    className="rounded border-slate-300"
+                    checked={connectorFilter.includes(label)}
+                    onChange={(e) =>
+                      setConnectorFilter((prev) =>
+                        e.target.checked
+                          ? [...prev, label]
+                          : prev.filter((x) => x !== label)
+                      )
+                    }
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+
+            {/* Power */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-slate-500 mb-2">Power</p>
+              {[
+                { label: '≤ 50 kW', code: '50' },
+                { label: '50–100 kW', code: '100' },
+                { label: '100–120 kW', code: '120' },
+                { label: '120 kW+', code: '150+' },
+              ].map(({ label, code }) => (
+                <label
+                  key={code}
+                  className="flex items-center gap-2 text-xs text-slate-600 mb-1"
+                >
+                  <input
+                    type="checkbox"
+                    className="rounded border-slate-300"
+                    checked={powerFilter.includes(code)}
+                    onChange={(e) =>
+                      setPowerFilter((prev) =>
+                        e.target.checked
+                          ? [...prev, code]
+                          : prev.filter((x) => x !== code)
+                      )
+                    }
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+
+            {/* Price range visual */}
+            <div className="mb-2">
+              <p className="text-xs font-semibold text-slate-500 mb-1">
+                Price Range: NPR0 – NPR20/kWh
+              </p>
+              <div className="h-1 rounded-full bg-slate-200 relative">
+                <div className="absolute left-0 right-10 h-1 rounded-full bg-emerald-500/80" />
+                <div className="absolute left-0 -top-1.5 h-4 w-4 rounded-full bg-white border border-emerald-500 shadow-sm" />
+                <div className="absolute right-10 -top-1.5 h-4 w-4 rounded-full bg-white border border-emerald-500 shadow-sm" />
+              </div>
+            </div>
+          </aside>
 
           {/* Right side: search + list + map */}
           <section className="flex-1 flex flex-col">
@@ -203,7 +330,17 @@ export default function EVFindStations() {
                   <button
                     className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-600"
                     onClick={() => {
-                      // location already loaded by useUserLocation hook
+                      if (!userLocation && 'geolocation' in navigator) {
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => {
+                            setUserLocation({
+                              lat: pos.coords.latitude,
+                              lng: pos.coords.longitude,
+                            });
+                          },
+                          (err) => console.warn('Geolocation error', err)
+                        );
+                      }
                     }}
                   >
                     Use my location
@@ -230,32 +367,132 @@ export default function EVFindStations() {
             {/* List + map */}
             <div className="flex flex-1">
               {/* Stations list */}
-              {/* ... your list JSX unchanged ... */}
+              <div className="w-full lg:w-[54%] bg-emerald-50/10 px-4 py-4 space-y-3 overflow-y-auto">
+                {loading && (
+                  <p className="text-xs text-slate-500 px-2 py-4">
+                    Loading stations…
+                  </p>
+                )}
+
+                {!loading &&
+                  filteredStations.map((s) => (
+                    <div
+                      key={s.id}
+                      className={
+                        'rounded-2xl bg-white border shadow-sm px-4 py-3 flex flex-col gap-3 ' +
+                        (s.id === selectedStationId
+                          ? 'border-emerald-500 ring-2 ring-emerald-200'
+                          : 'border-emerald-50')
+                      }
+                      onClick={() => {
+                        setSelectedStationId(s.id);
+                        setActiveStationForMap(s);
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-900">
+                            {s.name}
+                          </h3>
+                          <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {s.address}
+                            {s.city && `, ${s.city}`}
+                          </p>
+                          <p className="mt-1 text-[11px] text-slate-500">
+                            Operated by {s.operatorName || 'BijuliYatra'}
+                          </p>
+                          {s.distanceKm != null && (
+                            <p className="mt-1 text-[11px] text-slate-500">
+                              Approx. {s.distanceKm.toFixed(1)} km away
+                            </p>
+                          )}
+                        </div>
+                        <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
+                          {s.status || 'Available'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-[11px] text-slate-500">
+                        <div>
+                          <p className="mb-0.5">Chargers</p>
+                          <p className="font-medium text-slate-900">
+                            Level 2: {s.level2Chargers || 0} • DC Fast:{' '}
+                            {s.dcFastChargers || 0}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="mb-0.5">Rates</p>
+                          <p className="font-medium text-slate-900">
+                            L2: NPR
+                            {s.level2Rate != null
+                              ? s.level2Rate.toFixed(1)
+                              : '-'}{' '}
+                            /kWh • DC: NPR
+                            {s.dcFastRate != null
+                              ? s.dcFastRate.toFixed(1)
+                              : '-'}{' '}
+                            /kWh
+                          </p>
+                        </div>
+                        <div>
+                          <p className="mb-0.5">Peak Pricing</p>
+                          <p className="font-medium text-slate-900">
+                            {s.peakPricing
+                              ? `Yes (×${s.peakMultiplier})`
+                              : 'No'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                        <button
+                          className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDetailStation(s);
+                            setActiveStationForMap(s);
+                          }}
+                        >
+                          View details
+                        </button>
+                        <button
+                          className="rounded-lg bg-emerald-500 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/ev-owner/book/${s.id}`);
+                          }}
+                        >
+                          Book now
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                {!loading && filteredStations.length === 0 && (
+                  <p className="text-xs text-slate-500 px-2 py-4">
+                    No stations match your filters.
+                  </p>
+                )}
+              </div>
 
               {/* Map view */}
-              <div
-                className={
-                  'hidden lg:block flex-1 bg-emerald-50 transition-opacity ' +
-                  (detailStation ? 'opacity-40 pointer-events-none' : 'opacity-100')
-                }
-              >
-                <div className="h-full w-full p-6">
-                  <MapContainer
-                    center={
-                      userLocation.lat && userLocation.lng
-                        ? [userLocation.lat, userLocation.lng]
-                        : [27.7, 85.32]
-                    }
-                    zoom={12}
-                    className="h-full w-full rounded-3xl"
-                  >
+              <div className="hidden lg:block flex-1 bg-emerald-50">
+  <div className="h-full w-full p-6 relative z-0">
+    <MapContainer
+      className="h-full w-full rounded-3xl"
+      center={
+        userLocation ? [userLocation.lat, userLocation.lng] : [27.7, 85.32]
+      }
+      zoom={12}
+    >
                     <TileLayer
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                       attribution="&copy; OpenStreetMap contributors"
                     />
 
                     {/* user location marker */}
-                    {userLocation.lat && userLocation.lng && (
+                    {userLocation && (
                       <Marker
                         position={[userLocation.lat, userLocation.lng]}
                         icon={userIcon}
@@ -271,6 +508,7 @@ export default function EVFindStations() {
                           positions={polylinePositions}
                           pathOptions={{ color: '#10b981', weight: 3 }}
                         />
+                        {/* optional extra popup at station end with distance */}
                         <Marker
                           position={polylinePositions[1]}
                           icon={stationIcon}
@@ -331,7 +569,6 @@ export default function EVFindStations() {
           </section>
         </main>
       </div>
-
 
       {/* View details modal */}
       {detailStation && (
