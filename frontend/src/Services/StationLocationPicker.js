@@ -25,7 +25,6 @@ function ClickHandler({ onChange }) {
   return null;
 }
 
-// Force Leaflet to recalc size after mount
 function InvalidateSizeOnMount() {
   const map = useMap();
 
@@ -38,10 +37,22 @@ function InvalidateSizeOnMount() {
   return null;
 }
 
-export default function StationLocationPicker({ value, onChange }) {
-  const [position, setPosition] = useState(
-    value?.lat && value?.lng ? value : { lat: 27.7172, lng: 85.324 }
-  );
+export default function StationLocationPicker({ value, onChange, userLocation }) {
+  const initialPosition =
+    value?.lat && value?.lng
+      ? value
+      : userLocation?.lat && userLocation?.lng
+      ? userLocation
+      : { lat: 27.7172, lng: 85.324 };
+
+  const [position, setPosition] = useState(initialPosition);
+
+  useEffect(() => {
+    // if external userLocation changes and no value chosen yet, recenter
+    if (!value?.lat && userLocation?.lat && userLocation?.lng) {
+      setPosition({ lat: userLocation.lat, lng: userLocation.lng });
+    }
+  }, [userLocation, value]);
 
   const handleClick = (latlng) => {
     setPosition(latlng);
@@ -50,21 +61,19 @@ export default function StationLocationPicker({ value, onChange }) {
 
   return (
     <MapContainer
-  center={[position.lat, position.lng]}
-  zoom={13}
-  style={{ width: "100%", height: "100%" }}
->
-  <InvalidateSizeOnMount />
+      center={[position.lat, position.lng]}
+      zoom={13}
+      style={{ width: '100%', height: '100%' }}
+    >
+      <InvalidateSizeOnMount />
 
- 
-  <TileLayer
-  attribution="© OpenStreetMap contributors, © CARTO"
-  url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-/>
-  {/* END UPDATE */}
+      <TileLayer
+        attribution="© OpenStreetMap contributors, © CARTO"
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+      />
 
-  <ClickHandler onChange={handleClick} />
-  <Marker position={[position.lat, position.lng]} icon={markerIcon} />
-</MapContainer>
+      <ClickHandler onChange={handleClick} />
+      <Marker position={[position.lat, position.lng]} icon={markerIcon} />
+    </MapContainer>
   );
 }

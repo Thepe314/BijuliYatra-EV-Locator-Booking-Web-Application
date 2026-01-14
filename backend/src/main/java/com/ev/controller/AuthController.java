@@ -185,6 +185,14 @@ public class AuthController {
                     .body(Map.of("message", "Invalid email or password"));
             }
 
+            if (existingUser.isCreatedByAdmin() && existingUser.isMustChangePassword()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of(
+                        "message", "Password must be changed before first use",
+                        "reason", "MUST_CHANGE_PASSWORD"
+                    ));
+            }
+
             // ===== CASE A: OTP DISABLED (direct login) =====
             if (!otpEnabled) {
                 String roleString = existingUser.getRoleString();
@@ -405,6 +413,11 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setOtpCode(null);
         user.setOtpExpiry(null);
+        
+        if (user.isCreatedByAdmin() && user.isMustChangePassword()) {
+            user.setMustChangePassword(false);
+        }
+        
         uRepo.save(user);
 
         return ResponseEntity.ok(Map.of(

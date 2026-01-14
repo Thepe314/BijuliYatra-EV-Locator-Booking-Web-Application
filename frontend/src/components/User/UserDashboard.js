@@ -7,6 +7,7 @@ import {
 import { toast } from 'react-toastify';
 import { authService, bookingService, stationService } from '../../Services/api';
 import notify from '../../Utils/notify';
+import useUserLocation from '../../Services/UseUserLocation';
 
 import {
   MapContainer,
@@ -15,7 +16,8 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 
-// same marker icon as StationLocationPicker
+
+
 const markerIcon = new L.Icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   iconSize: [25, 41],
@@ -71,7 +73,7 @@ export default function EVUserDashboard() {
   });
 
   const [latestBooking, setLatestBooking] = useState(null);
-  const [userLocation, setUserLocation] = useState({ lat: null, lng: null });
+  const userLocation = useUserLocation();   // shared origin
 
   const navigate = useNavigate();
 
@@ -111,7 +113,7 @@ export default function EVUserDashboard() {
         }
         setLatestBooking(latest);
 
-        // upcoming bookings (same criteria)
+        // upcoming bookings
         const now = new Date();
         const upcoming = allBookings.filter(
           (b) =>
@@ -148,10 +150,9 @@ export default function EVUserDashboard() {
           favorites: 0,
         });
 
-        // 4) nearby stations + user location
-        const lat = profile?.latitude ?? 27.7172;
-        const lng = profile?.longitude ?? 85.3240;
-        setUserLocation({ lat, lng });
+        // 4) nearby stations: use geolocation if present, else profile/default
+        const lat = userLocation.lat ?? profile?.latitude ?? 27.7172;
+        const lng = userLocation.lng ?? profile?.longitude ?? 85.3240;
 
         try {
           const stationsRes = await stationService.listNearbyStations({
@@ -172,7 +173,7 @@ export default function EVUserDashboard() {
     };
 
     loadDashboardData();
-  }, []);
+  }, [userLocation.lat, userLocation.lng]);
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString('en-NP', {
@@ -220,14 +221,13 @@ export default function EVUserDashboard() {
     }
   };
 
-   const handleLogout = async () => {
-   try {
-     await authService.logout();
-   } catch (err) {}
-   notify.logout();
-   navigate("/login");
- };
- 
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (err) {}
+    notify.logout();
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -243,9 +243,15 @@ export default function EVUserDashboard() {
 
           <nav className="hidden md:flex items-center gap-6 text-sm text-slate-600">
             <button className="text-emerald-600 font-medium">Home</button>
-            <button onClick={() => navigate('/ev-owner/station')}>Find stations</button>
-            <button onClick={() => navigate('/ev-owner/bookings')}>My bookings</button>
-            <button onClick={() => navigate('/ev-owner/wallet')}>Wallet/Payments</button>
+            <button onClick={() => navigate('/ev-owner/station')}>
+              Find stations
+            </button>
+            <button onClick={() => navigate('/ev-owner/bookings')}>
+              My bookings
+            </button>
+            <button onClick={() => navigate('/ev-owner/wallet')}>
+              Wallet/Payments
+            </button>
             <button onClick={() => navigate('/profile')}>Profile</button>
           </nav>
 
@@ -392,8 +398,8 @@ export default function EVUserDashboard() {
 
               <div className="mb-4 h-28 rounded-xl overflow-hidden">
                 <NearbyStationsMap
-                  userLat={userLocation.lat}
-                  userLng={userLocation.lng}
+                  userLat={userLocation.lat ?? 27.7172}
+                  userLng={userLocation.lng ?? 85.3240}
                   stations={nearbyStations}
                 />
               </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Mail,
@@ -16,6 +16,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { userService } from '../../Services/api';
+import StationLocationPicker from '../../Services/StationLocationPicker';
 
 export default function EditUserPage() {
   const { userId } = useParams();
@@ -34,12 +35,16 @@ export default function EditUserPage() {
     region: '',
     district: '',
     joinDate: null,
+
+    // EV owner fields
     vehicleBrand: '',
     vehicleModel: '',
     vehicleYear: '',
     vehicleRegistrationNumber: '',
     chargingType: '',
     batteryCapacity: '',
+
+    // Operator fields
     companyName: '',
     companyRegistrationNo: '',
     companyPan: '',
@@ -50,6 +55,10 @@ export default function EditUserPage() {
     openingHours: '',
     closingHours: '',
     chargePerKwh: '',
+
+    // Location
+    latitude: null,
+    longitude: null,
   });
 
   const [errors, setErrors] = useState({});
@@ -57,6 +66,9 @@ export default function EditUserPage() {
   const [profileImage, setProfileImage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [reverseLoading, setReverseLoading] = useState(false);
+  const [reverseError, setReverseError] = useState('');
 
   const getUserType = (role) => {
     if (!role) return null;
@@ -78,13 +90,14 @@ export default function EditUserPage() {
       lastName,
       email: apiUser.email || '',
       phone: apiUser.phoneNumber || apiUser.phone || '',
-      role: apiUser.role || apiUser.primaryRole || '',
+      role: apiUser.userType || apiUser.role || apiUser.primaryRole || '',
       status: apiUser.status || 'Active',
       address: apiUser.address || '',
       city: apiUser.city || '',
       region: apiUser.region || '',
       district: apiUser.district || '',
       joinDate: apiUser.joinDate || apiUser.createdAt || null,
+
       vehicleBrand: apiUser.vehicleBrand || '',
       vehicleModel: apiUser.vehicleModel || '',
       vehicleYear: apiUser.vehicleYear || '',
@@ -92,6 +105,7 @@ export default function EditUserPage() {
         apiUser.vehicleRegistrationNumber || apiUser.vehileRegistrationModel || '',
       chargingType: apiUser.chargingType || '',
       batteryCapacity: apiUser.batteryCapacity || '',
+
       companyName: apiUser.companyName || '',
       companyRegistrationNo: apiUser.companyRegistrationNo || '',
       companyPan: apiUser.companyPan || '',
@@ -102,6 +116,9 @@ export default function EditUserPage() {
       openingHours: apiUser.openingHours || '',
       closingHours: apiUser.closingHours || '',
       chargePerKwh: apiUser.chargePerKwh || '',
+
+      latitude: apiUser.latitude ?? null,
+      longitude: apiUser.longitude ?? null,
     };
   };
 
@@ -120,11 +137,16 @@ export default function EditUserPage() {
         }));
 
         if (apiUser.avatarUrl || apiUser.avatar || apiUser.profileImage) {
-          setProfileImage(apiUser.avatarUrl || apiUser.avatar || apiUser.profileImage);
+          setProfileImage(
+            apiUser.avatarUrl || apiUser.avatar || apiUser.profileImage
+          );
         }
       } catch (err) {
         console.error('Failed to load user:', err);
-        setNotification({ type: 'error', message: 'Unable to load user details.' });
+        setNotification({
+          type: 'error',
+          message: 'Unable to load user details.',
+        });
         setTimeout(() => setNotification(null), 3000);
       } finally {
         if (mounted) setLoading(false);
@@ -145,40 +167,109 @@ export default function EditUserPage() {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors = {};
+
     if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) newErrors.email = 'Email is required';
-    else if (!emailRegex.test(formData.email)) newErrors.email = 'Invalid email format';
+    else if (!emailRegex.test(formData.email))
+      newErrors.email = 'Invalid email format';
 
     const phoneRegex = /^\+?[\d\s()-]+$/;
-    if (formData.phone && !phoneRegex.test(formData.phone)) newErrors.phone = 'Invalid phone format';
+    if (formData.phone && !phoneRegex.test(formData.phone))
+      newErrors.phone = 'Invalid phone format';
 
     if (!formData.role) newErrors.role = 'Role is required';
 
     if (userType === 'EV_OWNER') {
-      if (!formData.vehicleBrand.trim()) newErrors.vehicleBrand = 'Vehicle brand is required';
-      if (!formData.vehicleModel.trim()) newErrors.vehicleModel = 'Vehicle model is required';
+      if (!formData.vehicleBrand.trim())
+        newErrors.vehicleBrand = 'Vehicle brand is required';
+      if (!formData.vehicleModel.trim())
+        newErrors.vehicleModel = 'Vehicle model is required';
     }
 
     if (userType === 'CHARGER_OPERATOR') {
-      if (!formData.companyName.trim()) newErrors.companyName = 'Company name is required';
+      if (!formData.companyName.trim())
+        newErrors.companyName = 'Company name is required';
       if (!formData.companyRegistrationNo.trim())
         newErrors.companyRegistrationNo = 'Registration number is required';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  }, [formData, userType]);
+
+  const reverseGeocode = async (lat, lng) => {
+    setReverseLoading(true);
+    setReverseError('');
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
+        {
+          headers: {
+            Accept: 'application/json',
+            'User-Agent':
+              'BijuliYatra-Admin-Panel/1.0 (your-email@example.com)',
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error('Failed to reverse geocode');
+      const data = await res.json();
+
+      const addr = data.address || {};
+      const city =
+        addr.city ||
+        addr.town ||
+        addr.village ||
+        addr.municipality ||
+        addr.suburb ||
+        '';
+      const district =
+        addr.state_district ||
+        addr.county ||
+        addr.state ||
+        '';
+      const region =
+        addr.state ||
+        addr.region ||
+        addr.province ||
+        '';
+      const fullAddress = data.display_name || '';
+
+      setFormData((prev) => ({
+        ...prev,
+        city,
+        district,
+        region,
+        address: fullAddress,
+        latitude: lat,
+        longitude: lng,
+      }));
+    } catch (e) {
+      console.error(e);
+      setReverseError('Could not fetch address for this location.');
+      setFormData((prev) => ({
+        ...prev,
+        latitude: lat,
+        longitude: lng,
+      }));
+    } finally {
+      setReverseLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
 
     if (!validateForm()) {
-      setNotification({ type: 'error', message: 'Please fix the errors before submitting' });
+      setNotification({
+        type: 'error',
+        message: 'Please fix the errors before submitting',
+      });
       setTimeout(() => setNotification(null), 3000);
       return;
     }
@@ -197,6 +288,8 @@ export default function EditUserPage() {
         city: formData.city,
         region: formData.region,
         district: formData.district,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
       };
 
       let payload = { ...basePayload };
@@ -228,11 +321,17 @@ export default function EditUserPage() {
       }
 
       await userService.updateUser(userId, payload);
-      setNotification({ type: 'success', message: 'User updated successfully!' });
+      setNotification({
+        type: 'success',
+        message: 'User updated successfully!',
+      });
       setTimeout(() => setNotification(null), 3000);
     } catch (err) {
       console.error('Update failed:', err);
-      setNotification({ type: 'error', message: 'Failed to update user' });
+      setNotification({
+        type: 'error',
+        message: 'Failed to update user',
+      });
       setTimeout(() => setNotification(null), 3000);
     } finally {
       setSaving(false);
@@ -248,8 +347,9 @@ export default function EditUserPage() {
   };
 
   const initials =
-    `${(formData.firstName || '').charAt(0) || ''}${(formData.lastName || '').charAt(0) || ''}` ||
-    'U';
+    `${(formData.firstName || '').charAt(0) || ''}${
+      (formData.lastName || '').charAt(0) || ''
+    }` || 'U';
 
   if (loading) {
     return (
@@ -261,6 +361,7 @@ export default function EditUserPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Header */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
@@ -298,13 +399,16 @@ export default function EditUserPage() {
                 className="p-2 sm:px-4 sm:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition flex items-center gap-2 text-xs sm:text-sm disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
               >
                 <Save className="w-4 h-4" />
-                <span className="hidden sm:inline">{saving ? 'Saving...' : 'Save changes'}</span>
+                <span className="hidden sm:inline">
+                  {saving ? 'Saving...' : 'Save changes'}
+                </span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Notification */}
       {notification && (
         <div className="px-4 sm:px-6 lg:px-8 mt-4">
           <div
@@ -321,7 +425,9 @@ export default function EditUserPage() {
             )}
             <p
               className={`text-xs sm:text-sm font-medium ${
-                notification.type === 'success' ? 'text-emerald-800' : 'text-red-800'
+                notification.type === 'success'
+                  ? 'text-emerald-800'
+                  : 'text-red-800'
               }`}
             >
               {notification.message}
@@ -330,6 +436,7 @@ export default function EditUserPage() {
         </div>
       )}
 
+      {/* Content */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left profile card */}
@@ -361,7 +468,9 @@ export default function EditUserPage() {
               <h3 className="text-lg sm:text-xl font-semibold text-slate-900">
                 {formData.firstName} {formData.lastName}
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 break-all">{formData.email}</p>
+              <p className="text-xs sm:text-sm text-slate-500 break-all">
+                {formData.email}
+              </p>
 
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                 <span
@@ -393,10 +502,13 @@ export default function EditUserPage() {
                   <span>
                     Joined{' '}
                     {formData.joinDate
-                      ? new Date(formData.joinDate).toLocaleDateString('en-US', {
-                          month: 'short',
-                          year: 'numeric',
-                        })
+                      ? new Date(formData.joinDate).toLocaleDateString(
+                          'en-US',
+                          {
+                            month: 'short',
+                            year: 'numeric',
+                          }
+                        )
                       : '—'}
                   </span>
                 </div>
@@ -412,7 +524,10 @@ export default function EditUserPage() {
 
           {/* Right form */}
           <div className="lg:col-span-2">
-            <form className="bg-white rounded-2xl shadow-sm border border-slate-100" onSubmit={handleSubmit}>
+            <form
+              className="bg-white rounded-2xl shadow-sm border border-slate-100"
+              onSubmit={handleSubmit}
+            >
               {/* Personal info */}
               <div className="p-4 sm:p-6 border-b border-slate-100">
                 <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4">
@@ -438,7 +553,9 @@ export default function EditUserPage() {
                       }`}
                     />
                     {errors.firstName && (
-                      <p className="text-xs text-red-600 mt-1">{errors.firstName}</p>
+                      <p className="text-xs text-red-600 mt-1">
+                        {errors.firstName}
+                      </p>
                     )}
                   </div>
 
@@ -461,7 +578,9 @@ export default function EditUserPage() {
                       }`}
                     />
                     {errors.lastName && (
-                      <p className="text-xs text-red-600 mt-1">{errors.lastName}</p>
+                      <p className="text-xs text-red-600 mt-1">
+                        {errors.lastName}
+                      </p>
                     )}
                   </div>
 
@@ -490,7 +609,9 @@ export default function EditUserPage() {
                       />
                     </div>
                     {errors.email && (
-                      <p className="text-xs text-red-600 mt-1">{errors.email}</p>
+                      <p className="text-xs text-red-600 mt-1">
+                        {errors.email}
+                      </p>
                     )}
                   </div>
 
@@ -519,7 +640,9 @@ export default function EditUserPage() {
                       />
                     </div>
                     {errors.phone && (
-                      <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
+                      <p className="text-xs text-red-600 mt-1">
+                        {errors.phone}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -536,7 +659,7 @@ export default function EditUserPage() {
                       User Role *
                     </label>
                     <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
-                      {['EV Owner', 'Charger Operator', 'Admin',].map((label) => (
+                      {['EV Owner', 'Charger Operator', 'Admin'].map((label) => (
                         <button
                           key={label}
                           type="button"
@@ -552,59 +675,137 @@ export default function EditUserPage() {
                           }`}
                         >
                           {label === 'EV Owner' && <Car className="w-3 h-3" />}
-                          {label === 'Charger Operator' && <Zap className="w-3 h-3" />}
-                          {label === 'Admin' && <Building2 className="w-3 h-3" />}
-                          {label === 'Viewer' && <EyeIcon className="w-3 h-3" />}
+                          {label === 'Charger Operator' && (
+                            <Zap className="w-3 h-3" />
+                          )}
+                          {label === 'Admin' && (
+                            <Building2 className="w-3 h-3" />
+                          )}
                           <span>{label}</span>
                         </button>
                       ))}
                     </div>
                     {errors.role && (
-                      <p className="text-xs text-red-600 mt-1">{errors.role}</p>
+                      <p className="text-xs text-red-600 mt-1">
+                        {errors.role}
+                      </p>
                     )}
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="status"
-                      className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                    >
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                       Status
                     </label>
                     <select
-                      id="status"
                       name="status"
                       value={formData.status}
                       onChange={handleChange}
-                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none bg-white"
                     >
                       <option value="Active">Active</option>
                       <option value="Inactive">Inactive</option>
-                      <option value="Suspended">Suspended</option>
+                      <option value="Pending">Pending</option>
                     </select>
                   </div>
                 </div>
               </div>
 
-              {/* EV owner block */}
+              {/* Location & Address */}
+              <div className="p-4 sm:p-6 border-b border-slate-100">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4">
+                  Location & Address
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                      Region
+                    </label>
+                    <input
+                      name="region"
+                      value={formData.region}
+                      onChange={handleChange}
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                      City
+                    </label>
+                    <input
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                      District
+                    </label>
+                    <input
+                      name="district"
+                      value={formData.district}
+                      onChange={handleChange}
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                      Address
+                    </label>
+                    <input
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                    Location (click on map)
+                  </label>
+                  <div className="h-56 w-full overflow-hidden rounded-lg border border-slate-200">
+                    <StationLocationPicker
+                      value={
+                        formData.latitude && formData.longitude
+                          ? {
+                              lat: formData.latitude,
+                              lng: formData.longitude,
+                            }
+                          : null
+                      }
+                      onChange={({ lat, lng }) => {
+                        reverseGeocode(lat, lng);
+                      }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {reverseLoading
+                      ? 'Detecting address from map location...'
+                      : formData.address
+                      ? `Selected: ${formData.address}`
+                      : 'Click on the map to select a location and auto-fill address.'}
+                  </p>
+                  {reverseError && (
+                    <p className="text-[11px] text-red-500">{reverseError}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* EV Owner Details */}
               {userType === 'EV_OWNER' && (
                 <div className="p-4 sm:p-6 border-b border-slate-100">
-                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                    <Car className="w-5 h-5 text-emerald-600" />
-                    <h3 className="text-base sm:text-lg font-semibold text-slate-900">
-                      Vehicle Information
-                    </h3>
-                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4">
+                    EV Owner Details
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <label
-                        htmlFor="vehicleBrand"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Vehicle Brand *
                       </label>
                       <input
-                        id="vehicleBrand"
                         name="vehicleBrand"
                         value={formData.vehicleBrand}
                         onChange={handleChange}
@@ -613,22 +814,18 @@ export default function EditUserPage() {
                             ? 'border-red-500 focus:ring-1 focus:ring-red-400'
                             : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                         }`}
-                        placeholder="e.g., Tata, Nissan"
                       />
                       {errors.vehicleBrand && (
-                        <p className="text-xs text-red-600 mt-1">{errors.vehicleBrand}</p>
+                        <p className="text-xs text-red-600 mt-1">
+                          {errors.vehicleBrand}
+                        </p>
                       )}
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="vehicleModel"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Vehicle Model *
                       </label>
                       <input
-                        id="vehicleModel"
                         name="vehicleModel"
                         value={formData.vehicleModel}
                         onChange={handleChange}
@@ -637,107 +834,73 @@ export default function EditUserPage() {
                             ? 'border-red-500 focus:ring-1 focus:ring-red-400'
                             : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                         }`}
-                        placeholder="e.g., Nexon EV"
                       />
                       {errors.vehicleModel && (
-                        <p className="text-xs text-red-600 mt-1">{errors.vehicleModel}</p>
+                        <p className="text-xs text-red-600 mt-1">
+                          {errors.vehicleModel}
+                        </p>
                       )}
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="vehicleYear"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Vehicle Year
                       </label>
                       <input
-                        id="vehicleYear"
                         name="vehicleYear"
                         value={formData.vehicleYear}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
-                        placeholder="e.g., 2023"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
                       />
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="vehicleRegistrationNumber"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Registration Number
                       </label>
                       <input
-                        id="vehicleRegistrationNumber"
                         name="vehicleRegistrationNumber"
                         value={formData.vehicleRegistrationNumber}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
-                        placeholder="e.g., BA-12-CHA-3456"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
                       />
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="chargingType"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Charging Type
                       </label>
-                      <select
-                        id="chargingType"
+                      <input
                         name="chargingType"
                         value={formData.chargingType}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
-                      >
-                        <option value="">Select Type</option>
-                        <option value="AC">AC Charging</option>
-                        <option value="DC">DC Fast Charging</option>
-                        <option value="Both">Both</option>
-                      </select>
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
+                      />
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="batteryCapacity"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Battery Capacity
                       </label>
                       <input
-                        id="batteryCapacity"
                         name="batteryCapacity"
                         value={formData.batteryCapacity}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
-                        placeholder="e.g., 40 kWh"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
                       />
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Operator block */}
+              {/* Operator Details */}
               {userType === 'CHARGER_OPERATOR' && (
                 <div className="p-4 sm:p-6 border-b border-slate-100">
-                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                    <Zap className="w-5 h-5 text-emerald-600" />
-                    <h3 className="text-base sm:text-lg font-semibold text-slate-900">
-                      Operator Information
-                    </h3>
-                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-4">
+                    Operator Details
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div className="sm:col-span-2">
-                      <label
-                        htmlFor="companyName"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Company Name *
                       </label>
                       <input
-                        id="companyName"
                         name="companyName"
                         value={formData.companyName}
                         onChange={handleChange}
@@ -746,22 +909,18 @@ export default function EditUserPage() {
                             ? 'border-red-500 focus:ring-1 focus:ring-red-400'
                             : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                         }`}
-                        placeholder="Company name"
                       />
                       {errors.companyName && (
-                        <p className="text-xs text-red-600 mt-1">{errors.companyName}</p>
+                        <p className="text-xs text-red-600 mt-1">
+                          {errors.companyName}
+                        </p>
                       )}
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="companyRegistrationNo"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Registration No *
                       </label>
                       <input
-                        id="companyRegistrationNo"
                         name="companyRegistrationNo"
                         value={formData.companyRegistrationNo}
                         onChange={handleChange}
@@ -770,7 +929,6 @@ export default function EditUserPage() {
                             ? 'border-red-500 focus:ring-1 focus:ring-red-400'
                             : 'border-slate-300 focus:ring-1 focus:ring-emerald-400'
                         }`}
-                        placeholder="Registration number"
                       />
                       {errors.companyRegistrationNo && (
                         <p className="text-xs text-red-600 mt-1">
@@ -778,176 +936,97 @@ export default function EditUserPage() {
                         </p>
                       )}
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="companyPan"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
-                        Company PAN
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                        PAN
                       </label>
                       <input
-                        id="companyPan"
                         name="companyPan"
                         value={formData.companyPan}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
-                        placeholder="Company PAN"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
                       />
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="companyLicenseNo"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
-                        Company License No
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                        License No
                       </label>
                       <input
-                        id="companyLicenseNo"
                         name="companyLicenseNo"
                         value={formData.companyLicenseNo}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
-                        placeholder="Company license number"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
                       />
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="companyType"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Company Type
                       </label>
                       <input
-                        id="companyType"
                         name="companyType"
                         value={formData.companyType}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
-                        placeholder="Company type"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
                       />
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="stationCount"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
-                        Station Count
-                      </label>
-                      <input
-                        id="stationCount"
-                        name="stationCount"
-                        type="number"
-                        min="0"
-                        value={formData.stationCount}
-                        onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
-                        placeholder="Number of stations"
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="operatorChargingType"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
-                        Charging Type
-                      </label>
-                      <select
-                        id="operatorChargingType"
-                        name="operatorChargingType"
-                        value={formData.operatorChargingType}
-                        onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
-                      >
-                        <option value="">Select Type</option>
-                        <option value="AC">AC Charging</option>
-                        <option value="DC">DC Fast Charging</option>
-                        <option value="Both">Both</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="openingHours"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Opening Hours
                       </label>
                       <input
-                        id="openingHours"
                         name="openingHours"
-                        type="time"
                         value={formData.openingHours}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
                       />
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="closingHours"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Closing Hours
                       </label>
                       <input
-                        id="closingHours"
                         name="closingHours"
-                        type="time"
                         value={formData.closingHours}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
                       />
                     </div>
-
                     <div>
-                      <label
-                        htmlFor="chargePerKwh"
-                        className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2"
-                      >
+                      <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                         Charge per kWh
                       </label>
                       <input
-                        id="chargePerKwh"
                         name="chargePerKwh"
-                        type="number"
-                        min="0"
-                        step="0.01"
                         value={formData.chargePerKwh}
                         onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-slate-300 rounded-lg outline-none transition focus:ring-1 focus:ring-emerald-400"
-                        placeholder="Charge per kWh"
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg border-slate-300 focus:ring-1 focus:ring-emerald-400 outline-none"
                       />
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* Footer buttons (mobile) */}
+              <div className="p-4 sm:p-6 border-t border-slate-100 flex justify-end gap-2 sm:hidden">
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="px-4 py-2 text-xs rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 text-xs rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
             </form>
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-// Small helper icon for Viewer role (lucide doesn't export Eye as default here)
-function EyeIcon(props) {
-  return (
-    <svg
-      {...props}
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      fill="none"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
   );
 }

@@ -3,7 +3,7 @@ import {
   Battery, MapPin, Users, DollarSign, TrendingUp, Calendar, 
   AlertCircle, Loader, RefreshCw, LayoutDashboard, Building2, 
   Settings, LogOut, Menu, X, ChevronDown, Bell, Zap, 
-  Book
+  Book,User
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { userService, stationService, authService, bookingService } from '../../Services/api';
@@ -37,6 +37,7 @@ export default function AdminDashboard() {
     { name: 'Stations', icon: Building2, path: '/admin/stationmanagement' },
     { name: 'Users', icon: Users, path: '/admin/usermanagement' },
     { name: 'Bookings', icon: Book, path: '/admin/bookingmanagement' },
+     { name: 'Requests', icon: Users, path: '/admin/requestmanagement' },
     { name: 'Settings', icon: Settings, path: '/admin/settings' },
   ];
 

@@ -16,6 +16,7 @@ import com.ev.model.Admin;
 import com.ev.model.Booking;
 import com.ev.repository.BookingRepository;
 import com.ev.repository.ChargingStationRepository;
+import com.ev.repository.PaymentRepository;
 import com.ev.repository.RefreshTokenRepo;
 import com.ev.repository.UserRepository;
 
@@ -35,7 +36,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
@@ -50,6 +50,9 @@ public class AdminController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PaymentRepository pRepository;
     
     @Autowired
     private ChargingStationRepository chargingStationRepository;
@@ -387,7 +390,9 @@ public class AdminController {
             user.setStatus("ACTIVE");
             user.setLatitude(dto.getLatitude());
             user.setLongitude(dto.getLongitude());
-
+            user.setCreatedByAdmin(true);
+            user.setMustChangePassword(true);
+            
             User savedUser = userRepository.save(user);
             UserResponseDTO responseDTO = convertToResponseDTO(savedUser);
 
@@ -468,18 +473,26 @@ public class AdminController {
         log.warn("ADMIN FORCE DELETING USER ID: {} — NUKING EVERYTHING", userId);
 
         try {
-            // 1. Delete refresh tokens FIRST (this was the missing step!)
+        	// 1. Delete refresh tokens (user side)
             refreshTokenRepo.deleteByUserUser_id(userId);
 
-            // 2. Delete ALL bookings
+            // 2. Delete payments where this user is EV owner
+            pRepository.deleteByEvOwnerUserId(userId);
+
+            // 3. Delete bookings where this user is EV owner
             bookingRepository.deleteByEvOwnerUser_id(userId);
 
-            // 3. Delete ALL stations (if ChargerOperator)
+            // 4. Delete payments for bookings on this user's stations (operator side)
+            pRepository.deleteByStationOperatorUserId(userId); 
+
+            // 5. Delete bookings on this user's stations (operator side)
+            bookingRepository.deleteByStationOperatorUserId(userId); // you need this
+
+            // 6. Delete stations of this user (as operator)
             chargingStationRepository.deleteByOperatorUserId(userId);
 
-            // 4. Finally delete the user itself
+            // 7. Delete the user itself
             userRepository.deleteById(userId);
-
             log.warn("USER {} AND ALL DATA SUCCESSFULLY NUKED", userId);
             return ResponseEntity.noContent().build();
 

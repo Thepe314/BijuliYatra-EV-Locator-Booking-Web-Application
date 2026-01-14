@@ -59,6 +59,10 @@ public abstract class User {
     private Double latitude;
     private Double longitude;
     
+    private boolean createdByAdmin = false;
+    private boolean mustChangePassword = false;
+
+    
     
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -241,6 +245,22 @@ public abstract class User {
 
 	public void setRefreshTokens(Set<RefreshToken> refreshTokens) {
 		this.refreshTokens = refreshTokens;
+	}
+
+	public boolean isCreatedByAdmin() {
+		return createdByAdmin;
+	}
+
+	public void setCreatedByAdmin(boolean createdByAdmin) {
+		this.createdByAdmin = createdByAdmin;
+	}
+
+	public boolean isMustChangePassword() {
+		return mustChangePassword;
+	}
+
+	public void setMustChangePassword(boolean mustChangePassword) {
+		this.mustChangePassword = mustChangePassword;
 	}
 
     

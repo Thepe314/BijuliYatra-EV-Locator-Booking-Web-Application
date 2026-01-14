@@ -100,173 +100,184 @@ export default function LoginPage() {
     });
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setTouched({ email: true, password: true });
 
-    const isValid = validateForm();
-    if (!isValid) {
-      if (errors.email) {
-        notify.error(errors.email || "Please enter a valid email address.");
-      } else if (errors.password) {
-        notify.error(errors.password || "Please enter a valid password.");
-      } else {
-        notify.error("Please fix the highlighted fields before continuing.");
-      }
-      return;
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setTouched({ email: true, password: true });
+
+  const isValid = validateForm();
+  if (!isValid) {
+    if (errors.email) {
+      notify.error(errors.email || "Please enter a valid email address.");
+    } else if (errors.password) {
+      notify.error(errors.password || "Please enter a valid password.");
+    } else {
+      notify.error("Please fix the highlighted fields before continuing.");
     }
+    return;
+  }
 
-    setIsSubmitting(true);
-    setApiError("");
+  setIsSubmitting(true);
+  setApiError("");
 
-    try {
-      const data = await authService.login({
-        email: formData.email,
-        password: formData.password,
-      });
-      console.log("login data =", data);
+  try {
+    const data = await authService.login({
+      email: formData.email,
+      password: formData.password,
+    });
+    console.log("login data =", data);
 
-      // CASE 1: token directly
-      if (data.token) {
-        const role = (data.role || "").toString();
-        const status = (data.status || "").toString();
-        const normalizedRole = role.replace(/^ROLE_/, "").toLowerCase();
-        const statusLower = status.toLowerCase();
+    // CASE 1: token directly
+    if (data.token) {
+      const role = (data.role || "").toString();
+      const status = (data.status || "").toString();
+      const normalizedRole = role.replace(/^ROLE_/, "").toLowerCase();
+      const statusLower = status.toLowerCase();
 
-        if (normalizedRole === "charger_operator" && statusLower !== "active") {
-          let msg;
+      if (normalizedRole === "charger_operator" && statusLower !== "active") {
+        let msg;
 
-          if (statusLower.trim() === "pending") {
-            msg = "Your request is still in process.";
-            setApiError(msg);
-            notify.info(msg);
-          } else if (
-            ["cancelled", "canceled", "rejected"].includes(statusLower.trim())
-          ) {
-            msg = "Your account failed to meet the requirements.";
-            setApiError(msg);
-            notify.error(msg);
-          } else {
-            msg = "Your account is not active yet.";
-            setApiError(msg);
-            notify.error(msg);
-          }
-
-          setIsSubmitting(false);
-          return;
-        }
-
-        if (data.userId)
-          localStorage.setItem("userId", data.userId.toString());
-        if (data.role) localStorage.setItem("userRole", data.role);
-
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            userId: data.userId,
-            role: data.role,
-            email: data.email || null,
-            fullname: data.fullname || null,
-          })
-        );
-
-        if (login) {
-          login({
-            token: data.token,
-            userId: data.userId,
-            role: data.role,
-            email: data.email,
-            fullname: data.fullname,
-          });
-        }
-
-        let redirectPath;
-        if (location.state?.from) {
-          redirectPath = location.state.from;
-        } else if (data.redirect) {
-          redirectPath = data.redirect;
+        if (statusLower.trim() === "pending") {
+          msg = "Your request is still in process.";
+          setApiError(msg);
+          notify.info(msg);
+        } else if (
+          ["cancelled", "canceled", "rejected"].includes(statusLower.trim())
+        ) {
+          msg = "Your account failed to meet the requirements.";
+          setApiError(msg);
+          notify.error(msg);
         } else {
-          redirectPath = "/";
+          msg = "Your account is not active yet.";
+          setApiError(msg);
+          notify.error(msg);
         }
 
-        notify.success("Logged in successfully. Welcome back!");
-        navigate(redirectPath, { replace: true });
+        setIsSubmitting(false);
         return;
       }
 
-      // CASE 2: OTP flow
-      if (data.message && data.message.toLowerCase().includes("otp")) {
-        setOtp("");
-        setOtpEmail(formData.email);
-        setShowOtpModal(true);
-        notify.info(
-          "An OTP has been sent to your email. Please enter it to continue."
-        );
-      } else {
-        const msg = data.message || "Unexpected response from server.";
-        setApiError(msg);
-        notify.error(msg);
+      if (data.userId)
+        localStorage.setItem("userId", data.userId.toString());
+      if (data.role) localStorage.setItem("userRole", data.role);
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          userId: data.userId,
+          role: data.role,
+          email: data.email || null,
+          fullname: data.fullname || null,
+        })
+      );
+
+      if (login) {
+        login({
+          token: data.token,
+          userId: data.userId,
+          role: data.role,
+          email: data.email,
+          fullname: data.fullname,
+        });
       }
-    } catch (error) {
-      console.error("Login failed (component):", error);
 
-      if (error.response) {
-        const status = error.response.status;
-        const backendMessage = error.response.data?.message || "";
+      let redirectPath;
+      if (location.state?.from) {
+        redirectPath = location.state.from;
+      } else if (data.redirect) {
+        redirectPath = data.redirect;
+      } else {
+        redirectPath = "/";
+      }
 
-        if (status === 401) {
-          if (backendMessage.toLowerCase().includes("password")) {
-            const msg = "Incorrect password. Please try again.";
-            setApiError(msg);
-            notify.error(msg);
-          } else if (
-            backendMessage.toLowerCase().includes("user") ||
-            backendMessage.toLowerCase().includes("email")
-          ) {
-            const msg = "No account found with this email address.";
-            setApiError(msg);
-            notify.error(msg);
-          } else if (backendMessage.toLowerCase().includes("locked")) {
-            const msg =
-              "Your account is locked. Please contact support for assistance.";
-            setApiError(msg);
-            notify.error(msg);
-          } else {
-            const msg = "Invalid email or password. Please try again.";
-            setApiError(msg);
-            notify.error(msg);
-          }
-        } else if (status === 429) {
-          const msg =
-            "Too many login attempts. Please wait a moment and try again.";
+      notify.success("Logged in successfully. Welcome back!");
+      navigate(redirectPath, { replace: true });
+      return;
+    }
+
+    // CASE 2: OTP flow
+    if (data.message && data.message.toLowerCase().includes("otp")) {
+      setOtp("");
+      setOtpEmail(formData.email);
+      setShowOtpModal(true);
+      notify.info(
+        "An OTP has been sent to your email. Please enter it to continue."
+      );
+    } else {
+      const msg = data.message || "Unexpected response from server.";
+      setApiError(msg);
+      notify.error(msg);
+    }
+  } catch (error) {
+    console.error("Login failed (component):", error);
+
+    if (error.response) {
+      const status = error.response.status;
+      const backendMessage = error.response.data?.message || "";
+      const reason = error.response.data?.reason || "";
+
+      if (status === 401) {
+        if (backendMessage.toLowerCase().includes("password")) {
+          const msg = "Incorrect password. Please try again.";
           setApiError(msg);
           notify.error(msg);
-        } else if (status === 403) {
-          const msg =
-            "You do not have permission to access this application with this account.";
+        } else if (
+          backendMessage.toLowerCase().includes("user") ||
+          backendMessage.toLowerCase().includes("email")
+        ) {
+          const msg = "No account found with this email address.";
           setApiError(msg);
           notify.error(msg);
-        } else if (backendMessage) {
-          const msg = backendMessage;
+        } else if (backendMessage.toLowerCase().includes("locked")) {
+          const msg =
+            "Your account is locked. Please contact support for assistance.";
           setApiError(msg);
           notify.error(msg);
         } else {
-          const msg =
-            "Login failed due to a server error. Please try again.";
+          const msg = "Invalid email or password. Please try again.";
           setApiError(msg);
           notify.error(msg);
         }
+      } else if (status === 429) {
+        const msg =
+          "Too many login attempts. Please wait a moment and try again.";
+        setApiError(msg);
+        notify.error(msg);
+      } else if (status === 403 && reason === "MUST_CHANGE_PASSWORD") {
+        // ✅ admin-created user: force initial password set via forgot-password
+        const msg =
+          "Your account was created by an admin. Please set your password before logging in.";
+        setApiError(msg);
+        notify.info(msg);
+        navigate("/forgot-password", {
+          state: { email: formData.email },
+          replace: true,
+        });
+      } else if (status === 403) {
+        const msg =
+          "You do not have permission to access this application with this account.";
+        setApiError(msg);
+        notify.error(msg);
+      } else if (backendMessage) {
+        const msg = backendMessage;
+        setApiError(msg);
+        notify.error(msg);
       } else {
         const msg =
-          "Unable to connect to the server. Please check your connection and try again.";
+          "Login failed due to a server error. Please try again.";
         setApiError(msg);
         notify.error(msg);
       }
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      const msg =
+        "Unable to connect to the server. Please check your connection and try again.";
+      setApiError(msg);
+      notify.error(msg);
     }
-  };
-
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     if (!otp || otp.trim().length === 0) {

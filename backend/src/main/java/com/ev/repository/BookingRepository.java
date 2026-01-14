@@ -14,6 +14,8 @@ import com.ev.model.BookingStatus;
 import com.ev.model.ChargingStations;
 import com.ev.model.User;
 
+import jakarta.transaction.Transactional;
+
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     // Find all bookings for a user (EV Owner)
@@ -100,5 +102,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Modifying
     @Query("DELETE FROM Booking b WHERE b.evOwner.user_id = :userId")
     void deleteByEvOwnerUser_id(@Param("userId") Long userId);
+    
+    @Modifying
+    @Transactional
+    @Query("delete from Booking b where b.station.operator.user_id = :userId")
+    int deleteByStationOperatorUserId(@Param("userId") Long userId);
 
 }

@@ -552,6 +552,8 @@ getActiveBookingsCount: async (stationIds) => {
   });
   return response;
 },
+
+
 markPaymentSuccess: async (bookingId, gatewayPaymentId) => {
   const url = `/bookings/${bookingId}/payment-success`;
   console.log("=== markPaymentSuccess CALL ===");
