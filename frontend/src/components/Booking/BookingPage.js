@@ -23,6 +23,7 @@ console.log('booking stationId', stationId);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [bookedSlots, setBookedSlots] = useState([]);
+  
 
   const [formData, setFormData] = useState({
     date: '',
@@ -80,54 +81,58 @@ console.log('booking stationId', stationId);
 }, [stationId, navigate]);
 
   // 2) Fetch bookings for a day to build blocked slots
-  useEffect(() => {
-    const fetchAvailability = async () => {
-      if (!station || !formData.date) {
-        setBookedSlots([]);
-        return;
-      }
+useEffect(() => {
+  console.log("availability effect deps changed:", {
+    station,
+    date: formData.date,
+    stationId,
+  });
 
-      try {
-        const res = await fetch(
-          `/bookings/stations/${stationId}/bookings?date=${formData.date}`,
-          {
-            credentials: 'include',
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-            },
-          }
-        );
+  const fetchAvailability = async () => {
+    if (!station || !formData.date) {
+      console.log("no station or date yet, skipping fetch");
+      setBookedSlots([]);
+      return;
+    }
 
-        if (!res.ok) throw new Error('Failed to fetch availability');
+    console.log("calling availability for station", stationId, "date", formData.date);
 
-        const bookings = await res.json();
-        const blocked = new Set();
+    try {
+  const bookings = await bookingService.getAvailability(stationId, formData.date);
+  console.log("availability bookings =", bookings);
 
-        bookings.forEach((booking) => {
-          const start = new Date(booking.startTime);
-          const end = new Date(booking.endTime);
-          const bufferEnd = new Date(end.getTime() + 15 * 60 * 1000);
+  const blocked = new Set();
 
-          let current = new Date(start);
-          current.setMinutes(0, 0, 0);
+  bookings.forEach((booking) => {
+    const start = new Date(booking.startTime);
+    const end = new Date(booking.endTime);
+    const bufferEnd = new Date(end.getTime() + 15 * 60 * 1000);
 
-          while (current < bufferEnd) {
-            const key = current.toISOString().slice(0, 16);
-            blocked.add(key);
-            current.setHours(current.getHours() + 1);
-          }
-        });
+    let current = new Date(start);
+    current.setMinutes(0, 0, 0);
 
-        setBookedSlots(Array.from(blocked));
-      } catch (err) {
-        console.log('Availability check failed, will rely on backend validation');
-        setBookedSlots([]);
-      }
-    };
+    while (current < bufferEnd) {
+      const key = `${current.getFullYear()}-${String(
+        current.getMonth() + 1
+      ).padStart(2, "0")}-${String(current.getDate()).padStart(
+        2,
+        "0"
+      )}-${String(current.getHours()).padStart(2, "0")}`;
+      blocked.add(key);
+      current.setHours(current.getHours() + 1);
+    }
+  });
 
-    fetchAvailability();
-  }, [station, formData.date, stationId]);
+  setBookedSlots(Array.from(blocked));
+  console.log("blocked keys =", Array.from(blocked));
+} catch (err) {
+  console.error("Availability check failed:", err);
+  setBookedSlots([]);
+}
+  };
 
+  fetchAvailability();
+}, [station, formData.date, stationId]);
 
   const handleSubmit = async (e) => {
   e.preventDefault();
@@ -157,6 +162,7 @@ console.log('booking stationId', stationId);
 
   try {
     const result = await bookingService.createBooking(payload);
+    
     const bookingId = result.bookingId;
     const paymentUrl = result.paymentUrl;
 
@@ -271,161 +277,7 @@ console.log('booking stationId', stationId);
   }
 };
 
-  // 3) Submit booking + payment init
-// const handleSubmit = async (e) => {
-//   e.preventDefault();
-//   try {
-//     console.log("Submitting booking/payment payload:", payload);
-//     const res = await bookingService.initEsewaPayment(payload);
-//     console.log("eSewa init response:", res);
-//     // redirect to eSewa / success URL...
-//   } catch (err) {
-//     console.error("Error while init eSewa payment:", err);
-//     toast.error("Failed to start payment");
-//   }
-//   setSubmitting(true);
-
-//   const [hours, minutes] = formData.timeSlot.split(":");
-//   const startTime = new Date(formData.date);
-//   startTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-
-//   const endTime = new Date(startTime);
-//   endTime.setHours(startTime.getHours() + parseInt(formData.duration, 10));
-
-//   const formatDateTime = (date) => {
-//     const pad = (n) => String(n).padStart(2, "0");
-//     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-//       date.getDate()
-//     )}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
-//   };
-
-//   const payload = {
-//     stationId: parseInt(stationId, 10),
-//     startTime: formatDateTime(startTime),
-//     endTime: formatDateTime(endTime),
-//     connectorType: formData.connectorType,
-//     paymentMethod: formData.paymentMethod,
-//   };
-
-//   try {
-//     const result = await bookingService.createBooking(payload);
-//     console.log("createBooking result:", result);
-
-//     const bookingId = result.bookingId;
-//     const paymentUrl = result.paymentUrl;
-
-//     if (!bookingId) {
-//       toast.error("Missing booking ID from server");
-//       setSubmitting(false);
-//       return;
-//     }
-
-//     // CARD: Stripe Checkout redirect
-//     if (formData.paymentMethod === "CARD") {
-//       if (!paymentUrl) {
-//         toast.error("Unable to start payment. Please try again.");
-//         setSubmitting(false);
-//         return;
-//       }
-//       toast.info("Redirecting to secure card payment…", { autoClose: 1200 });
-//       setTimeout(() => {
-//         window.location.href = paymentUrl; // Stripe Checkout URL
-//       }, 1000);
-//       return;
-//     }
-
-//     // ESEWA
-//     if (formData.paymentMethod === "ESEWA") {
-//       try {
-//         const initRes = await fetch("http://localhost:4000/payments/esewa/init", {
-//           method: "POST",
-//           headers: { "Content-Type": "application/json" },
-//           body: JSON.stringify({ bookingId, amount: totalCost }),
-//         });
-
-//         if (!initRes.ok) {
-//           toast.error("Failed to initialize eSewa payment");
-//           setSubmitting(false);
-//           return;
-//         }
-
-//         const { esewa, formUrl } = await initRes.json();
-//         if (!esewa || !formUrl) {
-//           toast.error("Invalid eSewa init response");
-//           setSubmitting(false);
-//           return;
-//         }
-
-//         toast.info("Redirecting to eSewa…", { autoClose: 1200 });
-
-//         const form = document.createElement("form");
-//         form.method = "POST";
-//         form.action = formUrl;
-
-//         Object.entries(esewa).forEach(([key, value]) => {
-//           const input = document.createElement("input");
-//           input.type = "hidden";
-//           input.name = key;
-//           input.value = value;
-//           form.appendChild(input);
-//         });
-
-//         document.body.appendChild(form);
-//         form.submit();
-//         return;
-//       } catch (e) {
-//         console.error("eSewa init failed", e);
-//         toast.error("Failed to initialize eSewa payment");
-//         setSubmitting(false);
-//         return;
-//       }
-//     }
-
-//     // KHALTI
-//     if (formData.paymentMethod === "KHALTI") {
-//       try {
-//         const initRes = await fetch("http://localhost:4000/payments/khalti/init", {
-//           method: "POST",
-//           headers: { "Content-Type": "application/json" },
-//           body: JSON.stringify({ bookingId, amount: totalCost }),
-//         });
-
-//         if (!initRes.ok) {
-//           toast.error("Failed to initialize Khalti payment");
-//           setSubmitting(false);
-//           return;
-//         }
-
-//         const { paymentUrl: khaltiUrl } = await initRes.json();
-//         if (!khaltiUrl) {
-//           toast.error("Invalid Khalti init response");
-//           setSubmitting(false);
-//           return;
-//         }
-
-//         toast.info("Redirecting to Khalti…", { autoClose: 1500 });
-//         setTimeout(() => {
-//           window.location.href = khaltiUrl; // test-pay.khalti.com/?pidx=...
-//         }, 1200);
-//         return;
-//       } catch (e) {
-//         console.error("Khalti init failed", e);
-//         toast.error("Failed to initialize Khalti payment");
-//         setSubmitting(false);
-//         return;
-//       }
-//     }
-
-//     toast.error("Unknown payment method");
-//   } catch (err) {
-//     const msg =
-//       err.response?.data ||
-//       "Slot no longer available or payment could not be initialized.";
-//     toast.error(msg);
-//   } finally {
-//     setSubmitting(false);
-//   }
-// };
+  
 
 
   if (loading) {
@@ -605,75 +457,91 @@ const totalCost = Math.round(rate * estimatedKwh);
 
               {/* Time slots */}
               <div>
-                <label className="block text-lg font-semibold mb-4">
-                  <Clock className="w-5 h-5 inline mr-2" /> Available Time Slots
-                </label>
-                <div className="grid grid-cols-4 gap-3">
-                  {timeSlots.map((slot) => {
-                    const slotDateTime = formData.date
-                      ? `${formData.date}T${slot}:00`
-                      : null;
-                    const slotKey = slotDateTime?.slice(0, 16);
-                    const isBlocked = slotKey && bookedSlots.includes(slotKey);
+                <label className="block text-lg font-semibold mb-1">
+                <Clock className="w-5 h-5 inline mr-2" /> Available Time Slots
+              </label>
+              <p className="text-sm text-gray-500 mb-4">
+                Choose a start time that can fit a continuous {formData.duration}-hour session.
+              </p>
+              <div className="grid grid-cols-4 gap-3">
+                {timeSlots.map((slot) => {
+                const disabledBase = !formData.date;
 
-                    let durationBlocked = false;
-                    if (formData.date && slotDateTime) {
-                      const start = new Date(slotDateTime);
-                      const end = new Date(
-                        start.getTime() +
-                          parseInt(formData.duration, 10) * 3600000
-                      );
-                      let check = new Date(start);
-                      while (check < end) {
-                        const checkKey = check
-                          .toISOString()
-                          .slice(0, 16);
-                        if (bookedSlots.includes(checkKey)) {
-                          durationBlocked = true;
-                          break;
-                        }
-                        check.setHours(check.getHours() + 1);
-                      }
+                const [slotHour] = slot.split(":").map(Number);
+                  const openHour = 8;   // first slot hour
+                  const closeHour = 20; // last slot hour in your list
+
+                  const endHour = slotHour + parseInt(formData.duration, 10);
+                  const outsideWindow = slotHour < openHour || endHour > closeHour;
+
+                let isBlocked = false;
+                let durationBlocked = false;
+                
+
+                if (!disabledBase) {
+                  const [h] = slot.split(":");
+                  const slotKey = `${formData.date}-${h}`; // same pattern as above
+                  isBlocked = bookedSlots.includes(slotKey);
+                  console.log("slot =", slot, "slotKey =", slotKey, "bookedSlots =", bookedSlots);
+
+                  const start = new Date(`${formData.date}T${slot}:00`);
+                  const end = new Date(
+                    start.getTime() + parseInt(formData.duration, 10) * 3600000
+                  );
+
+                  let check = new Date(start);
+                  while (check < end) {
+                    const checkKey = `${check.getFullYear()}-${String(
+                      check.getMonth() + 1
+                    ).padStart(2, "0")}-${String(check.getDate()).padStart(
+                      2,
+                      "0"
+                    )}-${String(check.getHours()).padStart(2, "0")}`;
+
+                    if (bookedSlots.includes(checkKey)) {
+                      durationBlocked = true;
+                      break;
                     }
+                    check.setHours(check.getHours() + 1);
+                  }
+                }
 
-                    const disabled =
-                      !formData.date || isBlocked || durationBlocked;
+                const disabled = disabledBase || isBlocked || durationBlocked || outsideWindow;
 
-                    return (
-                      <button
-                        key={slot}
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => {
-                          if (disabled) {
-                            toast.warn(
-                              isBlocked
-                                ? 'This hour is booked or in buffer zone'
-                                : `Need ${formData.duration}h continuous free time`
-                            );
-                            return;
-                          }
-                          setFormData((prev) => ({
-                            ...prev,
-                            timeSlot: slot,
-                          }));
-                        }}
-                        className={`py-4 rounded-xl font-medium text-lg transition-all relative
-                          ${
-                            formData.timeSlot === slot && !disabled
-                              ? 'bg-emerald-600 text-white ring-4 ring-emerald-200'
-                              : disabled
-                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed line-through'
-                              : 'bg-gray-100 hover:bg-emerald-100 hover:shadow-md text-gray-800'
-                          }`}
-                      >
-                        {slot}
-                        {disabled && (
-                          <div className="absolute inset-0 rounded-xl bg-black opacity-10" />
-                        )}
-                      </button>
-                    );
-                  })}
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => {
+                        if (disabled) {
+                          toast.warn(
+                          isBlocked
+                            ? "This time is booked or in buffer zone."
+                            : `You need ${formData.duration} continuous free hour(s) from ${slot}.`
+                        );
+                          return;
+                        }
+                        setFormData((prev) => ({ ...prev, timeSlot: slot }));
+                      }}
+                      className={`py-4 rounded-xl font-medium text-lg transition-all relative
+                        ${
+                          formData.timeSlot === slot && !disabled
+                            ? "bg-emerald-600 text-white ring-4 ring-emerald-200"
+                            : disabled
+                            ? "bg-gray-200 text-gray-400 cursor-not-allowed line-through"
+                            : "bg-gray-100 hover:bg-emerald-100 hover:shadow-md text-gray-800"
+                        }`}
+                    >
+                      {slot}
+                      {disabled && (
+                        <div className="absolute inset-0 rounded-xl bg-black opacity-10" />
+                      )}
+                    </button>
+                  );
+                                
+              })}
+
                 </div>
 
                 <div className="flex gap-6 mt-6 text-sm text-gray-600">

@@ -56,17 +56,16 @@ function LocationClickHandler({ editMode, setProfileData }) {
         addr.village ||
         addr.municipality;
 
-      const state = addr.state;
-      const postcode = addr.postcode;
-
+        const region = addr.state;     
+        const district = addr.postcode; 
       setProfileData((prev) => ({
         ...prev,
         latitude: lat,
         longitude: lng,
         address: street || prev.address,
         city: city || prev.city,
-        state: state || prev.state,
-        zipCode: postcode || prev.zipCode,
+         region: region || prev.region,
+        district: district || prev.district,
       }));
     } catch (err) {
       console.error('Reverse geocoding failed', err);
@@ -92,8 +91,8 @@ export default function UserProfile() {
     latitude: null,
     longitude: null,
     city: '',
-    state: '',
-    zipCode: '',
+     region: '',    
+  district: '',
   });
 
   const [notifications, setNotifications] = useState({
@@ -124,8 +123,8 @@ export default function UserProfile() {
           latitude: data.latitude ?? null,
           longitude: data.longitude ?? null,
           city: data.city || '',
-          state: data.state || '',
-          zipCode: data.zipCode || '',
+           region: data.region || '',
+            district: data.district || '',
         });
       } catch (e) {
         console.error('Failed to load profile', e);
@@ -173,8 +172,8 @@ export default function UserProfile() {
         latitude: profileData.latitude,
         longitude: profileData.longitude,
         city: profileData.city,
-        state: profileData.state,
-        zipCode: profileData.zipCode,
+        region: profileData.region,
+          district: profileData.district,
       });
       setProfileData({
         name: updated.fullName,
@@ -185,8 +184,8 @@ export default function UserProfile() {
         latitude: updated.latitude ?? null,
         longitude: updated.longitude ?? null,
         city: updated.city || '',
-        state: updated.state || '',
-        zipCode: updated.zipCode || '',
+        region: updated.region || '',
+          district: updated.district || '',
       });
       setEditMode(false);
     } catch (e) {
@@ -225,7 +224,7 @@ export default function UserProfile() {
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-semibold text-slate-900">My Profile</h1>
             <button
-              onClick={() => navigate('/ev-owner/dashboard')}
+              onClick={() => navigate(-1)}
               className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50"
             >
               Back to dashboard
@@ -356,13 +355,13 @@ export default function UserProfile() {
 
                 <div>
                   <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    State
+                    Region
                   </label>
                   <input
                     type="text"
-                    value={profileData.state}
+                    value={profileData.region}
                     onChange={(e) =>
-                      setProfileData({ ...profileData, state: e.target.value })
+                      setProfileData({ ...profileData, region: e.target.value })
                     }
                     disabled={!editMode}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50"
@@ -371,15 +370,15 @@ export default function UserProfile() {
 
                 <div>
                   <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    ZIP code
+                    District
                   </label>
                   <input
                     type="text"
-                    value={profileData.zipCode}
+                    value={profileData.district}
                     onChange={(e) =>
                       setProfileData({
                         ...profileData,
-                        zipCode: e.target.value,
+                        district: e.target.value,
                       })
                     }
                     disabled={!editMode}

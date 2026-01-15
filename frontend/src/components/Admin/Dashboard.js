@@ -228,7 +228,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex flex-col">
                 <span className="font-semibold text-sm text-slate-900">
-                  EVCharge
+               Bijuliyatra
                 </span>
                 <span className="text-[11px] text-slate-500">
                   Admin Console

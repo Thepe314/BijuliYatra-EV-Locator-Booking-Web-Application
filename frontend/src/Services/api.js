@@ -436,6 +436,8 @@ listNearbyStations: async ({ lat, lng }) => {
   return res;
 },
 
+
+
 };
 
 
@@ -553,6 +555,12 @@ getActiveBookingsCount: async (stationIds) => {
   return response;
 },
 
+getAvailability: async (stationId, date) => {
+  const res = await api.get(`/bookings/stations/${stationId}/bookings`, {
+    params: { date },
+  });
+  return res.data;
+},
 
 markPaymentSuccess: async (bookingId, gatewayPaymentId) => {
   const url = `/bookings/${bookingId}/payment-success`;

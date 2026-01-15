@@ -20,9 +20,9 @@ import {
   LogOut,
 } from 'lucide-react';
 
-import { stationService } from '../../Services/api';
+import { stationService, authService } from '../../Services/api';
 import StationLocationPicker from '../../Services/StationLocationPicker';
-
+import notify from '../../Utils/notify';
 export default function OperatorEditStation() {
   const { id: stationId } = useParams();
   const navigate = useNavigate();
@@ -85,7 +85,7 @@ export default function OperatorEditStation() {
     const loadStation = async () => {
       setLoading(true);
       try {
-        const apiStation = await stationService.getStationById(stationId);
+        const apiStation = await stationService.getStationByIdO(stationId);
         if (!mounted) return;
         setFormData((prev) => ({ ...prev, ...mapApiToForm(apiStation) }));
       } catch (err) {
@@ -223,12 +223,13 @@ export default function OperatorEditStation() {
         longitude: formData.longitude,
       };
 
-      await stationService.updateStationAdmin(stationId, payload);
+      await stationService.updateStationOperator(stationId, payload);
       setNotification({
         type: 'success',
         message: 'Station updated successfully!',
       });
       setTimeout(() => setNotification(null), 3000);
+        
     } catch (err) {
       console.error('Update station failed:', err);
       setNotification({
@@ -248,6 +249,15 @@ export default function OperatorEditStation() {
       </div>
     );
   }
+
+   const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (err) {}
+    notify.logout();
+    navigate("/login");
+  };
+
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex">
@@ -374,7 +384,7 @@ export default function OperatorEditStation() {
         <div className="border-t border-slate-200 p-4 flex-shrink-0">
           <button
             type="button"
-            onClick={() => navigate('/logout')}
+              onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-100 text-sm text-slate-600 hover:text-slate-800"
           >
             <LogOut className="w-5 h-5" />
@@ -388,7 +398,7 @@ export default function OperatorEditStation() {
         <header className="h-16 bg-white border-b border-slate-200 flex items-center">
           <div className="max-w-5xl w-full mx-auto px-6 flex items-center justify-between">
             <button
-              onClick={() => navigate('/admin/stationmanagement')}
+              onClick={() => navigate('/operator/dashboard')}
               className="inline-flex items-center gap-2 text-base text-slate-700 hover:text-slate-900"
             >
               <ArrowLeft className="w-4 h-4" />

@@ -1172,7 +1172,7 @@ setStationData(transformedStations);
                     type="button"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
-                      navigate('/operator/profile');
+                      navigate('/profile');
                     }}
                     className="w-full flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
                   >
