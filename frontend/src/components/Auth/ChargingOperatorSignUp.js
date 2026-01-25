@@ -125,13 +125,13 @@ export default function ChargingOperatorSignUp() {
     setApiError("");
 
     try {
-      // Match backend OperatorSignupRequest DTO fields exactly
+      
      const userData = {
   fullname: formData.fullName,
   email: formData.email,
   phoneNumber: formData.phoneNumber,
   password: formData.password,
-  role: "CHARGING_OPERATOR",
+  role: "CHARGER_OPERATOR",
   region: formData.region,
   city: formData.city,
   district: formData.district,
@@ -223,7 +223,7 @@ export default function ChargingOperatorSignUp() {
 
             {/* Hero copy */}
             <div>
-              <h1 className="text-3xl font-semibold text-slate-900 mb-4 leading-snug">
+              <h1 className="text-4xl font-semibold text-slate-900 mb-4 leading-snug">
                 Grow Your Charging{" "}
                 <br className="hidden sm:block" />
                 Business With Us
@@ -236,27 +236,27 @@ export default function ChargingOperatorSignUp() {
 
               <div className="flex flex-wrap gap-8 text-emerald-500 text-sm font-semibold">
                 <div>
-                  <div className="text-lg">5,000+</div>
-                  <div className="text-[11px] uppercase tracking-wide text-slate-600">
+                  <div className="text-xl">5,000+</div>
+                  <div className="text-sm uppercase tracking-wide text-slate-600">
                     Charging Stations
                   </div>
                 </div>
                 <div>
-                  <div className="text-lg">50K+</div>
-                  <div className="text-[11px] uppercase tracking-wide text-slate-600">
+                  <div className="text-xl">50K+</div>
+                  <div className="text-sm uppercase tracking-wide text-slate-600">
                     Active Users
                   </div>
                 </div>
                 <div>
-                  <div className="text-lg">24/7</div>
-                  <div className="text-[11px] uppercase tracking-wide text-slate-600">
+                  <div className="text-xl">24/7</div>
+                  <div className="text-sm uppercase tracking-wide text-slate-600">
                     Support
                   </div>
                 </div>
               </div>
             </div>
 
-            <p className="mt-10 text-[11px] text-slate-500">
+            <p className="mt-10 text-sm text-slate-500">
               © {new Date().getFullYear()} BijuliYatra. All rights reserved.
             </p>
           </div>
@@ -265,10 +265,10 @@ export default function ChargingOperatorSignUp() {
         {/* RIGHT: registration form panel */}
         <div className="bg-white px-10 py-10 flex flex-col justify-center border-l border-slate-200">
           <div className="w-full max-w-md mx-auto">
-            <h2 className="text-2xl font-semibold text-slate-900 mb-1">
+            <h2 className="text-3xl font-semibold text-slate-900 mb-1">
               Register as Station Owner / Operator
             </h2>
-            <p className="text-xs text-slate-500 mb-6">
+            <p className="text-sm text-slate-500 mb-6">
               Start your journey as a charging station partner.
             </p>
 
@@ -278,10 +278,10 @@ export default function ChargingOperatorSignUp() {
                 <Clock className="w-4 h-4 text-emerald-500" />
               </div>
               <div>
-                <p className="text-[11px] font-semibold text-emerald-900">
+                <p className="text-sm font-semibold text-emerald-900">
                   Account approval required
                 </p>
-                <p className="text-[11px] text-slate-700">
+                <p className="text-sm text-slate-700">
                   Your account will be reviewed by our admin team within
                   24–48 hours. You&apos;ll receive a confirmation email once
                   approved.
@@ -296,7 +296,7 @@ export default function ChargingOperatorSignUp() {
                 <React.Fragment key={step.number}>
                   <div className="flex flex-col items-center flex-1">
                     <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center mb-1 text-[11px] ${
+                      className={`w-9 h-9 rounded-full flex items-center justify-center mb-1 text-sm ${
                         currentStep > step.number
                           ? "bg-emerald-500 text-white"
                           : currentStep === step.number
@@ -311,7 +311,7 @@ export default function ChargingOperatorSignUp() {
                       )}
                     </div>
                     <span
-                      className={`text-[11px] font-medium ${
+                      className={`text-sm font-medium ${
                         currentStep >= step.number
                           ? "text-slate-800"
                           : "text-slate-400"
@@ -334,7 +334,7 @@ export default function ChargingOperatorSignUp() {
             </div>
 
             {apiError && (
-              <div className="mb-4 p-2.5 bg-red-50 border border-red-200 text-red-700 rounded-md text-[11px]">
+              <div className="mb-4 p-2.5 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
                 {apiError}
               </div>
             )}
@@ -346,7 +346,7 @@ export default function ChargingOperatorSignUp() {
                 <>
                   {/* Full Name */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
                       Full Name
                     </label>
                     <div className="relative">
@@ -360,12 +360,12 @@ export default function ChargingOperatorSignUp() {
                           errors.fullName
                             ? "border-red-400"
                             : "border-slate-300"
-                        } rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                        } rounded-md pl-9 pr-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
                         placeholder="John Doe"
                       />
                     </div>
                     {errors.fullName && (
-                      <p className="text-red-500 text-[11px] mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.fullName}
                       </p>
                     )}
@@ -373,7 +373,7 @@ export default function ChargingOperatorSignUp() {
 
                   {/* Email */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
                       Email Address
                     </label>
                     <div className="relative">
@@ -385,12 +385,12 @@ export default function ChargingOperatorSignUp() {
                         onChange={handleInputChange}
                         className={`w-full bg-white border ${
                           errors.email ? "border-red-400" : "border-slate-300"
-                        } rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                        } rounded-md pl-9 pr-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
                         placeholder="you@company.com"
                       />
                     </div>
                     {errors.email && (
-                      <p className="text-red-500 text-[11px] mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.email}
                       </p>
                     )}
@@ -398,7 +398,7 @@ export default function ChargingOperatorSignUp() {
 
                   {/* Phone */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
                       Phone Number
                     </label>
                     <div className="relative">
@@ -412,12 +412,12 @@ export default function ChargingOperatorSignUp() {
                           errors.phoneNumber
                             ? "border-red-400"
                             : "border-slate-300"
-                        } rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                        } rounded-md pl-9 pr-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
                         placeholder="+977 1234567890"
                       />
                     </div>
                     {errors.phoneNumber && (
-                      <p className="text-red-500 text-[11px] mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.phoneNumber}
                       </p>
                     )}
@@ -425,7 +425,7 @@ export default function ChargingOperatorSignUp() {
 
                   {/* Password */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
                       Password
                     </label>
                     <div className="relative">
@@ -439,7 +439,7 @@ export default function ChargingOperatorSignUp() {
                           errors.password
                             ? "border-red-400"
                             : "border-slate-300"
-                        } rounded-md pl-9 pr-9 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                        } rounded-md pl-9 pr-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
                         placeholder="••••••••"
                       />
                       <button
@@ -455,7 +455,7 @@ export default function ChargingOperatorSignUp() {
                       </button>
                     </div>
                     {errors.password && (
-                      <p className="text-red-500 text-[11px] mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.password}
                       </p>
                     )}
@@ -463,7 +463,7 @@ export default function ChargingOperatorSignUp() {
 
                   {/* Confirm Password */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
                       Confirm Password
                     </label>
                     <div className="relative">
@@ -477,7 +477,7 @@ export default function ChargingOperatorSignUp() {
                           errors.confirmPassword
                             ? "border-red-400"
                             : "border-slate-300"
-                        } rounded-md pl-9 pr-9 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                        } rounded-md pl-9 pr-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500`}
                         placeholder="••••••••"
                       />
                       <button
@@ -495,7 +495,7 @@ export default function ChargingOperatorSignUp() {
                       </button>
                     </div>
                     {errors.confirmPassword && (
-                      <p className="text-red-500 text-[11px] mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.confirmPassword}
                       </p>
                     )}
@@ -507,7 +507,7 @@ export default function ChargingOperatorSignUp() {
                   <>
                     {/* Company Name */}
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
                         Company Name
                       </label>
                       <div className="relative">
@@ -521,19 +521,19 @@ export default function ChargingOperatorSignUp() {
                             errors.companyName
                               ? "border-red-400"
                               : "border-slate-300"
-                          } rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                          } rounded-md pl-9 pr-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
                           placeholder="PowerGrid Charging Solutions"
                         />
                       </div>
                       {errors.companyName && (
-                        <p className="text-red-500 text-[11px] mt-1">
+                        <p className="text-red-500 text-sm mt-1">
                           {errors.companyName}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
                         Company Type
                       </label>
                       <select
@@ -544,7 +544,7 @@ export default function ChargingOperatorSignUp() {
                           errors.companyType
                             ? "border-red-400"
                             : "border-slate-300"
-                        } rounded-md px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                        } rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500`}
                       >
                         <option value="">Select company type</option>
                         <option value="individual">Individual Operator</option>
@@ -554,14 +554,14 @@ export default function ChargingOperatorSignUp() {
                         <option value="government">Government</option>
                       </select>
                       {errors.companyType && (
-                        <p className="text-red-500 text-[11px] mt-1">
+                        <p className="text-red-500 text-sm mt-1">
                           {errors.companyType}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
                         Company Registration Number
                       </label>
                       <div className="relative">
@@ -575,19 +575,19 @@ export default function ChargingOperatorSignUp() {
                             errors.companyRegistrationNo
                               ? "border-red-400"
                               : "border-slate-300"
-                          } rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                          } rounded-md pl-9 pr-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
                           placeholder="REG-2024-001234"
                         />
                       </div>
                       {errors.companyRegistrationNo && (
-                        <p className="text-red-500 text-[11px] mt-1">
+                        <p className="text-red-500 text-sm mt-1">
                           {errors.companyRegistrationNo}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
                         PAN Number
                       </label>
                       <div className="relative">
@@ -601,19 +601,19 @@ export default function ChargingOperatorSignUp() {
                             errors.companyPan
                               ? "border-red-400"
                               : "border-slate-300"
-                          } rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                          } rounded-md pl-9 pr-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
                           placeholder="PAN123456789"
                         />
                       </div>
                       {errors.companyPan && (
-                        <p className="text-red-500 text-[11px] mt-1">
+                        <p className="text-red-500 text-sm mt-1">
                           {errors.companyPan}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
                         Company License Number
                       </label>
                       <div className="relative">
@@ -627,12 +627,12 @@ export default function ChargingOperatorSignUp() {
                             errors.companyLicenseNo
                               ? "border-red-400"
                               : "border-slate-300"
-                          } rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                          } rounded-md pl-9 pr-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
                           placeholder="LIC-2024-567890"
                         />
                       </div>
                       {errors.companyLicenseNo && (
-                        <p className="text-red-500 text-[11px] mt-1">
+                        <p className="text-red-500 text-sm mt-1">
                           {errors.companyLicenseNo}
                         </p>
                       )}
@@ -644,7 +644,7 @@ export default function ChargingOperatorSignUp() {
                 {currentStep === 3 && (
                   <>
                     <div>
-                      <label className="block text-xs font-medium text-slate-700 mb-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
                         Region
                       </label>
                       <div className="relative">
@@ -658,12 +658,12 @@ export default function ChargingOperatorSignUp() {
                             errors.region
                               ? "border-red-400"
                               : "border-slate-300"
-                          } rounded-md pl-9 pr-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                          } rounded-md pl-9 pr-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
                           placeholder="Bagmati"
                         />
                       </div>
                       {errors.region && (
-                        <p className="text-red-500 text-[11px] mt-1">
+                        <p className="text-red-500 text-sm mt-1">
                           {errors.region}
                         </p>
                       )}
@@ -671,7 +671,7 @@ export default function ChargingOperatorSignUp() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-medium text-slate-700 mb-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
                           City
                         </label>
                         <input
@@ -681,17 +681,17 @@ export default function ChargingOperatorSignUp() {
                           onChange={handleInputChange}
                           className={`w-full bg-white border ${
                             errors.city ? "border-red-400" : "border-slate-300"
-                          } rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                          } rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
                           placeholder="Lalitpur"
                         />
                         {errors.city && (
-                          <p className="text-red-500 text-[11px] mt-1">
+                          <p className="text-red-500 text-sm mt-1">
                             {errors.city}
                           </p>
                         )}
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-slate-700 mb-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
                           District
                         </label>
                         <input
@@ -703,11 +703,11 @@ export default function ChargingOperatorSignUp() {
                             errors.district
                               ? "border-red-400"
                               : "border-slate-300"
-                          } rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                          } rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
                           placeholder="Jhamsikhel"
                         />
                         {errors.district && (
-                          <p className="text-red-500 text-[11px] mt-1">
+                          <p className="text-red-500 text-sm mt-1">
                             {errors.district}
                           </p>
                         )}
@@ -715,7 +715,7 @@ export default function ChargingOperatorSignUp() {
                     </div>
 
                       <div>
-                        <label className="block text-xs font-medium text-slate-700 mb-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
                           Street Address
                         </label>
                         <input
@@ -727,11 +727,11 @@ export default function ChargingOperatorSignUp() {
                             errors.address
                               ? "border-red-400"
                               : "border-slate-300"
-                          } rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                          } rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500`}
                           placeholder="House no./building/street/area"
                         />
                         {errors.address && (
-                          <p className="text-red-500 text-[11px] mt-1">
+                          <p className="text-red-500 text-sm mt-1">
                             {errors.address}
                           </p>
                         )}
@@ -739,7 +739,7 @@ export default function ChargingOperatorSignUp() {
                     <div className="mt-4">
 
                 <div>
-                <label className="block text-xs font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Company Location (click on map)
                 </label>
                 <div className="h-56 rounded-xl overflow-hidden border border-slate-200">
@@ -747,12 +747,12 @@ export default function ChargingOperatorSignUp() {
                     value={
                       formData.latitude != null && formData.longitude != null
                         ? { lat: formData.latitude, lng: formData.longitude }
-                        : { lat: 27.7172, lng: 85.324 } // default center
+                        : { lat: 27.7172, lng: 85.324 } 
                     }
                     onChange={handleLocationChange}
                   />
                 </div>
-                <p className="text-[11px] text-slate-500 mt-1">
+                <p className="text-sm text-slate-500 mt-1">
                   Click on the map to set location; region, city, district and address will auto-fill.
                 </p>
               </div>
@@ -760,7 +760,7 @@ export default function ChargingOperatorSignUp() {
 
             <div className="grid grid-cols-2 gap-3 mt-3">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Opening Hours
                 </label>
                 <input
@@ -770,16 +770,16 @@ export default function ChargingOperatorSignUp() {
                   onChange={handleInputChange}
                   className={`w-full bg-white border ${
                     errors.openingHours ? "border-red-400" : "border-slate-300"
-                  } rounded-md px-3 py-2.5 text-xs text-slate-900`}
+                  } rounded-md px-3 py-2.5 text-sm text-slate-900`}
                 />
                 {errors.openingHours && (
-                  <p className="text-red-500 text-[11px] mt-1">
+                  <p className="text-red-500 text-sm mt-1">
                     {errors.openingHours}
                   </p>
                 )}
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Closing Hours
                 </label>
                 <input
@@ -789,10 +789,10 @@ export default function ChargingOperatorSignUp() {
                   onChange={handleInputChange}
                   className={`w-full bg-white border ${
                     errors.closingHours ? "border-red-400" : "border-slate-300"
-                  } rounded-md px-3 py-2.5 text-xs text-slate-900`}
+                  } rounded-md px-3 py-2.5 text-sm text-slate-900`}
                 />
                 {errors.closingHours && (
-                  <p className="text-red-500 text-[11px] mt-1">
+                  <p className="text-red-500 text-sm mt-1">
                     {errors.closingHours}
                   </p>
                 )}
@@ -806,7 +806,7 @@ export default function ChargingOperatorSignUp() {
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Back
@@ -817,7 +817,7 @@ export default function ChargingOperatorSignUp() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md bg-emerald-500 text-xs font-semibold text-white hover:bg-emerald-600 transition"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md bg-emerald-500 text-sm font-semibold text-white hover:bg-emerald-600 transition"
               >
                 Next
                 <ArrowRight className="w-4 h-4" />
@@ -827,14 +827,14 @@ export default function ChargingOperatorSignUp() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="flex-1 py-2.5 rounded-md bg-emerald-500 text-xs font-semibold text-white hover:bg-emerald-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-1 py-2.5 rounded-md bg-emerald-500 text-sm font-semibold text-white hover:bg-emerald-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? "Submitting..." : "Submit for Review"}
               </button>
             )}
             </div>
 
-            <div className="mt-5 space-y-1 text-center text-[11px] text-slate-500">
+            <div className="mt-5 space-y-1 text-center text-sm text-slate-500">
               <p>
                 Already have an account?{" "}
                 <Link

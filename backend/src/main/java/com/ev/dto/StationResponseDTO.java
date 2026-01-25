@@ -5,6 +5,8 @@ import com.ev.model.ChargingStations;
 import com.ev.model.ChargerOperator;
 import com.ev.model.User;
 
+import jakarta.persistence.Column;
+
 public class StationResponseDTO {
     private Long id;
     private String name;
@@ -25,11 +27,16 @@ public class StationResponseDTO {
     private String createdAt;
     private String updatedAt;
     private Long operatorId;
-    private String imageKey;
+    private String imageUrl;
     private Double latitude;
     private Double longitude;
     private String operatorName;
-
+    private Integer level1Chargers;
+    private Integer dcUltraChargers;
+    private Integer dcComboChargers;
+    
+    
+    
     // Constructors
     public StationResponseDTO() {}
 
@@ -53,9 +60,12 @@ public class StationResponseDTO {
         this.createdAt = station.getCreatedAt().toString();
         this.updatedAt = station.getUpdatedAt().toString();
         this.operatorId = station.getOperatorId();
-        this.imageKey = station.getImageKey();
+        this.imageUrl = station.getImageUrl();
         this.latitude = station.getLatitude();
         this.longitude = station.getLongitude();
+        this.level1Chargers=station.getLevel1Chargers();
+        this.dcUltraChargers=station.getDcUltraChargers();
+        this.dcComboChargers=station.getDcComboChargers();
         
 
         // Extract company name safely
@@ -112,12 +122,14 @@ public class StationResponseDTO {
     public String getOperatorName() { return operatorName; }
     public void setOperatorName(String operatorName) { this.operatorName = operatorName; }
 
-	public String getImageKey() {
-		return imageKey;
+	
+
+	public String getImageUrl() {
+		return imageUrl;
 	}
 
-	public void setImageKey(String imageKey) {
-		this.imageKey = imageKey;
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
 	}
 
 	public Double getLatitude() {
@@ -135,6 +147,31 @@ public class StationResponseDTO {
 	public void setLongitude(Double longitude) {
 		this.longitude = longitude;
 	}
+
+	public Integer getLevel1Chargers() {
+		return level1Chargers;
+	}
+
+	public void setLevel1Chargers(Integer level1Chargers) {
+		this.level1Chargers = level1Chargers;
+	}
+
+	public Integer getDcUltraChargers() {
+		return dcUltraChargers;
+	}
+
+	public void setDcUltraChargers(Integer dcUltraChargers) {
+		this.dcUltraChargers = dcUltraChargers;
+	}
+
+	public Integer getDcComboChargers() {
+		return dcComboChargers;
+	}
+
+	public void setDcComboChargers(Integer dcComboChargers) {
+		this.dcComboChargers = dcComboChargers;
+	}
     
+	
     
 }

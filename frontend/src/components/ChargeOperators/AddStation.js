@@ -1,6 +1,6 @@
 // src/pages/AddStation.jsx
 import React, { useState } from 'react';
-import { AlertCircle, CheckCircle, Loader, MapPin, Zap } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader, Zap,LayoutDashboard,Calendar,BarChart3,Settings, Building2,Book} from 'lucide-react';
 import { stationService } from '../../Services/api';
 import { useNavigate, NavLink } from 'react-router-dom';
 import StationLocationPicker from '../../Services/StationLocationPicker';
@@ -28,7 +28,13 @@ export default function AddStation() {
     notes: '',
     latitude: null,
     longitude: null,
-    imageKey: 'station-1',
+   imageUrl: '',
+  //   level1Chargers: 0,
+  // dcUltraChargers: 0,
+  // dcComboChargers: 0,
+  // level1Rate: 0.2,
+  // dcUltraRate: 0.8,
+  // dcComboRate: 0.9,
   });
 
   const validateForm = () => {
@@ -67,6 +73,10 @@ export default function AddStation() {
     const level2 = parseInt(formData.level2Chargers, 10) || 0;
     const dcFast = parseInt(formData.dcFastChargers, 10) || 0;
 
+    // const level1 = parseInt(formData.level1Chargers, 10) || 0;
+    // const dcUltra = parseInt(formData.dcUltraChargers, 10) || 0;
+    // const dcCombo = parseInt(formData.dcComboChargers, 10) || 0;
+
     if (level2 < 0) {
       errors.level2Chargers = 'Level 2 chargers cannot be negative';
     }
@@ -77,8 +87,20 @@ export default function AddStation() {
       errors.chargers = 'At least one charger is required';
     }
 
+    // if (level1 < 0) errors.level1Chargers = 'Level 1 chargers cannot be negative';
+    // if (dcUltra < 0) errors.dcUltraChargers = 'DC Ultra chargers cannot be negative';
+    // if (dcCombo < 0) errors.dcComboChargers = 'DC Combo chargers cannot be negative';
+
+    // if (level1 + level2 + dcFast + dcUltra + dcCombo === 0) {
+    //   errors.chargers = 'At least one charger is required';
+    // }
     const level2Rate = parseFloat(formData.level2Rate) || 0;
     const dcFastRate = parseFloat(formData.dcFastRate) || 0;
+
+
+//  const level1Rate = parseFloat(formData.level1Rate) || 0;
+//  const dcUltraRate = parseFloat(formData.dcUltraRate) || 0;
+//  const dcComboRate = parseFloat(formData.dcComboRate) || 0;
 
     if (level2Rate <= 0) {
       errors.level2Rate = 'Level 2 rate must be greater than 0';
@@ -86,6 +108,11 @@ export default function AddStation() {
     if (dcFastRate <= 0) {
       errors.dcFastRate = 'DC Fast rate must be greater than 0';
     }
+
+    
+// if (level1Rate <= 0) errors.level1Rate = 'Level 1 rate must be greater than 0';
+// if (dcUltraRate <= 0) errors.dcUltraRate = 'DC Ultra rate must be greater than 0';
+// if (dcComboRate <= 0) errors.dcComboRate = 'DC Combo rate must be greater than 0';
 
     const peakMultiplier = parseFloat(formData.peakMultiplier) || 0;
     if (formData.peakPricing && peakMultiplier <= 1) {
@@ -185,15 +212,33 @@ export default function AddStation() {
         peakPricing: formData.peakPricing,
         peakMultiplier: parseFloat(formData.peakMultiplier),
         notes: formData.notes.trim(),
+        // level1Chargers: parseInt(formData.level1Chargers, 10) || 0,
+        // dcUltraChargers: parseInt(formData.dcUltraChargers, 10) || 0,
+        // dcComboChargers: parseInt(formData.dcComboChargers, 10) || 0,
+        // level1Rate: parseFloat(formData.level1Rate),
+        // dcUltraRate: parseFloat(formData.dcUltraRate),
+        // dcComboRate: parseFloat(formData.dcComboRate),
+
+
         totalSlots:
           (parseInt(formData.level2Chargers, 10) || 0) +
-          (parseInt(formData.dcFastChargers, 10) || 0),
+          (parseInt(formData.dcFastChargers, 10) || 0) ,
+          // (parseInt(formData.level1Chargers, 10) || 0) +
+          // (parseInt(formData.dcFastChargers, 10) || 0) +
+          // (parseInt(formData.dcUltraChargers, 10) || 0) +
+          // (parseInt(formData.dcComboChargers, 10) || 0),
+          
         availableSlots:
           (parseInt(formData.level2Chargers, 10) || 0) +
-          (parseInt(formData.dcFastChargers, 10) || 0),
+          (parseInt(formData.dcFastChargers, 10) || 0) ,
+          // (parseInt(formData.level1Chargers, 10) || 0) +
+          //  (parseInt(formData.level2Chargers, 10) || 0) +
+          // (parseInt(formData.dcFastChargers, 10) || 0) +
+          // (parseInt(formData.dcUltraChargers, 10) || 0) +
+          // (parseInt(formData.dcComboChargers, 10) || 0),
         latitude: formData.latitude,
         longitude: formData.longitude,
-        imageKey: formData.imageKey,
+        imageUrl: formData.imageUrl,
       };
 
       console.log('Submitting station data:', stationData);
@@ -217,7 +262,7 @@ export default function AddStation() {
         notes: '',
         latitude: null,
         longitude: null,
-        imageKey: 'station-1',
+        imageUrl:'',
       });
 
       setTimeout(() => {
@@ -238,7 +283,7 @@ export default function AddStation() {
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* LEFT SIDEBAR */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-screen fixed left-0 top-0 z-40">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
           <div className="bg-emerald-500 p-2 rounded-xl">
             <Zap className="w-6 h-6 text-white" />
@@ -249,82 +294,78 @@ export default function AddStation() {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 text-sm">
+        <nav className="flex-1 px-3 py-4 space-y-1 text-sm overflow-y-auto">
           <NavLink
             to="/operator/dashboard"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg ${
+              `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                 isActive
                   ? 'bg-emerald-50 text-emerald-700'
                   : 'text-slate-600 hover:bg-slate-50'
               }`
             }
           >
+            <LayoutDashboard className="w-4 h-4" />
             <span>Dashboard</span>
           </NavLink>
 
           <NavLink
-            to="/operator/stations"
+            to="/operator/dashboard"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg ${
+              `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                 isActive
                   ? 'bg-emerald-50 text-emerald-700'
                   : 'text-slate-600 hover:bg-slate-50'
               }`
             }
           >
+            <Building2 className="w-4 h-4" />
             <span>Stations</span>
           </NavLink>
 
           <NavLink
-            to="/operator/bookings"
+            to="/operator/dashboard"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg ${
+              `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                 isActive
                   ? 'bg-emerald-50 text-emerald-700'
                   : 'text-slate-600 hover:bg-slate-50'
               }`
             }
           >
+            <Book className="w-4 h-4" />
             <span>Bookings</span>
           </NavLink>
 
           <NavLink
-            to="/operator/analytics"
+            to="/operator/dashboard"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg ${
+              `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                 isActive
                   ? 'bg-emerald-50 text-emerald-700'
                   : 'text-slate-600 hover:bg-slate-50'
               }`
             }
           >
+            <BarChart3 className="w-4 h-4" />
             <span>Analytics</span>
           </NavLink>
 
           <NavLink
             to="/operator/settings"
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg ${
+              `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                 isActive
                   ? 'bg-emerald-50 text-emerald-700'
                   : 'text-slate-600 hover:bg-slate-50'
               }`
             }
           >
+            <Settings className="w-4 h-4" />
             <span>Settings</span>
           </NavLink>
         </nav>
-
-        <button
-          type="button"
-          onClick={() => navigate('/logout')}
-          className="m-3 mt-auto text-xs text-slate-500 hover:text-slate-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50"
-        >
-          Logout
-        </button>
       </aside>
-
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col">
         {/* Top bar / breadcrumb */}
@@ -361,14 +402,14 @@ export default function AddStation() {
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
               <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Station details + map side by side on large screens */}
+             
                 <section>
                   <h2 className="text-lg font-semibold text-slate-900 mb-4">
                     Station Details
                   </h2>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left: basic fields */}
+                 
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -513,24 +554,43 @@ export default function AddStation() {
                         </div>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Station Image Preset
-                        </label>
-                        <select
-                          name="imageKey"
-                          value={formData.imageKey}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 border-gray-300 focus:ring-emerald-500 text-sm"
-                        >
-                          <option value="station-1">Preset 1</option>
-                          <option value="station-2">Preset 2</option>
-                          <option value="station-3">Preset 3</option>
-                        </select>
+                    <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Station Image URL
+                    </label>
+                    <input
+                      type="url"
+                      name="imageUrl"
+                      value={formData.imageUrl}
+                      onChange={handleInputChange}
+                      placeholder="https://images.unsplash.com/photo-..."
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Put your Station Image</p>
+                    
+                    {/* Image Preview */}
+                    {formData.imageUrl && (
+                      <div className="mt-3 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <p className="text-xs text-slate-600 mb-1">Preview:</p>
+                        <img 
+                          src={formData.imageUrl} 
+                          alt="Station preview"
+                          className="w-full max-h-48 object-cover rounded-lg shadow-sm"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextElementSibling.style.display = 'block';
+                          }}
+                        />
+                        <p className="text-xs text-red-500 mt-1 hidden">
+                          Invalid image URL
+                        </p>
                       </div>
+                      
+                    )}
                     </div>
+                  </div>
 
-                    {/* Right: map card */}
+                 
                     <div className="space-y-3">
                       <h3 className="text-sm font-medium text-gray-800">
                         Map Location (click to set coordinates) *
@@ -563,120 +623,196 @@ export default function AddStation() {
                   </div>
                 </section>
 
-                {/* Charger configuration */}
-                <section>
-                  <h2 className="text-lg font-semibold text-slate-900 mb-4">
-                    Charger Configuration
-                  </h2>
-                  {validationErrors.chargers && (
-                    <p className="text-red-600 text-sm mb-3">
-                      {validationErrors.chargers}
-                    </p>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {/* Charger configuration */}
+                 <section>
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">
+                Charger Types
+              </h2>
+
+              {validationErrors.chargers && (
+                <p className="text-red-600 text-sm mb-3">
+                  {validationErrors.chargers}
+                </p>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Level 1 */}
+                {/* <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium text-slate-800">Level 1</p>
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Level 2 Chargers *
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        name="level1Chargers"
+                        min="0"
+                        value={formData.level1Chargers}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Rate (NPR/kWh)
+                      </label>
+                      <input
+                        type="number"
+                        name="level1Rate"
+                        min="0.01"
+                        step="0.01"
+                        value={formData.level1Rate}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+                </div> */}
+
+                {/* Level 2 */}
+                <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium text-slate-800">Level 2</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Quantity
                       </label>
                       <input
                         type="number"
                         name="level2Chargers"
+                        min="0"
                         value={formData.level2Chargers}
                         onChange={handleInputChange}
-                        min="0"
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                          validationErrors.level2Chargers
-                            ? 'border-red-500 focus:ring-red-500'
-                            : 'border-gray-300 focus:ring-emerald-500'
-                        }`}
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       />
-                      {validationErrors.level2Chargers && (
-                        <p className="text-red-600 text-xs mt-1">
-                          {validationErrors.level2Chargers}
-                        </p>
-                      )}
                     </div>
-
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        DC Fast Chargers *
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Rate (NPR/kWh)
+                      </label>
+                      <input
+                        type="number"
+                        name="level2Rate"
+                        min="0.01"
+                        step="0.01"
+                        value={formData.level2Rate}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* DC Fast */}
+                <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium text-slate-800">DC Fast</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Quantity
                       </label>
                       <input
                         type="number"
                         name="dcFastChargers"
+                        min="0"
                         value={formData.dcFastChargers}
                         onChange={handleInputChange}
-                        min="0"
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                          validationErrors.dcFastChargers
-                            ? 'border-red-500 focus:ring-red-500'
-                            : 'border-gray-300 focus:ring-emerald-500'
-                        }`}
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       />
-                      {validationErrors.dcFastChargers && (
-                        <p className="text-red-600 text-xs mt-1">
-                          {validationErrors.dcFastChargers}
-                        </p>
-                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Rate (NPR/kWh)
+                      </label>
+                      <input
+                        type="number"
+                        name="dcFastRate"
+                        min="0.01"
+                        step="0.01"
+                        value={formData.dcFastRate}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
                     </div>
                   </div>
-                </section>
+                </div>
+
+                {/* DC Ultra */}
+                {/* <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium text-slate-800">DC Ultra</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        name="dcUltraChargers"
+                        min="0"
+                        value={formData.dcUltraChargers}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Rate (NPR/kWh)
+                      </label>
+                      <input
+                        type="number"
+                        name="dcUltraRate"
+                        min="0.01"
+                        step="0.01"
+                        value={formData.dcUltraRate}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+                </div> */}
+
+                {/* DC Combo */}
+                {/* <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium text-slate-800">DC Combo (CCS)</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        name="dcComboChargers"
+                        min="0"
+                        value={formData.dcComboChargers}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Rate (NPR/kWh)
+                      </label>
+                      <input
+                        type="number"
+                        name="dcComboRate"
+                        min="0.01"
+                        step="0.01"
+                        value={formData.dcComboRate}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div> */}
+                {/* </div> */}
+              </div>
+            </section>
 
                 {/* Pricing */}
                 <section>
                   <h2 className="text-lg font-semibold text-slate-900 mb-4">
                     Pricing Configuration
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Level 2 Rate (NPR/kWh) *
-                      </label>
-                      <input
-                        type="number"
-                        name="level2Rate"
-                        value={formData.level2Rate}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        min="0.01"
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                          validationErrors.level2Rate
-                            ? 'border-red-500 focus:ring-red-500'
-                            : 'border-gray-300 focus:ring-emerald-500'
-                        }`}
-                      />
-                      {validationErrors.level2Rate && (
-                        <p className="text-red-600 text-xs mt-1">
-                          {validationErrors.level2Rate}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        DC Fast Rate (NPR/kWh) *
-                      </label>
-                      <input
-                        type="number"
-                        name="dcFastRate"
-                        value={formData.dcFastRate}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        min="0.01"
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                          validationErrors.dcFastRate
-                            ? 'border-red-500 focus:ring-red-500'
-                            : 'border-gray-300 focus:ring-emerald-500'
-                        }`}
-                      />
-                      {validationErrors.dcFastRate && (
-                        <p className="text-red-600 text-xs mt-1">
-                          {validationErrors.dcFastRate}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
+                  </h2>                    
                   <div className="bg-slate-50 p-4 rounded-lg">
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input

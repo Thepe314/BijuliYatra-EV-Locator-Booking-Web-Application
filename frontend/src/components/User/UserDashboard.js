@@ -172,7 +172,35 @@ export default function EVUserDashboard() {
     };
 
     loadDashboardData();
-  }, [userLocation.lat, userLocation.lng]);
+
+    const checkCompletedBookings = async () => {
+    try {
+      const allBookingsRes = await bookingService.listBookings();
+      const allBookings = allBookingsRes.data || allBookingsRes || [];
+      const now = new Date();
+
+      // Check each booking
+      for (const booking of allBookings) {
+        if (booking.status !== 'COMPLETED' && 
+            booking.status !== 'CANCELLED' && 
+            new Date(booking.endTime) < now) {
+          // PATCH to complete it
+          await bookingService.updateBookingStatus(booking.id, 'COMPLETED');
+          toast.info(`Booking #${booking.id} auto-completed`);
+        }
+      }
+
+      // Refresh data after checks
+      await loadDashboardData();
+    } catch (err) {
+      console.error('Auto-complete check failed:', err);
+    }
+  };
+
+  const interval = setInterval(checkCompletedBookings, 60000);  // 60s
+  return () => clearInterval(interval);
+}, [userLocation.lat, userLocation.lng]);
+
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString('en-NP', {
@@ -228,15 +256,17 @@ export default function EVUserDashboard() {
     navigate('/login');
   };
 
+
+  
   return (
     <div className="min-h-screen bg-slate-100">
       <div className="max-w-6xl mx-auto my-6 border border-emerald-100 rounded-2xl bg-white shadow-sm overflow-hidden">
         {/* Header */}
         <header className="border-b px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-emerald-500 p-2 rounded-lg">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+             <div className="h-11 w-11 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
+                        <Zap className="w-6 h-6 text-white" />
+                      </div>
             <span className="font-semibold text-slate-900">BijuliYatra</span>
           </div>
 
@@ -248,6 +278,7 @@ export default function EVUserDashboard() {
             <button onClick={() => navigate('/ev-owner/bookings')}>
               My bookings
             </button>
+            <button onClick={() => navigate('/ev-owner/vehicles')}>My vehicles</button> 
             <button onClick={() => navigate('/ev-owner/wallet')}>
               Wallet/Payments
             </button>
@@ -301,7 +332,7 @@ export default function EVUserDashboard() {
                   Find nearby station
                 </button>
                 <button
-                  onClick={() => setActiveTab('upcoming')}
+                  onClick={() => navigate('/ev-owner/bookings')}
                   className="inline-flex items-center gap-2 border border-emerald-100 bg-emerald-600/10 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-600/20"
                 >
                   <Calendar className="w-4 h-4" />

@@ -12,6 +12,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  
 } from "recharts";
 import {
   Zap,
@@ -28,20 +29,13 @@ import {
   LogOut,
   Settings as SettingsIcon,
   User as UserIcon,
+  Building2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { stationService, authService, bookingService } from "../../Services/api";
 import { toast, ToastContainer } from "react-toastify";
 import notify from "../../Utils/notify";
-
-import station1 from '../Assets/stations/Station-1.jpg';
-import station2 from '../Assets/stations/Station-2.jpg';
-
-export const STATION_IMAGES = {
-  'station-1': station1,
-  'station-2': station2,
- 
-};
+import { api } from "../../Services/api";
 
 export default function OperatorDashboard() {
   const navigate = useNavigate();
@@ -51,7 +45,10 @@ export default function OperatorDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [operatorStats, setOperatorStats] = useState({ totalRevenue: 0, paymentMethods: [] });
+  const monthlySessions = operatorStats.monthlySessions || [];
 
+  const [revenueData, setRevenueData] = useState([]);
   // profile dropdown state
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
@@ -61,17 +58,6 @@ export default function OperatorDashboard() {
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingsError, setBookingsError] = useState(null);
 
-  
-
-  // Mock analytics data
-  const revenueData = [
-    { month: "Jan", revenue: 12400, sessions: 340 },
-    { month: "Feb", revenue: 14200, sessions: 380 },
-    { month: "Mar", revenue: 16800, sessions: 425 },
-    { month: "Apr", revenue: 15600, sessions: 390 },
-    { month: "May", revenue: 18900, sessions: 468 },
-    { month: "Jun", revenue: 21300, sessions: 512 },
-  ];
 
   const utilizationData = [
     { hour: "00:00", usage: 12 },
@@ -109,7 +95,12 @@ export default function OperatorDashboard() {
   // Initial fetch
   useEffect(() => {
     fetchStations();
-  }, []);
+
+    api.get('/operator/stats').then(res => setOperatorStats(res.data));
+}, []);
+ 
+
+
 
   const fetchStations = async (isRefresh = false) => {
     try {
@@ -160,10 +151,12 @@ export default function OperatorDashboard() {
       peakPricing: station.peakPricing,
       notes: station.notes,
       createdAt: station.createdAt,
-      imageKey: station.imageKey || 'station-1', // << add this
-    };
-  }
-);
+       imageUrl: station.imageUrl
+    }
+    });
+
+    
+
 setStationData(transformedStations);
     } catch (err) {
       console.error("Error fetching stations:", err);
@@ -182,6 +175,8 @@ setStationData(transformedStations);
       setRefreshing(false);
     }
   };
+
+  
 
   const handleViewDetails = (id) => {
     navigate(`/stationdetails/${id}`);
@@ -224,11 +219,6 @@ setStationData(transformedStations);
   };
 
   const handleLogout = async () => {
-  const confirmed = window.confirm(
-    'Are you sure you want to log out from your operator account?'
-  );
-  if (!confirmed) return;
-
   try {
     await authService.logout();
 
@@ -283,6 +273,9 @@ setStationData(transformedStations);
     { name: "Level 2 (AC)", value: totalLevel2, color: "#3b82f6" },
     { name: "DC Fast", value: totalDCFast, color: "#10b981" },
   ];
+
+  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+  const totalStationRevenue = operatorStats.totalRevenue;  
 
   // close profile dropdown on outside click
   useEffect(() => {
@@ -371,13 +364,29 @@ setStationData(transformedStations);
           </div>
         </div>
 
+         <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Total Revenue</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                NPR {totalStationRevenue?.toLocaleString() || '0'}
+              </p>
+              <p className="text-sm text-green-600 mt-2">
+                +12.5% from last month
+              </p>
+            </div>
+            <div className="bg-emerald-100 p-3 rounded-full">
+              <TrendingUp className="w-8 h-8 text-emerald-600" />
+            </div>
+          </div>
+        </div>
+
+
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Sessions</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">
-                {totalSessions}
-              </p>
+             <p className="text-3xl font-bold text-gray-900 mt-2">{operatorStats.totalSessions}</p>
               <p className="text-sm text-green-600 mt-2 flex items-center">
                 <TrendingUp className="w-4 h-4 mr-1" />
                 +8.3% from last month
@@ -389,7 +398,8 @@ setStationData(transformedStations);
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+       
+        {/* <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Active Alerts</p>
@@ -404,29 +414,31 @@ setStationData(transformedStations);
               <AlertCircle className="w-8 h-8 text-orange-600" />
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
+      
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Revenue Trends
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#3b82f6"
-                strokeWidth={2}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+       <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie data={operatorStats.paymentMethods} 
+                dataKey="count" 
+                nameKey="method" 
+                cx="50%" cy="50%" 
+                outerRadius={80}
+                label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                fill="#8884d8">
+              {operatorStats.paymentMethods.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+        
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -496,7 +508,7 @@ setStationData(transformedStations);
           {refreshing ? 'Refreshing...' : 'Refresh'}
         </button>
         <button
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+         className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
           onClick={handleAddStation}
         >
           <MapPin className="w-4 h-4 mr-2" />
@@ -548,7 +560,7 @@ setStationData(transformedStations);
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {stationData.map((station) => {
           const imgSrc =
-            STATION_IMAGES[station.imageKey] || STATION_IMAGES['station-1'];
+            station.imageUrl || '/assets/fallback-station.jpg';
 
           return (
             <div
@@ -743,9 +755,9 @@ setStationData(transformedStations);
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Connector
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     kWh (est)
-                  </th>
+                  </th> */}
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
                   </th>
@@ -780,11 +792,11 @@ setStationData(transformedStations);
                     <td className="px-4 py-3 text-gray-700">
                       {b.connectorType}
                     </td>
-                    <td className="px-4 py-3 text-gray-700">
+                    {/* <td className="px-4 py-3 text-gray-700">
                       {b.estimatedKwh?.toFixed
                         ? b.estimatedKwh.toFixed(1)
                         : b.estimatedKwh}
-                    </td>
+                    </td> */}
                     <td className="px-4 py-3 text-gray-700">
                       NPR
                       {b.totalAmount?.toFixed
@@ -815,119 +827,187 @@ setStationData(transformedStations);
     </div>
   );
 
-  const renderAnalytics = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Analytics & Reports</h2>
+ const renderAnalytics = () => (
+  <div className="space-y-6">
+    <h2 className="text-2xl font-bold text-gray-900">Analytics & Reports</h2>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Charger Distribution
-          </h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={chargerTypes}
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                dataKey="value"
-                label
-              >
-                {chargerTypes.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-4 space-y-2">
-            {chargerTypes.map((type) => (
-              <div
-                key={type.name}
-                className="flex items-center justify-between"
-              >
-                <div className="flex items-center">
-                  <div
-                    className="w-3 h-3 rounded-full mr-2"
-                    style={{ backgroundColor: type.color }}
-                  />
-                  <span className="text-sm text-gray-600">{type.name}</span>
-                </div>
-                <span className="text-sm font-medium text-gray-900">
-                  {type.value}
-                </span>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Charger Distribution - 1/3 */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Charger Distribution
+        </h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <PieChart>
+            <Pie
+              data={chargerTypes}
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              dataKey="value"
+              label
+            >
+              {chargerTypes.map((entry, index) => (
+                <Cell key={index} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="mt-4 space-y-2">
+          {chargerTypes.map((type) => (
+            <div
+              key={type.name}
+              className="flex items-center justify-between"
+            >
+              <div className="flex items-center">
+                <div
+                  className="w-3 h-3 rounded-full mr-2"
+                  style={{ backgroundColor: type.color }}
+                />
+                <span className="text-sm text-gray-600">{type.name}</span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Session Analytics
-          </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="sessions" fill="#8b5cf6" />
-            </BarChart>
-          </ResponsiveContainer>
+              <span className="text-sm font-medium text-gray-900">
+                {type.value}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
+      {/* Booking Analytics - 2/3 */}
+      <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            Generate Reports
+            Booking Analytics
           </h3>
-          <div className="flex gap-2">
-            <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          <div className="text-sm text-gray-500">
+            {operatorStats.totalSessions || 0} total sessions
+          </div>
+        </div>
+        
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={monthlySessions} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+            <defs>
+              <linearGradient id="sessionsGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.6}/>
+              </linearGradient>
+            </defs>
+            
+            <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="#f8fafc"/>
+            <XAxis 
+              dataKey="month" 
+              fontSize={12}
+              tick={{ fill: '#64748b' }}
+              axisLine={false}
+            />
+            <YAxis 
+              fontSize={12}
+              tick={{ fill: '#64748b' }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <Tooltip 
+              contentStyle={{
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+              }}
+            />
+            <Bar 
+              dataKey="sessions" 
+              fill="url(#sessionsGradient)"
+              radius={[4, 4, 0, 0]}
+              stroke="#7c3aed"
+              strokeWidth={1}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+        
+        {/* Legend */}
+        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-center text-xs">
+          <div className="flex items-center mr-6">
+            <div className="w-3 h-3 bg-gradient-to-b from-[#8b5cf6] to-[#a78bfa] rounded mr-2"></div>
+            <span className="text-gray-700 font-medium">Bookings</span>
+          </div>
+          <div className="text-sm text-gray-500">
+            {monthlySessions.reduce((sum, m) => sum + m.sessions, 0)} Bookings this year
+          </div>
+        </div>
+      </div>
+
+      {/* Generate Reports*/}
+      <div className="lg:col-span-3 bg-white rounded-lg shadow-md p-4 lg:p-6 w-full">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
+          <h3 className="text-lg font-semibold text-gray-900">Generate Reports</h3>
+          <div className="flex gap-2 w-full lg:w-auto">
+            <select className="flex-1 lg:flex-none border border-gray-300 rounded-lg px-3 py-2 text-sm">
               <option>Last 7 days</option>
               <option>Last 30 days</option>
               <option>Last 3 months</option>
               <option>Last year</option>
             </select>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center text-sm">
+            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center text-sm whitespace-nowrap">
               <Download className="w-4 h-4 mr-2" />
               Export
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Total Stations</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {stationData.length}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6 px-2 lg:px-0">
+          <div className="group p-6 border border-gray-100 rounded-xl hover:shadow-lg hover:border-blue-200 transition-all bg-gradient-to-br from-blue-50/50 to-indigo-50/50">
+            <p className="text-sm text-gray-600 mb-2 flex items-center">
+              <Building2 className="w-4 h-4 mr-2 text-blue-600" />
+              Total Stations
             </p>
+            <p className="text-3xl font-bold text-gray-900 mb-1">{stationData.length}</p>
+            <p className="text-xs text-emerald-600 font-medium">{stationData.length > 0 ? '+2 this month' : 'Get started'}</p>
           </div>
-          <div className="p-4 border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Total Chargers</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {totalChargers}
+
+          <div className="group p-6 border border-gray-100 rounded-xl hover:shadow-lg hover:border-green-200 transition-all bg-gradient-to-br from-green-50/50 to-emerald-50/50">
+            <p className="text-sm text-gray-600 mb-2 flex items-center">
+              <Zap className="w-4 h-4 mr-2 text-green-600" />
+              Total Chargers
             </p>
+            <p className="text-3xl font-bold text-gray-900 mb-1">{totalChargers}</p>
+            <p className="text-xs text-emerald-600 font-medium">Avg {Math.round(totalChargers / (stationData.length || 1))} per station</p>
           </div>
-          <div className="p-4 border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Average Utilization</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {stationData.length > 0
-                ? Math.round(
-                    stationData.reduce(
-                      (sum, s) => sum + s.utilization,
-                      0
-                    ) / stationData.length
-                  )
-                : 0}
-              %
+
+          <div className="group p-6 border border-gray-100 rounded-xl hover:shadow-lg hover:border-orange-200 transition-all bg-gradient-to-br from-orange-50/50 to-amber-50/50">
+            <p className="text-sm text-gray-600 mb-2 flex items-center">
+              <Activity className="w-4 h-4 mr-2 text-orange-600" />
+              Avg Utilization
             </p>
+            <p className="text-3xl font-bold text-gray-900 mb-1">
+              {stationData.length > 0 
+                ? Math.round(stationData.reduce((sum, s) => sum + s.utilization, 0) / stationData.length)
+                : 0}%
+            </p>
+            <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+              <div 
+                className="h-2 rounded-full transition-all bg-gradient-to-r from-green-500 to-blue-500"
+                style={{ 
+                  width: `${Math.min(100, (stationData.reduce((sum, s) => sum + s.utilization, 0) / stationData.length) || 0)}%`
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="group p-6 border border-gray-100 rounded-xl hover:shadow-lg hover:border-purple-200 transition-all bg-gradient-to-br from-purple-50/50 to-violet-50/50">
+            <p className="text-sm text-gray-600 mb-2 flex items-center">
+              <TrendingUp className="w-4 h-4 mr-2 text-purple-600" />
+              Revenue (NPR)
+            </p>
+            <p className="text-3xl font-bold text-gray-900 mb-1">{operatorStats.totalRevenue?.toLocaleString() || 0}</p>
+            <p className="text-xs text-emerald-600 font-medium">+12.5% vs last month</p>
           </div>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 
   const renderSettings = () => (
     <div className="space-y-6">
@@ -1025,20 +1105,20 @@ setStationData(transformedStations);
 <div className="min-h-screen bg-slate-50 flex">
   <ToastContainer position="top-right" autoClose={3000} theme="colored" />
 
-  {/* LEFT SIDEBAR - BijuliYatra logo + nav */}
+  {/* LEFT SIDEBAR */}
   <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
   {/* Brand */}
   <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-    <div className="bg-emerald-500 p-2 rounded-xl">
-      <Zap className="w-7 h-7 text-white" />
-    </div>
+    <div className="h-11 w-11 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
+            <Zap className="w-6 h-6 text-white" />
+          </div>
     <div>
       <p className="text-base font-semibold text-slate-900">BijuliYatra</p>
       <p className="text-xs text-slate-500">Operator Portal</p>
     </div>
   </div>
 
-  {/* Scrollable nav with bigger text/icons */}
+  {/* Scrollable nav */}
   <nav className="flex-1 px-3 py-4 space-y-1 text-base overflow-y-auto">
     <button
       onClick={() => setActiveTab("overview")}
@@ -1060,7 +1140,7 @@ setStationData(transformedStations);
           : "text-slate-600 hover:bg-slate-50"
       }`}
     >
-      <MapPin className="w-5 h-5" />
+      <Building2 className="w-5 h-5" />
       Stations
     </button>
 
@@ -1101,7 +1181,7 @@ setStationData(transformedStations);
     </button>
   </nav>
 
-  {/* Sticky logout at bottom */}
+  {/* Logout */}
   <div className="px-3 py-4 border-t border-slate-100 sticky bottom-0 bg-white">
     <button
       onClick={handleLogout}
@@ -1115,7 +1195,7 @@ setStationData(transformedStations);
 
       {/* RIGHT MAIN AREA */}
       <div className="flex-1 flex flex-col">
-        {/* TOP BAR (search + profile like design) */}
+        {/* TOP BAR */}
         <header className="bg-white border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <div>
@@ -1228,8 +1308,9 @@ setStationData(transformedStations);
             )}
           </div>
         </div>
+        
 
-        {/* MAIN CONTENT: use your existing render* functions */}
+        {/* MAIN CONTENT*/}
         <main className="flex-1 bg-slate-50">
           <div className="max-w-7xl mx-auto px-6 py-6">
             {loading ? (
@@ -1258,5 +1339,6 @@ setStationData(transformedStations);
         </main>
       </div>
     </div>
+   
   );
 }

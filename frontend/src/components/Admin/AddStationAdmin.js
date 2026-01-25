@@ -238,7 +238,7 @@ export default function AddStationAdmin() {
               <textarea name="notes" value={formData.notes} onChange={handleInputChange} rows="3" className="w-full px-4 py-2 border rounded-lg mt-1" />
             </div>
 
-            {/* BUTTONS — NOW INSIDE THE FORM! */}
+           
             <div className="flex gap-4 pt-8">
               <button
                 type="submit"

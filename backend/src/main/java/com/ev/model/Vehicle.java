@@ -1,6 +1,8 @@
 package com.ev.model;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -14,30 +16,36 @@ public class Vehicle {
     // Owner of this vehicle (EvOwner extends User)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
+    @JsonIgnore 
     private EvOwner owner;
 
     @Column(nullable = false)
-    private String vehicleBrand;      // e.g. "Tata", "Tesla"
+    private String vehicleBrand;      
 
     @Column(nullable = false)
-    private String vehicleModel;      // e.g. "Nexon EV", "Model 3"
+    private String vehicleModel;      
 
     @Column(nullable = true)
-    private String vehicleYear;       // keep String to match your EvOwner field
+    private String vehicleYear;      
 
     @Column(nullable = true)
-    private String vehicleRegistrationNumber; // your vehileRegistrationModel
+    private String vehicleRegistrationNumber; 
 
     @Column(nullable = true)
-    private String chargingType;      // e.g. "CCS2", "Type 2"
+    private String chargingType;      
 
     @Column(nullable = true)
-    private String batteryCapacity;   // e.g. "30.2 kWh"
+    private String batteryCapacity;  
 
     @Column(nullable = false)
     private boolean primaryVehicle = false;
+    
+    @Column(name = "image_url", length = 1000, nullable = true) 
+    private String imageUrl;
 
-    // ===== Getters and setters =====
+    @Column(nullable = true)
+    private String colour;  
+
 
     public Long getId() {
         return id;
@@ -110,5 +118,24 @@ public class Vehicle {
     public void setPrimaryVehicle(boolean primaryVehicle) {
         this.primaryVehicle = primaryVehicle;
     }
+
+	public String getImageUrl() {
+		return imageUrl;
+	}
+
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
+	public String getColour() {
+		return colour;
+	}
+
+	public void setColour(String colour) {
+		this.colour = colour;
+	}
+    
+	
+    
 }
 

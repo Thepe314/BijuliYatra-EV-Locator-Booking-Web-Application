@@ -51,6 +51,17 @@ console.log('booking stationId', stationId);
     '20:00',
   ];
 
+  const getNowPlus15 = () => {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() + 15);
+  return now;
+};
+
+const nowPlus15 = getNowPlus15();
+const selectedDate = new Date(formData.date);
+const slotDateTime = new Date(selectedDate);
+
+
   // 1) Load single station from /evowner/{id}
   useEffect(() => {
   const loadStation = async () => {
@@ -471,6 +482,13 @@ const totalCost = Math.round(rate * estimatedKwh);
                   const openHour = 8;   // first slot hour
                   const closeHour = 20; // last slot hour in your list
 
+                  const nowPlus15 = getNowPlus15();
+                    const [hoursStr] = slot.split(':');
+                    const selectedDate = new Date(formData.date + 'T00:00:00');
+                    const slotDateTime = new Date(selectedDate);
+                    slotDateTime.setHours(parseInt(hoursStr, 10), 0, 0, 0);  // :00 minutes
+                    const isPastSlot = slotDateTime < nowPlus15;
+
                   const endHour = slotHour + parseInt(formData.duration, 10);
                   const outsideWindow = slotHour < openHour || endHour > closeHour;
 
@@ -506,7 +524,7 @@ const totalCost = Math.round(rate * estimatedKwh);
                   }
                 }
 
-                const disabled = disabledBase || isBlocked || durationBlocked || outsideWindow;
+                const disabled = disabledBase || isBlocked || durationBlocked || outsideWindow || isPastSlot;
 
                   return (
                     <button
@@ -515,11 +533,13 @@ const totalCost = Math.round(rate * estimatedKwh);
                       disabled={disabled}
                       onClick={() => {
                         if (disabled) {
-                          toast.warn(
-                          isBlocked
-                            ? "This time is booked or in buffer zone."
-                            : `You need ${formData.duration} continuous free hour(s) from ${slot}.`
-                        );
+                          if (isPastSlot) {
+                            toast.warn("Slot must start 15+ minutes from now.");
+                          } else if (isBlocked) {
+                            toast.warn("This time is booked or in buffer zone.");
+                          } else {
+                            toast.warn(`Need ${formData.duration} continuous free hour(s) from ${slot}.`);
+                          }
                           return;
                         }
                         setFormData((prev) => ({ ...prev, timeSlot: slot }));

@@ -1,22 +1,15 @@
 package com.ev.configuration;
 
 import java.util.Arrays;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -46,7 +39,9 @@ public class SecurityConfig {
             	        .hasAnyRole("EV_OWNER", "ADMIN", "CHARGER_OPERATOR")
 
             	    // EV Owner endpoints
-            	    .requestMatchers("/evowner/**").hasRole("EV_OWNER")
+            	    .requestMatchers("/evowner/**","/vechicles/**").hasRole("EV_OWNER")
+            	
+            	    
 
             	    // Operator endpoints
             	    .requestMatchers("/operator/**").hasRole("CHARGER_OPERATOR")
@@ -58,8 +53,8 @@ public class SecurityConfig {
             	    .anyRequest().authenticated()
             	)
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .maximumSessions(1)
+            		.sessionCreationPolicy(SessionCreationPolicy.STATELESS) 
+                
             )
             .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 

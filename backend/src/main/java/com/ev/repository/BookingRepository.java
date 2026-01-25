@@ -1,5 +1,6 @@
 package com.ev.repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -107,5 +108,39 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Transactional
     @Query("delete from Booking b where b.station.operator.user_id = :userId")
     int deleteByStationOperatorUserId(@Param("userId") Long userId);
+    @Query("SELECT COALESCE(SUM(b.totalAmount * 0.05), 0) FROM Booking b WHERE b.status IN ('CONFIRMED', 'COMPLETED')")
+    BigDecimal sumPlatformFees();
+
+    @Query("SELECT COALESCE(SUM(b.totalAmount * 0.95), 0) FROM Booking b WHERE b.status IN ('CONFIRMED', 'COMPLETED')")
+    BigDecimal sumStationFees();
+
+    
+    @Query("SELECT b FROM Booking b WHERE b.status != 'COMPLETED' AND b.status != 'CANCELLED' AND b.endTime < CURRENT_TIMESTAMP")
+    List<Booking> findExpiredBookings();
+   
+    	
+    	
+    @Query("SELECT b.paymentMethod, COUNT(b) " +
+    	       "FROM Booking b " +
+    	       "WHERE b.station.operator.user_id = :operatorId " +
+    	       "AND b.status IN ('CONFIRMED', 'COMPLETED') " +
+    	       "GROUP BY b.paymentMethod " +
+    	       "ORDER BY COUNT(b) DESC")
+    List<Object[]> getPaymentMethodBreakdown(@Param("operatorId") Long operatorId);
+
+    @Query("SELECT COALESCE(SUM(b.stationFee), 0) FROM Booking b WHERE b.station.operator.user_id = :operatorId AND b.status IN ('CONFIRMED', 'COMPLETED')")
+    BigDecimal getOperatorTotalRevenue(@Param("operatorId") Long operatorId);
+    		
+    //Count how many bookings per Id
+    @Query("SELECT COUNT(b) FROM Booking b " +
+    			       "WHERE b.station.operator.user_id = :operatorId")
+    			long countOperatorBookings(@Param("operatorId") Long operatorId);
+    
+    
+    //Find Current Moth booking
+    @Query("SELECT MONTH(b.bookedAt), COUNT(b) FROM Booking b " +
+    	       "WHERE b.station.operator.user_id = :operatorId " +
+    	       "GROUP BY MONTH(b.bookedAt) ORDER BY MONTH(b.bookedAt)")
+    	List<Object[]> getMonthlySessions(@Param("operatorId") Long operatorId);
 
 }

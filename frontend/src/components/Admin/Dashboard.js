@@ -81,16 +81,25 @@ export default function AdminDashboard() {
         ['active', 'operational'].includes(s.status?.toLowerCase())
       ).length || 0;
 
-      // Mock realistic calculations (replace with real revenue/bookings API later)
-      const totalRevenue = stationsData?.reduce((sum, s) => sum + 2850, 0) || 0;
-      const totalEnergy = stationsData?.reduce((sum, s) => {
-        const chargers = (s.level2Chargers || 0) + (s.dcFastChargers || 0);
-        return sum + (chargers * 420);
-      }, 0) || 0;
+      //Revenue total
+            let totalRevenue = 0;
+              try {
+                const earningsResponse = await bookingService.listAdminEarnings();
+                totalRevenue = Number(earningsResponse.totalPlatformEarnings || 0);
+              } catch (err) {
+                console.warn("Earnings API failed, using mock:", err);
+                
+              }
+
+            //totalEnergy calculation
+              const totalEnergy = stationsData?.reduce((sum, s) => {
+                const chargers = (s.level2Chargers || 0) + (s.dcFastChargers || 0);
+                return sum + (chargers * 420);
+                }, 0) || 0;
 
       const userGrowth = previousStats.users ? Math.round(((totalUsers - previousStats.users) / previousStats.users) * 100) : 18;
       const stationGrowth = previousStats.stations ? activeStations - previousStats.stations : 7;
-      const revenueGrowth = previousStats.revenue ? Math.round(((totalRevenue - previousStats.revenue) / previousStats.revenue) * 100) : 29;
+      const revenueGrowth = previousStats.revenue ? Math.round(((totalRevenue - Number(previousStats.revenue)) / Number(previousStats.revenue)) * 100) : 29;
       const energyGrowth = previousStats.energy ? Math.round(((totalEnergy - previousStats.energy) / previousStats.energy) * 100) : 22;
 
       setStats([
@@ -145,7 +154,7 @@ export default function AdminDashboard() {
 
       setStations(enhancedStations);
 
-      // Fetch REAL Bookings
+      //Booking Details
       let bookingsData = [];
       try {
         const response = await bookingService.listBookingsAdmin({
@@ -223,16 +232,14 @@ export default function AdminDashboard() {
         {sidebarOpen ? (
           <>
             <div className="flex items-center gap-3">
-              <div className="bg-emerald-500 p-2 rounded-lg shadow-sm shadow-emerald-200">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
+          <div className="h-11 w-11 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
+            <Zap className="w-6 h-6 text-white" />
+          </div>
               <div className="flex flex-col">
                 <span className="font-semibold text-sm text-slate-900">
                Bijuliyatra
                 </span>
-                <span className="text-[11px] text-slate-500">
-                  Admin Console
-                </span>
+               
               </div>
             </div>
             <button

@@ -377,16 +377,14 @@ export default function UserManagement() {
           {sidebarOpen ? (
             <>
               <div className="flex items-center gap-3">
-                <div className="bg-emerald-500 p-2 rounded-lg shadow-sm shadow-emerald-200">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
+                 <div className="h-11 w-11 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
+                    <Zap className="w-6 h-6 text-white" />
+                  </div>
                 <div className="flex flex-col">
                   <span className="font-semibold text-sm text-slate-900">
-                    EVCharge
+                    BijuliYatra
                   </span>
-                  <span className="text-[11px] text-slate-500">
-                    Admin Console
-                  </span>
+                  
                 </div>
               </div>
               <button

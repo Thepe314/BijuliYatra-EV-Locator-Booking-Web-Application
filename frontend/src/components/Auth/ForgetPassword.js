@@ -241,7 +241,7 @@ export default function ForgotPasswordPage() {
               Enter Verification Code
             </label>
 
-            {/* Paste handler on wrapper */}
+       
             <div
               className="flex gap-2 justify-center"
               onPaste={(e) => {
@@ -429,7 +429,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-sky-50 to-white flex items-center justify-center px-4">
-      {/* Top-left brand for small screens */}
+    
       <div className="absolute top-6 left-6 z-10 lg:hidden">
         <div className="flex items-center space-x-2">
           <Zap className="w-7 h-7 text-emerald-500" />
@@ -441,7 +441,7 @@ export default function ForgotPasswordPage() {
 
       {/* Main 2-column card */}
       <div className="relative w-full max-w-5xl grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] rounded-3xl overflow-hidden shadow-2xl bg-white/60 backdrop-blur-2xl border border-white">
-        {/* LEFT: marketing / illustration area */}
+      
         <div className="relative hidden lg:flex flex-col justify-between px-10 py-10 bg-gradient-to-b from-emerald-100 via-white to-sky-100">
           <div>
             <div className="flex items-center gap-3 mb-10">
@@ -484,7 +484,7 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        {/* RIGHT: step content */}
+    
         <div className="relative flex items-center justify-center px-6 py-10 lg:px-10 bg-white/70 backdrop-blur-xl">
           <p className="absolute top-5 right-7 text-[11px] tracking-wide uppercase text-slate-400">
             Authentication Screens Design

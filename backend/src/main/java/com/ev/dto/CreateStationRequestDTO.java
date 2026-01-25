@@ -1,6 +1,8 @@
 package com.ev.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.*;
 
 public class CreateStationRequestDTO {
@@ -70,7 +72,19 @@ public class CreateStationRequestDTO {
     @Size(max = 500, message = "Notes cannot exceed 500 characters")
     private String notes;
 
-    private String imageKey;
+    private String imageUrl;
+    
+    
+    
+    @Column(name = "level1_chargers", nullable = true)
+    private Integer level1Chargers = 0;
+
+    @Column(name = "dc_ultra_chargers", nullable = true) 
+    private Integer dcUltraChargers = 0;
+
+    @Column(name = "dc_combo_chargers", nullable = true)
+    private Integer dcComboChargers = 0;
+    
 
     // custom validation
     @AssertTrue(message = "Peak multiplier must be greater than 1.0 when peak pricing is enabled")
@@ -216,14 +230,39 @@ public class CreateStationRequestDTO {
 		this.longitude = longitude;
 	}
 
-	public String getImageKey() {
-		return imageKey;
+	public String getImageUrl() {
+		return imageUrl;
 	}
 
-	public void setImageKey(String imageKey) {
-		this.imageKey = imageKey;
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
 	}
-	
+
+	public Integer getLevel1Chargers() {
+		return level1Chargers;
+	}
+
+	public void setLevel1Chargers(Integer level1Chargers) {
+		this.level1Chargers = level1Chargers;
+	}
+
+	public Integer getDcUltraChargers() {
+		return dcUltraChargers;
+	}
+
+	public void setDcUltraChargers(Integer dcUltraChargers) {
+		this.dcUltraChargers = dcUltraChargers;
+	}
+
+	public Integer getDcComboChargers() {
+		return dcComboChargers;
+	}
+
+	public void setDcComboChargers(Integer dcComboChargers) {
+		this.dcComboChargers = dcComboChargers;
+	}
+
+
 	
     
     

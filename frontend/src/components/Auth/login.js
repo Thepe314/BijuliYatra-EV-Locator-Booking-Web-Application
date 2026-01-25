@@ -244,7 +244,7 @@ const handleLogin = async (e) => {
         setApiError(msg);
         notify.error(msg);
       } else if (status === 403 && reason === "MUST_CHANGE_PASSWORD") {
-        // ✅ admin-created user: force initial password set via forgot-password
+        
         const msg =
           "Your account was created by an admin. Please set your password before logging in.";
         setApiError(msg);
@@ -385,10 +385,10 @@ const handleLogin = async (e) => {
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-10 font-[Inter,sans-serif]">
-      {/* Outer frame */}
+    
       <div className="w-full max-w-6xl bg-white rounded-3xl overflow-hidden shadow-xl border border-slate-200">
         <div className="grid md:grid-cols-2">
-          {/* LEFT: brand / marketing panel */}
+       
           <div className="relative flex flex-col justify-between overflow-hidden">
             <img
               src={evChargerImg}
@@ -400,6 +400,7 @@ const handleLogin = async (e) => {
             <div className="relative z-10 px-10 py-10 flex flex-col justify-between h-full">
               {/* Logo */}
               <div className="flex items-center gap-3 mb-12">
+                
                 <div className="h-11 w-11 rounded-full bg-emerald-500 flex items-center justify-center">
                   <Zap className="w-6 h-6 text-white" />
                 </div>
@@ -408,7 +409,7 @@ const handleLogin = async (e) => {
                 </span>
               </div>
 
-              {/* Hero text */}
+           
               <div>
                 <h1 className="text-4xl font-semibold text-slate-900 mb-5 leading-snug">
                   Power Your Journey
@@ -416,7 +417,7 @@ const handleLogin = async (e) => {
                   with Smart EV Charging
                 </h1>
                 <p className="text-base text-slate-700 max-w-md mb-8">
-                  Connect to thousands of charging stations across India.
+                  Connect to thousands of charging stations across Nepal.
                   Monitor your charging sessions, manage your stations, and
                   drive the electric revolution.
                 </p>
@@ -449,7 +450,7 @@ const handleLogin = async (e) => {
             </div>
           </div>
 
-          {/* RIGHT: login form panel */}
+       
           <div className="bg-white px-10 py-10 flex flex-col justify-center border-l border-slate-200">
             <div className="w-full max-w-sm mx-auto">
               <h2 className="text-3xl font-semibold text-slate-900 mb-2">

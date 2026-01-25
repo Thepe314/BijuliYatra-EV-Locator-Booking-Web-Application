@@ -13,6 +13,6 @@ public class StripeConfig {
 
     @PostConstruct
     public void init() {
-        Stripe.apiKey = stripeSecretKey; // set global Stripe key [web:46]
+        Stripe.apiKey = stripeSecretKey; // set global Stripe key 
     }
 }

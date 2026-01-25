@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { MapPin, SlidersHorizontal, Zap } from 'lucide-react';
 import { stationService } from '../../Services/api';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap  } from 'react-leaflet';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +26,31 @@ const stationIcon = L.icon({
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
+
+function MapResizer({ deps = [] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    // Multiple invalidateSize calls with increasing delays
+    const timeouts = [
+      setTimeout(() => map.invalidateSize(), 100),
+      setTimeout(() => map.invalidateSize(), 300),
+      setTimeout(() => map.invalidateSize(), 600),
+    ];
+    
+    return () => {
+      timeouts.forEach(clearTimeout);
+    };
+  }, [map, ...deps]);
+
+  useEffect(() => {
+    const onResize = () => setTimeout(() => map.invalidateSize(), 100);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [map]);
+
+  return null;
+}
 
 // simple round user marker
 const userIcon = L.divIcon({
@@ -57,9 +82,17 @@ export default function EVFindStations() {
   const [userLocation, setUserLocation] = useState(null); // { lat, lng }
   const [detailStation, setDetailStation] = useState(null);
   const [activeStationForMap, setActiveStationForMap] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
+
+    delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
     const loadStations = async () => {
       try {
         setLoading(true);
@@ -90,7 +123,7 @@ export default function EVFindStations() {
     }
   }, []);
 
-  // Attach distance (if possible) to each station
+  // Attach distance to each station
   const stationsWithDistance = stations.map((s) => {
     let dist = null;
     if (userLocation && s.latitude && s.longitude) {
@@ -104,23 +137,27 @@ export default function EVFindStations() {
     return { ...s, distanceKm: dist };
   });
 
+
   // derive filtered + sorted stations
   const filteredStations = stationsWithDistance
     .filter((s) =>
       city ? s.city?.toLowerCase().includes(city.toLowerCase()) : true
     )
     .filter((s) =>
-      connectorFilter.length
-        ? (() => {
-            const connectors = [];
-            if (s.level2Chargers && s.level2Chargers > 0)
-              connectors.push('Level 2');
-            if (s.dcFastChargers && s.dcFastChargers > 0)
-              connectors.push('DC Fast');
-            return connectors.some((c) => connectorFilter.includes(c));
-          })()
-        : true
-    )
+  connectorFilter.length
+    ? (() => {
+        const stationTypes = [];
+        // Map station data to charger types
+        if (s.level1Chargers && s.level1Chargers > 0) stationTypes.push('AC_LEVEL1');
+        if (s.level2Chargers && s.level2Chargers > 0) stationTypes.push('AC_LEVEL2');
+        if (s.dcFastChargers && s.dcFastChargers > 0) stationTypes.push('DC_FAST');
+        if (s.dcUltraChargers && s.dcUltraChargers > 0) stationTypes.push('DC_ULTRA');
+        if (s.dcComboChargers && s.dcComboChargers > 0) stationTypes.push('DC_COMBO');
+        
+        return stationTypes.some((t) => connectorFilter.includes(t));
+      })()
+    : true
+)
     .filter((s) =>
       powerFilter.length
         ? powerFilter.some((range) => {
@@ -155,6 +192,13 @@ export default function EVFindStations() {
       return 0;
     });
 
+    const searchFilteredStations = filteredStations.filter((s) =>
+  searchTerm === '' ||
+  s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  s.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  s.city?.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
   // polyline between user and active station
   const polylinePositions =
     userLocation && activeStationForMap?.latitude && activeStationForMap?.longitude
@@ -164,15 +208,24 @@ export default function EVFindStations() {
         ]
       : null;
 
+
+      const chargingTypes = [
+  { value: 'DC_FAST', label: 'DC Fast Charger (50-150kW)', ports: '1 port' },
+  { value: 'DC_ULTRA', label: 'DC Ultra Fast (150-350kW)', ports: '1 port' },
+  { value: 'AC_LEVEL2', label: 'Level 2 (AC) (7-22kW)', ports: '1 port' },
+  { value: 'AC_LEVEL1', label: 'Level 1 (AC) (2-3.7kW)', ports: '1 port' },
+  { value: 'DC_COMBO', label: 'DC Combo (CCS/ChAdeMO)', ports: '2 ports' }
+];
+
   return (
     <div className="min-h-screen bg-slate-100">
       <div className="max-w-6xl mx-auto my-6 border border-emerald-100 rounded-2xl bg-white shadow-sm overflow-hidden">
         {/* Top bar */}
         <header className="border-b px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-emerald-500 p-2 rounded-lg">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+            <div className="h-11 w-11 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
+                        <Zap className="w-6 h-6 text-white" />
+                      </div>
             <span className="font-semibold text-slate-900">BijuliYatra</span>
           </div>
 
@@ -184,6 +237,7 @@ export default function EVFindStations() {
             <button onClick={() => navigate('/ev-owner/bookings')}>
               My bookings
             </button>
+             <button onClick={() => navigate('/ev-owner/vehicles')}>My Vehicles</button>
             <button>Wallet/Payments</button>
             <button onClick={() => navigate('/profile')}>Profile</button>
           </nav>
@@ -191,7 +245,7 @@ export default function EVFindStations() {
 
         {/* Main finder layout */}
         <main className="flex min-h-[540px] bg-emerald-50/30">
-          {/* Filters sidebar */}
+       
           <aside className="w-72 border-r bg-white px-5 py-5 hidden md:block">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -242,28 +296,23 @@ export default function EVFindStations() {
             </div>
 
             {/* Connector type */}
-            <div className="mb-5">
-              <p className="text-xs font-semibold text-slate-500 mb-2">
-                Connector Type
-              </p>
-              {['Level 2', 'DC Fast'].map((label) => (
-                <label
-                  key={label}
-                  className="flex items-center gap-2 text-xs text-slate-600 mb-1"
-                >
+           <div className="mb-5">
+              <p className="text-xs font-semibold text-slate-500 mb-2">Charger Type</p>
+              {chargingTypes.map((type) => (
+                <label key={type.value} className="flex items-center gap-2 text-xs text-slate-600 mb-1">
                   <input
                     type="checkbox"
                     className="rounded border-slate-300"
-                    checked={connectorFilter.includes(label)}
+                    checked={connectorFilter.includes(type.value)}
                     onChange={(e) =>
                       setConnectorFilter((prev) =>
                         e.target.checked
-                          ? [...prev, label]
-                          : prev.filter((x) => x !== label)
+                          ? [...prev, type.value]
+                          : prev.filter((x) => x !== type.value)
                       )
                     }
                   />
-                  {label}
+                  <span>{type.label}</span>
                 </label>
               ))}
             </div>
@@ -311,9 +360,9 @@ export default function EVFindStations() {
             </div>
           </aside>
 
-          {/* Right side: search + list + map */}
+        
           <section className="flex-1 flex flex-col">
-            {/* Search bar + sort */}
+    
             <div className="border-b bg-white px-6 py-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex-1 flex items-center gap-2 text-xs text-slate-500">
@@ -322,10 +371,12 @@ export default function EVFindStations() {
                       🔍
                     </span>
                     <input
-                      type="text"
-                      placeholder="Search by station or address"
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-8 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    />
+                    type="text"
+                    placeholder="Search by station or address"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-8 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
                   </div>
                   <button
                     className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-600"
@@ -347,7 +398,7 @@ export default function EVFindStations() {
                   </button>
                 </div>
                 <div className="flex items-center justify-between lg:justify-end gap-4 text-[11px] text-slate-500">
-                  <span>{filteredStations.length} stations found near you</span>
+                  <span>{searchFilteredStations.length} stations found near you</span>
                   <div className="flex items-center gap-1">
                     <span>Sort by:</span>
                     <select
@@ -375,7 +426,7 @@ export default function EVFindStations() {
                 )}
 
                 {!loading &&
-                  filteredStations.map((s) => (
+                  searchFilteredStations.map((s) => (
                     <div
                       key={s.id}
                       className={
@@ -477,98 +528,97 @@ export default function EVFindStations() {
               </div>
 
               {/* Map view */}
-              <div className="hidden lg:block flex-1 bg-emerald-50">
-  <div className="h-full w-full p-6 relative z-0">
-    <MapContainer
-      className="h-full w-full rounded-3xl"
-      center={
-        userLocation ? [userLocation.lat, userLocation.lng] : [27.7, 85.32]
-      }
-      zoom={12}
-    >
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution="&copy; OpenStreetMap contributors"
+           <div className="hidden lg:block flex-1 min-h-[500px]">
+            <div className="h-full w-full rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
+              <MapContainer
+                className="h-full w-full"
+                center={userLocation ? [userLocation.lat, userLocation.lng] : [27.7, 85.324]}
+                zoom={13}
+                scrollWheelZoom={true}
+              >
+                {/* Enhanced MapResizer - fixes grey area */}
+                <MapResizer deps={[filteredStations.length, selectedStationId, polylinePositions, userLocation]} />
+                
+               <TileLayer
+                attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+              />
+
+                {/* User location marker */}
+                {userLocation && (
+                  <Marker
+                    position={[userLocation.lat, userLocation.lng]}
+                    icon={userIcon}
+                  >
+                    <Popup>You are here</Popup>
+                  </Marker>
+                )}
+
+                {/* Line from user to selected station */}
+                {polylinePositions && (
+                  <>
+                    <Polyline
+                      positions={polylinePositions}
+                      pathOptions={{ color: '#10b981', weight: 3, opacity: 0.8 }}
                     />
-
-                    {/* user location marker */}
-                    {userLocation && (
-                      <Marker
-                        position={[userLocation.lat, userLocation.lng]}
-                        icon={userIcon}
-                      >
-                        <Popup>You are here</Popup>
-                      </Marker>
-                    )}
-
-                    {/* line from user to selected station */}
-                    {polylinePositions && (
-                      <>
-                        <Polyline
-                          positions={polylinePositions}
-                          pathOptions={{ color: '#10b981', weight: 3 }}
-                        />
-                        {/* optional extra popup at station end with distance */}
-                        <Marker
-                          position={polylinePositions[1]}
-                          icon={stationIcon}
-                        >
-                          <Popup>
-                            <div className="text-xs">
-                              <strong>
-                                {activeStationForMap?.name || 'Selected station'}
-                              </strong>
-                              {activeStationForMap?.distanceKm != null && (
-                                <>
-                                  <br />
-                                  Distance:{' '}
-                                  {activeStationForMap.distanceKm.toFixed(2)} km
-                                </>
-                              )}
-                            </div>
-                          </Popup>
-                        </Marker>
-                      </>
-                    )}
-
-                    {/* station markers */}
-                    {filteredStations
-                      .filter((s) => s.latitude && s.longitude)
-                      .map((s) => (
-                        <Marker
-                          key={s.id}
-                          position={[s.latitude, s.longitude]}
-                          icon={stationIcon}
-                          eventHandlers={{
-                            click: () => {
-                              setSelectedStationId(s.id);
-                              setActiveStationForMap(s);
-                            },
-                          }}
-                        >
-                          <Popup>
-                            <div className="text-xs">
-                              <strong>{s.name}</strong>
+                    <Marker
+                      position={polylinePositions[1]}
+                      icon={stationIcon}
+                    >
+                      <Popup>
+                        <div className="text-xs">
+                          <strong>{activeStationForMap?.name || 'Selected station'}</strong>
+                          {activeStationForMap?.distanceKm != null && (
+                            <>
                               <br />
-                              {s.address}
-                              {s.city && `, ${s.city}`}
-                              {s.distanceKm != null && (
-                                <>
-                                  <br />
-                                  ~{s.distanceKm.toFixed(1)} km from you
-                                </>
-                              )}
-                            </div>
-                          </Popup>
-                        </Marker>
-                      ))}
-                  </MapContainer>
-                </div>
-              </div>
+                              Distance: {activeStationForMap.distanceKm.toFixed(2)} km
+                            </>
+                          )}
+                        </div>
+                      </Popup>
+                    </Marker>
+                  </>
+                )}
+
+                {/* Station markers - limit to 20 for performance */}
+                {searchFilteredStations
+                  .filter((s) => s.latitude && s.longitude)
+                  .slice(0, 20)
+                  .map((s) => (
+                    <Marker
+                      key={`station-${s.id}`}
+                      position={[s.latitude, s.longitude]}
+                      icon={stationIcon}
+                      eventHandlers={{
+                        click: () => {
+                          setSelectedStationId(s.id);
+                          setActiveStationForMap(s);
+                        },
+                      }}
+                    >
+                      <Popup>
+                        <div className="text-xs">
+                          <strong>{s.name}</strong>
+                          <br />
+                          {s.address}
+                          {s.city && `, ${s.city}`}
+                          {s.distanceKm != null && (
+                            <>
+                              <br />
+                              ~{s.distanceKm.toFixed(1)} km from you
+                            </>
+                          )}
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+              </MapContainer>
             </div>
-          </section>
-        </main>
-      </div>
+          </div>
+            </div> 
+        </section>
+      </main>
+    </div> 
 
       {/* View details modal */}
       {detailStation && (

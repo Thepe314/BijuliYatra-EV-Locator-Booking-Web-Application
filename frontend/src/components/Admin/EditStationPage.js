@@ -18,16 +18,19 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Users
+  Users,
+  Building2,
+  Book,
 } from 'lucide-react';
 
-import { stationService } from '../../Services/api';
+import { stationService, authService } from '../../Services/api';
 import StationLocationPicker from '../../Services/StationLocationPicker';
-
+import notify from '../../Utils/notify';
 export default function OperatorEditStation() {
   const { id: stationId } = useParams();
   const navigate = useNavigate();
   const loc = useLocation();
+  const [imgError, setImgError] = useState(false);  
 
   const [formData, setFormData] = useState({
     name: '',
@@ -49,6 +52,7 @@ export default function OperatorEditStation() {
     operatorId: '',
     latitude: null,
     longitude: null,
+    imageUrl: '', 
   });
 
   const [errors, setErrors] = useState({});
@@ -79,6 +83,7 @@ export default function OperatorEditStation() {
       '',
     latitude: station.latitude ?? null,
     longitude: station.longitude ?? null,
+     imageUrl: station.imageUrl || '',
   });
 
   useEffect(() => {
@@ -121,6 +126,9 @@ export default function OperatorEditStation() {
     if (!formData.city.trim()) newErrors.city = 'City is required';
     if (!formData.state.trim()) newErrors.state = 'State is required';
     if (!formData.zipCode.trim()) newErrors.zipCode = 'ZIP code is required';
+    if (formData.imageUrl && !formData.imageUrl.startsWith('http')) {
+  newErrors.imageUrl = 'Must be a valid URL starting with http:// or https://';
+}
 
     if (formData.level2Chargers === '' || formData.level2Chargers < 0) {
       newErrors.level2Chargers = 'Level 2 chargers is required';
@@ -222,6 +230,7 @@ export default function OperatorEditStation() {
         operatorId: Number(formData.operatorId),
         latitude: formData.latitude,
         longitude: formData.longitude,
+        imageUrl: formData.imageUrl || null,
       };
 
       await stationService.updateStationAdmin(stationId, payload);
@@ -230,6 +239,7 @@ export default function OperatorEditStation() {
         message: 'Station updated successfully!',
       });
       setTimeout(() => setNotification(null), 3000);
+        
     } catch (err) {
       console.error('Update station failed:', err);
       setNotification({
@@ -250,6 +260,15 @@ export default function OperatorEditStation() {
     );
   }
 
+   const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (err) {}
+    notify.logout();
+    navigate("/login");
+  };
+
+
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex">
       {/* Sidebar */}
@@ -264,7 +283,7 @@ export default function OperatorEditStation() {
               <span className="font-semibold text-base text-slate-900">
                 BijuliYatra
               </span>
-              <span className="text-xs text-slate-500">Operator Portal</span>
+           
             </div>
           </div>
         </div>
@@ -300,7 +319,7 @@ export default function OperatorEditStation() {
               }`
             }
           >
-            <PlugZap
+            <Building2
               className={`w-5 h-5 ${
                 loc.pathname.startsWith('/admin/stationmanagement')
                   ? 'text-emerald-500'
@@ -308,6 +327,25 @@ export default function OperatorEditStation() {
               }`}
             />
             <span>Stations</span>
+          </NavLink>
+           <NavLink
+            to="/admin/usermanagement"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                isActive
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`
+            }
+          >
+            <Users
+              className={`w-5 h-5 ${
+                loc.pathname.startsWith('/admin/usermanagement')
+                  ? 'text-emerald-500'
+                  : 'text-slate-400'
+              }`}
+            />
+            <span>Users</span>
           </NavLink>
 
           <NavLink
@@ -320,7 +358,7 @@ export default function OperatorEditStation() {
               }`
             }
           >
-            <CalendarClock
+            <Book
               className={`w-5 h-5 ${
                 loc.pathname.startsWith('/admin/bookingmanagement')
                   ? 'text-emerald-500'
@@ -329,8 +367,9 @@ export default function OperatorEditStation() {
             />
             <span>Bookings</span>
           </NavLink>
+
           <NavLink
-            to="/admin/bookingmanagement"
+            to="/admin/requestmanagement"
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 isActive
@@ -341,14 +380,13 @@ export default function OperatorEditStation() {
           >
             <Users
               className={`w-5 h-5 ${
-                loc.pathname.startsWith("/admin/requestmanagement")
+                loc.pathname.startsWith('/admin/requestmanagement')
                   ? 'text-emerald-500'
                   : 'text-slate-400'
               }`}
             />
             <span>Request</span>
           </NavLink>
-         
 
           <NavLink
             to="/admin/dashboard"
@@ -360,29 +398,9 @@ export default function OperatorEditStation() {
               }`
             }
           >
-            <BarChart3
-              className={`w-5 h-5 ${
-                loc.pathname.startsWith('/admin/dashboard')
-                  ? 'text-emerald-500'
-                  : 'text-slate-400'
-              }`}
-            />
-            <span>Analytics</span>
-          </NavLink>
-
-          <NavLink
-            to="/operator/settings"
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                isActive
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`
-            }
-          >
             <Settings
               className={`w-5 h-5 ${
-                loc.pathname.startsWith('/operator/settings')
+                loc.pathname.startsWith('/admin/dashboard')
                   ? 'text-emerald-500'
                   : 'text-slate-400'
               }`}
@@ -395,7 +413,7 @@ export default function OperatorEditStation() {
         <div className="border-t border-slate-200 p-4 flex-shrink-0">
           <button
             type="button"
-            onClick={() => navigate('/logout')}
+              onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-100 text-sm text-slate-600 hover:text-slate-800"
           >
             <LogOut className="w-5 h-5" />
@@ -409,7 +427,7 @@ export default function OperatorEditStation() {
         <header className="h-16 bg-white border-b border-slate-200 flex items-center">
           <div className="max-w-5xl w-full mx-auto px-6 flex items-center justify-between">
             <button
-              onClick={() => navigate('/admin/stationmanagement')}
+              onClick={() => navigate('/admin/dashboard')}
               className="inline-flex items-center gap-2 text-base text-slate-700 hover:text-slate-900"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -462,161 +480,176 @@ export default function OperatorEditStation() {
                   </h2>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left: text fields */}
-                    <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-base font-medium text-slate-700 mb-1">
-                          Name *
-                        </label>
-                        <input
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
-                            errors.name
-                              ? 'border-rose-500'
-                              : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
-                          }`}
-                        />
-                        {errors.name && (
-                          <p className="text-sm text-rose-600 mt-1">
-                            {errors.name}
-                          </p>
-                        )}
-                      </div>
+             
+                  <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                      <div>
-                        <label className="block text-base font-medium text-slate-700 mb-1">
-                          Location label *
-                        </label>
-                        <input
-                          name="location"
-                          value={formData.location}
-                          onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
-                            errors.location
-                              ? 'border-rose-500'
-                              : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
-                          }`}
-                        />
-                        {errors.location && (
-                          <p className="text-sm text-rose-600 mt-1">
-                            {errors.location}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="sm:col-span-2">
-                        <label className="block text-base font-medium text-slate-700 mb-1">
-                          Address *
-                        </label>
-                        <input
-                          name="address"
-                          value={formData.address}
-                          onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
-                            errors.address
-                              ? 'border-rose-500'
-                              : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
-                          }`}
-                        />
-                        {errors.address && (
-                          <p className="text-sm text-rose-600 mt-1">
-                            {errors.address}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-base font-medium text-slate-700 mb-1">
-                          City *
-                        </label>
-                        <input
-                          name="city"
-                          value={formData.city}
-                          onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
-                            errors.city
-                              ? 'border-rose-500'
-                              : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
-                          }`}
-                        />
-                        {errors.city && (
-                          <p className="text-sm text-rose-600 mt-1">
-                            {errors.city}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-base font-medium text-slate-700 mb-1">
-                          State *
-                        </label>
-                        <input
-                          name="state"
-                          value={formData.state}
-                          onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
-                            errors.state
-                              ? 'border-rose-500'
-                              : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
-                          }`}
-                        />
-                        {errors.state && (
-                          <p className="text-sm text-rose-600 mt-1">
-                            {errors.state}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-base font-medium text-slate-700 mb-1">
-                          ZIP code *
-                        </label>
-                        <input
-                          name="zipCode"
-                          value={formData.zipCode}
-                          onChange={handleChange}
-                          className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
-                            errors.zipCode
-                              ? 'border-rose-500'
-                              : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
-                          }`}
-                        />
-                        {errors.zipCode && (
-                          <p className="text-sm text-rose-600 mt-1">
-                            {errors.zipCode}
-                          </p>
-                        )}
-                      </div>
+                    {/* Name */}
+                    <div>
+                      <label className="block text-base font-medium text-slate-700 mb-1">
+                        Name *
+                      </label>
+                      <input
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
+                          errors.name ? 'border-rose-500' : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
+                        }`}
+                      />
+                      {errors.name && <p className="text-sm text-rose-600 mt-1">{errors.name}</p>}
                     </div>
 
-                    {/* Right: map */}
-                    <div className="space-y-3">
-                      <h3 className="text-base font-medium text-slate-800">
-                        Map location (click to change)
-                      </h3>
-                      <div className="w-full h-56 rounded-xl overflow-hidden border border-slate-200">
-                        <StationLocationPicker
-                          value={
-                            formData.latitude && formData.longitude
-                              ? {
-                                  lat: formData.latitude,
-                                  lng: formData.longitude,
-                                }
-                              : null
-                          }
-                          onChange={handleMapLocationChange}
-                        />
-                      </div>
-                      {formData.latitude && formData.longitude && (
-                        <p className="text-xs text-slate-500">
-                          Selected: {formData.latitude.toFixed(6)},{' '}
-                          {formData.longitude.toFixed(6)}
-                        </p>
+                    {/* Location */}
+                    <div>
+                      <label className="block text-base font-medium text-slate-700 mb-1">
+                        Location label *
+                      </label>
+                      <input
+                        name="location"
+                        value={formData.location}
+                        onChange={handleChange}
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
+                          errors.location ? 'border-rose-500' : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
+                        }`}
+                      />
+                      {errors.location && <p className="text-sm text-rose-600 mt-1">{errors.location}</p>}
+                    </div>
+
+                    {/* Address */}
+                    <div className="sm:col-span-2">
+                      <label className="block text-base font-medium text-slate-700 mb-1">
+                        Address *
+                      </label>
+                      <input
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
+                          errors.address ? 'border-rose-500' : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
+                        }`}
+                      />
+                      {errors.address && <p className="text-sm text-rose-600 mt-1">{errors.address}</p>}
+                    </div>
+
+                    {/* City */}
+                    <div>
+                      <label className="block text-base font-medium text-slate-700 mb-1">
+                        City *
+                      </label>
+                      <input
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
+                          errors.city ? 'border-rose-500' : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
+                        }`}
+                      />
+                      {errors.city && <p className="text-sm text-rose-600 mt-1">{errors.city}</p>}
+                    </div>
+
+                    {/* State */}
+                    <div>
+                      <label className="block text-base font-medium text-slate-700 mb-1">
+                        State *
+                      </label>
+                      <input
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
+                          errors.state ? 'border-rose-500' : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
+                        }`}
+                      />
+                      {errors.state && <p className="text-sm text-rose-600 mt-1">{errors.state}</p>}
+                    </div>
+
+                    {/* ZIP */}
+                    <div>
+                      <label className="block text-base font-medium text-slate-700 mb-1">
+                        ZIP code *
+                      </label>
+                      <input
+                        name="zipCode"
+                        value={formData.zipCode}
+                        onChange={handleChange}
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
+                          errors.zipCode ? 'border-rose-500' : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
+                        }`}
+                      />
+                      {errors.zipCode && <p className="text-sm text-rose-600 mt-1">{errors.zipCode}</p>}
+                    </div>
+
+                    {/* Station Image URL */}
+                    <div className="sm:col-span-2 space-y-2">
+                      <label className="block text-base font-medium text-slate-700">
+                        Station Image URL
+                      </label>
+
+                      <input
+                        type="text"
+                        name="imageUrl"
+                        value={formData.imageUrl}
+                        onChange={(e) => {
+                          setImgError(false);
+                          handleChange(e);
+                        }}
+                        placeholder="https://... or data:image/...base64,..."
+                        className={`w-full px-3 py-2 border rounded-lg text-base outline-none ${
+                          errors.imageUrl ? 'border-rose-500' : 'border-slate-300 focus:ring-2 focus:ring-emerald-500'
+                        }`}
+                      />
+                      {errors.imageUrl && <p className="text-sm text-rose-600">{errors.imageUrl}</p>}
+
+                      {formData.imageUrl && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-slate-500">Preview:</p>
+
+                          <div className="relative w-full h-32 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                            {!imgError ? (
+                              <img
+                                src={formData.imageUrl}
+                                alt="Station preview"
+                                className="w-full h-full object-cover"
+                                onError={() => setImgError(true)}
+                              />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm">
+                                Invalid URL or image not found
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       )}
+
+                      <p className="text-xs text-slate-500">
+                        Paste Unsplash/S3 URL or a data URL. Leave empty for fallback.
+                      </p>
                     </div>
                   </div>
+
+                  {/* Right: map */}
+                  <div className="space-y-3">
+                    <h3 className="text-base font-medium text-slate-800">
+                      Map location (click to change)
+                    </h3>
+                    <div className="w-full h-56 rounded-xl overflow-hidden border border-slate-200">
+                      <StationLocationPicker
+                        value={
+                          formData.latitude && formData.longitude
+                            ? { lat: formData.latitude, lng: formData.longitude }
+                            : null
+                        }
+                        onChange={handleMapLocationChange}
+                      />
+                    </div>
+                    {formData.latitude && formData.longitude && (
+                      <p className="text-xs text-slate-500">
+                        Selected: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 </section>
 
                 {/* Capacity & pricing */}

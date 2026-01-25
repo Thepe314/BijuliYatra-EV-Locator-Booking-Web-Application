@@ -34,6 +34,7 @@ import WalletPage from "./components/User/WalletPage.js";
 import OperatorEditStation from "./components/ChargeOperators/OperatorEditStation.js";
 import RequestManagement from "./components/Admin/RequestManagement.js";
 import PaymentFailed from "./components/General/PaymentFailed.js";
+import EVOwnerVehicles from "./components/User/EvOwnerVehicles.js";
 
 function App() {
   return (
@@ -95,6 +96,7 @@ function App() {
          <Route path="/ev-owner/book/:stationId" element={<BookingPage />}/>
          <Route path="/ev-owner/bookings" element={<EVOwnerBookingsList />} />
          <Route path="/ev-owner/wallet" element={<WalletPage />} />
+        <Route path="/ev-owner/vehicles" element={<EVOwnerVehicles/>} />
       
 
         </Routes>

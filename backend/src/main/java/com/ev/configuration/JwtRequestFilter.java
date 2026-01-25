@@ -19,6 +19,7 @@ import java.util.List;
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
 
+	
     private final jwtUtil jwtUtil;
 
     public JwtRequestFilter(jwtUtil jwtUtil) {
@@ -59,14 +60,14 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                     if (username != null && rolesString != null &&
                         SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                        List<GrantedAuthority> authorities = new ArrayList<>();
-                        for (String role : rolesString.split(",")) {
-                            role = role.trim();
-                            authorities.add(new SimpleGrantedAuthority(role));
-                            if (!role.startsWith("ROLE_")) {
-                                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-                            }
-                        }
+                    	List<GrantedAuthority> authorities = new ArrayList<>();
+                    	for (String role : rolesString.split(",")) {
+                    	    role = role.trim();
+                    	    if (!role.startsWith("ROLE_")) {
+                    	        role = "ROLE_" + role;  // Spring expects ROLE_ prefix
+                    	    }
+                    	    authorities.add(new SimpleGrantedAuthority(role));
+                    	}
 
                         UsernamePasswordAuthenticationToken auth =
                                 new UsernamePasswordAuthenticationToken(username, null, authorities);
@@ -76,14 +77,14 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                     }
                 } else {
                     System.out.println("[JwtRequestFilter] Invalid JWT token");
-                    invalidateSession(request);
+                 
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token expired or invalid");
                     return;
                 }
 
             } else {
                 System.out.println("[JwtRequestFilter] No Bearer token found");
-                invalidateSession(request);
+             
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing JWT token");
                 return;
             }
@@ -93,7 +94,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         } catch (Exception ex) {
             System.err.println("[JwtRequestFilter] Exception: " + ex.getMessage());
             ex.printStackTrace();
-            invalidateSession(request);
+           
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Error processing JWT filter");
         }
     }

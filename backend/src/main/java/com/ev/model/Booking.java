@@ -1,5 +1,6 @@
 package com.ev.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -45,7 +46,7 @@ public class Booking {
     private Double actualKwh;
 
     @Column(nullable = false)
-    private Double totalAmount;
+    private BigDecimal totalAmount;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -59,6 +60,16 @@ public class Booking {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentMethod paymentMethod;
+    
+    @Column(nullable=false, precision=10,scale=2)
+    private BigDecimal platformFee;
+    
+    @Column(nullable=false, precision=10,scale=2)
+    private BigDecimal stationFee;
+    
+    @Column(nullable=false)
+    private BigDecimal commisionRate =BigDecimal.valueOf(0.05); //0.5%
+    
 
     public PaymentMethod getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
@@ -91,8 +102,8 @@ public class Booking {
     public Double getActualKwh() { return actualKwh; }
     public void setActualKwh(Double actualKwh) { this.actualKwh = actualKwh; }
 
-    public Double getTotalAmount() { return totalAmount; }
-    public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
+    public BigDecimal getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
 
     public BookingStatus getStatus() { return status; }
     public void setStatus(BookingStatus status) { this.status = status; }
@@ -100,4 +111,28 @@ public class Booking {
     public LocalDateTime getBookedAt() { return bookedAt; }
     public LocalDateTime getCompletedAt() { return completedAt; }
     public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+	public BigDecimal getPlatformFee() {
+		return platformFee;
+	}
+	public void setPlatformFee(BigDecimal platformFee) {
+		this.platformFee = platformFee;
+	}
+	public BigDecimal getStationFee() {
+		return stationFee;
+	}
+	public void setStationFee(BigDecimal stationFee) {
+		this.stationFee = stationFee;
+	}
+	public BigDecimal getCommisionRate() {
+		return commisionRate;
+	}
+	public void setCommisionRate(BigDecimal commisionRate) {
+		this.commisionRate = commisionRate;
+	}
+	public void setBookedAt(LocalDateTime bookedAt) {
+		this.bookedAt = bookedAt;
+	}
+    
+    
+    
 }

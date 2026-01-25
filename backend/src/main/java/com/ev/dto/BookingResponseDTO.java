@@ -13,7 +13,7 @@ public class BookingResponseDTO {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String connectorType;
-    private Double totalAmount;
+    private BigDecimal totalAmount;
     private String status;
     private String vehicleName;
     private LocalDateTime bookedAt;
@@ -103,11 +103,11 @@ public class BookingResponseDTO {
 		this.connectorType = connectorType;
 	}
 
-	public Double getTotalAmount() {
+	public BigDecimal getTotalAmount() {
 		return totalAmount;
 	}
 
-	public void setTotalAmount(Double totalAmount) {
+	public void setTotalAmount(BigDecimal totalAmount) {
 		this.totalAmount = totalAmount;
 	}
 

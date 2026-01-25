@@ -21,6 +21,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { userService, authService } from "../../Services/api";
 import { notify } from "../../Utils/notify";
+import { ToastContainer } from 'react-toastify';
 
 export default function RequestManagement() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -129,6 +130,7 @@ export default function RequestManagement() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex">
+       <ToastContainer position="top-right" theme="colored" />
       {/* Sidebar */}
       <aside
         className={`${
@@ -140,9 +142,9 @@ export default function RequestManagement() {
           {sidebarOpen ? (
             <>
               <div className="flex items-center gap-3">
-                <div className="bg-emerald-500/90 p-2 rounded-lg shadow-md shadow-emerald-500/40">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
+                <div className="h-11 w-11 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
+            <Zap className="w-6 h-6 text-white" />
+          </div>
                 <span className="font-semibold text-sm text-slate-900">
                   BijuliYatra
                 </span>

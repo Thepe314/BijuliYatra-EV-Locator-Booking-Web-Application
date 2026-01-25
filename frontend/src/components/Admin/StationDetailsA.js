@@ -56,11 +56,23 @@ export default function StationDetailsA() {
   const { stationId } = useParams();
   const navigate = useNavigate();
 
+  const [imgError, setImgError] = useState(false);
+  
+  const mainImage =
+    !imgError && station?.imageUrl
+      ? station.imageUrl 
+      : imageMap[
+          station?.name?.toLowerCase().replace(/\s+/g, '-') || 'station-1'
+        ] || stationImg2;
+  
+  const images = [{ src: mainImage }];
+
   useEffect(() => {
     const fetchStation = async () => {
       try {
         setLoading(true);
         setError(null);
+        setImgError(false); 
         const data = await stationService.getStationById(stationId);
         setStation(data);
       } catch (err) {
@@ -99,9 +111,6 @@ export default function StationDetailsA() {
   const createdAt = station.createdAt || '-';
   const updatedAt = station.updatedAt || '-';
 
-  const mainImage = imageMap[station.imageKey] || stationImg2;
-  const images = [{ src: mainImage }];
-
   const hasCoords = station.latitude && station.longitude;
   const centerLat = hasCoords ? station.latitude : 27.7172;
   const centerLng = hasCoords ? station.longitude : 85.324;
@@ -139,55 +148,51 @@ export default function StationDetailsA() {
       {/* Main content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: visuals + overview + chargers */}
+         
           <div className="lg:col-span-2 space-y-6">
-            {/* Hero image */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-100">
-              <div className="h-64 md:h-96 relative">
-                {images[activeImage]?.src ? (
-                  <img
-                    src={images[activeImage].src}
-                    alt={station.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 flex items-center justify-center text-white">
-                    <div className="text-center">
-                      <Zap className="w-20 h-20 mx-auto mb-4" />
-                      <p className="text-xl font-bold">{station.name}</p>
-                      <p className="text-sm mt-1">
-                        {station.location || fullAddress}
-                      </p>
-                    </div>
+            <div className="h-64 md:h-96 relative">
+              {mainImage ? (
+                <img
+                  src={mainImage}
+                  alt={station.name}
+                  className="w-full h-full object-cover"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                <div className="h-full bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 flex items-center justify-center text-white">
+                  <div className="text-center">
+                    <Zap className="w-20 h-20 mx-auto mb-4" />
+                    <p className="text-xl font-bold">{station.name}</p>
+                    <p className="text-sm mt-1">{station.location || fullAddress}</p>
                   </div>
-                )}
-              </div>
-
-              {/* Thumbnails */}
-              <div className="grid grid-cols-4 gap-2 p-4 bg-gray-50 border-t border-slate-100">
-                {images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImage(idx)}
-                    className={`h-16 md:h-20 rounded-lg overflow-hidden transition-all ${
-                      activeImage === idx
-                        ? 'ring-4 ring-green-500'
-                        : 'opacity-60 hover:opacity-100'
-                    }`}
-                  >
-                    {img.src ? (
-                      <img
-                        src={img.src}
-                        alt={`Preview ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200" />
-                    )}
-                  </button>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
+
+            {/* Thumbnails */}
+            <div className="grid grid-cols-4 gap-2 p-4 bg-gray-50 border-t border-slate-100">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImage(idx)}
+                  className={`h-16 md:h-20 rounded-lg overflow-hidden transition-all ${
+                    activeImage === idx ? 'ring-4 ring-green-500' : 'opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  {img.src ? (
+                    <img
+                      src={img.src}
+                      alt={`Preview ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
 
             {/* Overview */}
             <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
@@ -306,7 +311,7 @@ export default function StationDetailsA() {
             </div>
           </div>
 
-          {/* Right: status + live map + note */}
+        
           <div className="lg:col-span-1 space-y-6">
             {/* Station status */}
             <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-100">
@@ -427,7 +432,7 @@ export default function StationDetailsA() {
               )}
             </div>
 
-            {/* Internal view note */}
+           
             <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
               <p className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
                 <Info className="w-4 h-4" />

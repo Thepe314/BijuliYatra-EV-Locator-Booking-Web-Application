@@ -9,10 +9,21 @@ const api = axios.create({
   },
 });
 
+const getToken = () => {
+  const role = localStorage.getItem('activeRole') || 'admin';  // Default to admin
+  return localStorage.getItem(`authToken_${role}`) || localStorage.getItem('authToken');
+};
+
+const setToken = (token, role) => {
+  localStorage.setItem(`authToken_${role}`, token);
+  localStorage.setItem('activeRole', role);
+};
+
+
 // Add request interceptor to add token to headers
 api.interceptors.request.use(
   config => {
-    const token = localStorage.getItem('authToken');
+    const token = getToken();  // Uses activeRole to get `authToken_${role}`
     if (token) {
       config.headers['Authorization'] = 'Bearer ' + token;
     }
@@ -31,17 +42,23 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const newAccessToken = await authService.refresh();
+        const role = localStorage.getItem('activeRole') || 'admin';
+        const newAccessToken = await authService.refresh(role);  // Pass role or current refresh token
 
         if (newAccessToken) {
+          setToken(newAccessToken, role);  // Stores as `authToken_${role}`
           originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken;
           return api(originalRequest);
         } else {
-          authService.logout();
+          // Use your logout helper or inline:
+          localStorage.removeItem(`authToken_${role}`);
+          localStorage.removeItem('activeRole');
           window.location.href = "/login";
         }
       } catch (refreshError) {
-        authService.logout();
+        const role = localStorage.getItem('activeRole') || 'admin';
+        localStorage.removeItem(`authToken_${role}`);
+        localStorage.removeItem('activeRole');
         window.location.href = "/login";
       }
     }
@@ -57,33 +74,31 @@ export const authService = {
   const data = response.data;
 
   if (data.token) {
-    localStorage.setItem("authToken", data.token);
-
+    // Extract role from JWT payload or response
+    let role = 'admin';  // Default
     try {
       const parts = data.token.split(".");
       if (parts.length === 3) {
         const payload = JSON.parse(atob(parts[1]));
-        if (payload.userId) {
-          localStorage.setItem("userId", payload.userId.toString());
-        }
-        if (payload.role) {
-          localStorage.setItem("userRole", payload.role);
-        }
-
-     
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            userId: payload.userId ?? data.userId ?? null,
-            role:  payload.role   ?? data.role   ?? null,
-            email: data.email ?? null,
-            fullname: data.fullname ?? null,
-          })
-        );
+        role = payload.role || data.role || 'admin';
       }
     } catch (e) {
       console.error("Failed to decode JWT payload:", e);
+      role = data.role || 'admin';
     }
+
+    setToken(data.token, role);  // This sets `authToken_${role}` + activeRole
+
+    // Store user data (keep your existing logic)
+    localStorage.setItem(
+      "user",
+      JSON.stringify({
+        userId: data.userId ?? null,
+        role: role,
+        email: data.email ?? null,
+        fullname: data.fullname ?? null,
+      })
+    );
   }
 
   return data;
@@ -102,40 +117,34 @@ export const authService = {
 
   logout: async () => {
   try {
-    // Tell backend to invalidate refresh token / session (if your API supports it)
-    await api.post("/auth/logout");
+    await api.post("/auth/logout");  // Sends current role's JWT to backend
   } catch (error) {
     console.error("Logout error:", error);
-    // still continue with client cleanup
   } finally {
-    // Clear all auth-related data you set on login
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userRole");
+    const role = localStorage.getItem('activeRole') || 'admin';  // Matches JWT role
+    localStorage.removeItem(`authToken_${role}`);
+    localStorage.removeItem('activeRole');
     localStorage.removeItem("user");
-
-    // Option A: hard redirect (full reload, clean state)
-    window.location.href = "/login"; // or "/"
-    // Option B (React Router): use navigate("/login") from component instead
+    window.location.href = "/login";
   }
 },
 
-  refresh: async () => {
-    const refreshToken = localStorage.getItem("refreshToken");
-    if (!refreshToken) return null;
+  refresh: async (role) => {  // Accept role param from interceptor
+  const activeRole = role || localStorage.getItem('activeRole') || 'admin';
+  const refreshToken = localStorage.getItem(`refreshToken_${activeRole}`);  // If per-role refresh
+  if (!refreshToken) return null;
 
-    try {
-      const response = await api.post("/auth/refresh", { refreshToken });
-      if (response.data.accessToken) {
-        localStorage.setItem("authToken", response.data.accessToken);
-        return response.data.accessToken;
-      }
-    } catch (error) {
-      console.error("Refresh token error:", error);
+  try {
+    const response = await api.post("/auth/refresh", { refreshToken });
+    if (response.data.accessToken) {
+      setToken(response.data.accessToken, activeRole);
+      return response.data.accessToken;
     }
-    return null;
-  },
+  } catch (error) {
+    console.error("Refresh token error:", error);
+  }
+  return null;
+},
 
    requestPasswordReset: async (email) => {
     const response = await api.post("/auth/forgot-password", { email });
@@ -145,10 +154,39 @@ export const authService = {
   verifyForgotOtp: async ({ email, otpCode }) => {
     const response = await api.post("/auth/forgot-password/verify-otp", {
       email,
-      otpCode,
+      otpCode
     });
     return response.data;
   },
+
+verifyLoginOtp: async ({ email, otpCode }) => {
+  const response = await api.post("/auth/login/verify-otp", { email, otpCode });
+  const data = response.data;
+
+  if (data.token) {
+    let role = 'admin';
+    try {
+      const parts = data.token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        role = payload.role || data.role || 'admin';
+      }
+    } catch (e) {
+      console.error("Failed to decode JWT payload:", e);
+      role = data.role || 'admin';
+    }
+    setToken(data.token, role);
+
+    localStorage.setItem("user", JSON.stringify({
+      userId: data.userId ?? null,
+      role: role,
+      email: data.email ?? null,
+      fullname: data.fullname ?? null,
+    }));
+  }
+
+  return data;
+},
 
   resetPassword: async (email, newPassword) => {
     const response = await api.post("/auth/reset-password", {
@@ -158,33 +196,11 @@ export const authService = {
     return response.data;
   },
 
-  isAuthenticated: () => !!localStorage.getItem("authToken"),
-
-
- verifyLoginOtp: async ({ email, otpCode }) => {
-  const response = await api.post("/auth/login/verify-otp", { email, otpCode });
-  const data = response.data;
-
-  if (data.token) {
-    localStorage.setItem("authToken", data.token);
-    try {
-      const parts = data.token.split(".");
-      if (parts.length === 3) {
-        const payload = JSON.parse(atob(parts[1]));
-        if (payload.userId) {
-          localStorage.setItem("userId", payload.userId.toString());
-        }
-        if (payload.role) {
-          localStorage.setItem("userRole", payload.role);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to decode JWT payload (verify-otp):", e);
-    }
-  }
-
-  return data;
+  isAuthenticated: () => {
+  const role = localStorage.getItem('activeRole') || 'admin';
+  return !!localStorage.getItem(`authToken_${role}`);
 },
+
 
 };
 
@@ -573,6 +589,11 @@ markPaymentSuccess: async (bookingId, gatewayPaymentId) => {
   });
   return res.data;
 },
+
+ listAdminEarnings: async () => {
+    const response = await api.get('/admin/earnings');
+    return response.data;
+  },
   
 };
 export const paymentService = {
@@ -633,13 +654,29 @@ export const analyticsService = {
 };
 // services/vehicleService.js
 export const vehicleService = {
-  getMyVehicles: () => api.get('/evowner/vehicles')
+
+   listVehicles: async () => {
+    try {
+      console.log('Fetching vehicles...'); // Debug
+      const response = await api.get('/ev-owner/vehicles');
+      console.log('Vehicles response:', response.data); // Debug
+      return response;
+    } catch (error) {
+      console.error('List vehicles error:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+ createVehicle: async (data) => api.post('/ev-owner/vehicles', data), 
+ updateVehicle: async (id, data) => api.put(`/ev-owner/vehicles/${id}`, data),
+  deleteVehicle: async (id) => api.delete(`/ev-owner/vehicles/${id}`),
 };
 
 // services/favoriteService.js
 export const favoriteService = {
   getMyFavorites: () => api.get('/evowner/favorites')
 };
+
+
 
 
 

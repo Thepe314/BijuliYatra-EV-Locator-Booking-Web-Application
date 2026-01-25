@@ -83,8 +83,19 @@ public class ChargingStations {
     @Column(nullable = true)
     private Double longitude;
     
-    @Column(nullable = true)
-    private String imageKey; 
+    @Column(name = "image_url", length = 1500)
+    private String imageUrl; 
+    
+    @Column(name = "level1_chargers", nullable = true)
+    private Integer level1Chargers = 0;
+
+    @Column(name = "dc_ultra_chargers", nullable = true) 
+    private Integer dcUltraChargers = 0;
+
+    @Column(name = "dc_combo_chargers", nullable = true)
+    private Integer dcComboChargers = 0;
+    
+    
     
     @PrePersist
     protected void onCreate() {
@@ -185,12 +196,38 @@ public class ChargingStations {
 		this.longitude = longitude;
 	}
 
-	public String getImageKey() {
-		return imageKey;
+	
+
+	public String getImageUrl() {
+		return imageUrl;
 	}
 
-	public void setImageKey(String imageKey) {
-		this.imageKey = imageKey;
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
+	public Integer getLevel1Chargers() {
+		return level1Chargers;
+	}
+
+	public void setLevel1Chargers(Integer level1Chargers) {
+		this.level1Chargers = level1Chargers;
+	}
+
+	public Integer getDcUltraChargers() {
+		return dcUltraChargers;
+	}
+
+	public void setDcUltraChargers(Integer dcUltraChargers) {
+		this.dcUltraChargers = dcUltraChargers;
+	}
+
+	public Integer getDcComboChargers() {
+		return dcComboChargers;
+	}
+
+	public void setDcComboChargers(Integer dcComboChargers) {
+		this.dcComboChargers = dcComboChargers;
 	}
     
     

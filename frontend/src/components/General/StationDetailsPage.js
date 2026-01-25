@@ -30,9 +30,9 @@ const markerIcon = new L.Icon({
 
 const imageMap = {
   'station-1': stationImg1,
-  // 'station-2': stationImg2,
-  // 'station-3': stationImg3,
 };
+
+
 
 function CenterOnStation({ lat, lng }) {
   const map = useMap();
@@ -53,6 +53,17 @@ export default function StationDetailsPage() {
 
   const { stationId } = useParams();
   const navigate = useNavigate();
+
+  const [imgError, setImgError] = useState(false);
+
+const mainImage =
+  !imgError && station?.imageUrl
+    ? station.imageUrl 
+    : imageMap[
+        station?.name?.toLowerCase().replace(/\s+/g, '-') || 'station-1'
+      ] || stationImg1;
+
+const images = [{ src: mainImage }];
 
   useEffect(() => {
     const fetchStation = async () => {
@@ -96,9 +107,6 @@ export default function StationDetailsPage() {
   const fullAddress = `${station.address}, ${station.city}, ${station.state} ${station.zipCode}`;
   const createdAt = station.createdAt || '-';
   const updatedAt = station.updatedAt || '-';
-
-  const mainImage = imageMap[station.imageKey] || stationImg1;
-  const images = [{ src: mainImage }];
 
   const hasCoords = station.latitude && station.longitude;
   const centerLat = hasCoords ? station.latitude : 27.7172;
@@ -163,20 +171,31 @@ export default function StationDetailsPage() {
             {/* Image / banner */}
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
               <div className="h-64 md:h-96 relative">
-                {images[activeImage]?.src ? (
+                {mainImage ? (
                   <img
-                    src={images[activeImage].src}
+                    src={mainImage}
                     alt={station.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to gradient if both imageUrl and local fail
+                      e.target.style.display = 'none';
+                      e.target.parentNode.innerHTML = `
+                        <div class="h-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-sky-500 flex items-center justify-center text-white">
+                          <div class="text-center">
+                            <Zap class="w-20 h-20 mx-auto mb-4" />
+                            <p class="text-xl font-semibold">${station.name}</p>
+                            <p class="text-sm mt-1">${station.location || fullAddress}</p>
+                          </div>
+                        </div>
+                      `;
+                    }}
                   />
                 ) : (
                   <div className="h-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-sky-500 flex items-center justify-center text-white">
                     <div className="text-center">
                       <Zap className="w-20 h-20 mx-auto mb-4" />
                       <p className="text-xl font-semibold">{station.name}</p>
-                      <p className="text-sm mt-1">
-                        {station.location || fullAddress}
-                      </p>
+                      <p className="text-sm mt-1">{station.location || fullAddress}</p>
                     </div>
                   </div>
                 )}

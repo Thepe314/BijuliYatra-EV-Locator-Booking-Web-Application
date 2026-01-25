@@ -1,6 +1,9 @@
 package com.ev.controller;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -22,6 +25,7 @@ import com.ev.dto.CreateStationRequestDTO;
 import com.ev.dto.StationResponseDTO;
 import com.ev.model.ChargingStations;
 import com.ev.model.User;
+import com.ev.repository.BookingRepository;
 import com.ev.repository.ChargingStationRepository;
 import com.ev.repository.UserRepository;
 
@@ -34,7 +38,8 @@ public class OperatorController {
 	 @Autowired
 	 private ChargingStationRepository repository;
 	 
-	 
+	 @Autowired
+	 private BookingRepository bookingRepository;
 	 
 	 @Autowired
 	 private UserRepository userRepository;
@@ -70,9 +75,13 @@ public class OperatorController {
         station.setOperator(operator);       
         station.setTotalSlots(request.getLevel2Chargers() + request.getDcFastChargers());
         station.setAvailableSlots(station.getTotalSlots());
-        station.setImageKey(request.getImageKey());
+        station.setImageUrl(request.getImageUrl());
         station.setLatitude(request.getLatitude());
         station.setLongitude(request.getLongitude());
+        station.setLevel1Chargers(request.getLevel1Chargers());
+        station.setDcUltraChargers(request.getDcUltraChargers());
+        station.setDcComboChargers(request.getDcComboChargers());
+   
 
         ChargingStations saved = repository.save(station);
         return new ResponseEntity<>(new StationResponseDTO(saved), HttpStatus.CREATED);
@@ -85,9 +94,9 @@ public class OperatorController {
         User currentOperator = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Operator not found"));
 
-        // THIS IS THE KEY LINE — only return stations owned by this operator
+    
         List<ChargingStations> stations = repository
-                .findByOperator(currentOperator);   // ← THIS MUST EXIST!
+                .findByOperator(currentOperator);  
 
         List<StationResponseDTO> dtos = stations.stream()
                 .map(StationResponseDTO::new)
@@ -96,13 +105,7 @@ public class OperatorController {
         return ResponseEntity.ok(dtos);
     }
     
-//    @GetMapping("/stations/{id}")
-//    public ResponseEntity<StationResponseDTO> getStationById(@PathVariable Long id) {
-//        ChargingStations station = repository.findById(id)
-//            .orElseThrow(() -> new RuntimeException("Station not found with id: " + id));
-//        return ResponseEntity.ok(new StationResponseDTO(station));
-//    }
-    
+
     @PutMapping("/stations/edit/{stationId}")
     public ResponseEntity<StationResponseDTO> updateStationOperator(
             @PathVariable Long stationId,
@@ -137,6 +140,9 @@ public class OperatorController {
         station.setDcFastChargers(request.getDcFastChargers());
         station.setLevel2Rate(request.getLevel2Rate());
         station.setDcFastRate(request.getDcFastRate());
+        station.setLevel1Chargers(request.getLevel1Chargers());
+        station.setDcUltraChargers(request.getDcUltraChargers());
+        station.setDcComboChargers(request.getDcComboChargers());
 
         // 5) Peak pricing
         station.setPeakPricing(request.getPeakPricing());
@@ -150,7 +156,7 @@ public class OperatorController {
         station.setNotes(request.getNotes());
 
         // 7) Image preset
-        station.setImageKey(request.getImageKey());
+        station.setImageUrl(request.getImageUrl());
 
         // 8) Total / available slots (same rule as admin)
         int totalSlots = request.getLevel2Chargers() + request.getDcFastChargers();
@@ -176,4 +182,64 @@ public class OperatorController {
                 .map(station -> ResponseEntity.ok(new StationResponseDTO(station)))
                 .orElse(ResponseEntity.notFound().build());
     }
+    
+    
+    //Total Operator money and also Total Bookings per Id
+
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getOperatorStats(Authentication auth) {
+        User operator = userRepository.findByEmail(auth.getName()).orElseThrow();
+
+        BigDecimal totalRevenue = bookingRepository.getOperatorTotalRevenue(operator.getUser_id());
+        List<Object[]> paymentBreakdown = bookingRepository.getPaymentMethodBreakdown(operator.getUser_id());
+        
+        // Total bookings count
+        long totalSessions = bookingRepository.countOperatorBookings(operator.getUser_id());
+        
+        // ADD: Monthly sessions (current year)
+        List<Object[]> monthlySessionsRaw = bookingRepository.getMonthlySessions(operator.getUser_id());
+        
+        // Month names for current year
+        String[] monthNames = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        
+        List<Map<String, Object>> monthlySessions = monthlySessionsRaw.stream()
+            .map(row -> {
+                int monthNum = ((Number) row[0]).intValue();
+                long sessions = ((Number) row[1]).longValue();
+                
+                Map<String, Object> monthData = new HashMap<>();
+                monthData.put("month", monthNames[monthNum - 1]);
+                monthData.put("sessions", sessions);
+                return monthData;
+            })
+            .collect(Collectors.toList());
+
+        long totalCount = paymentBreakdown.stream()
+                .mapToLong(r -> ((Number) r[1]).longValue())
+                .sum();
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalRevenue", totalRevenue.doubleValue());
+        stats.put("totalSessions", totalSessions);
+        stats.put("monthlySessions", monthlySessions);  // NEW: for BarChart
+
+        stats.put("paymentMethods", paymentBreakdown.stream()
+            .map(row -> {
+                String method = String.valueOf(row[0]);
+                long count = ((Number) row[1]).longValue();
+                double percentage = totalCount > 0 ? (count * 100.0 / totalCount) : 0.0;
+
+                Map<String, Object> m = new HashMap<>();
+                m.put("method", method);
+                m.put("count", count);
+                m.put("percentage", percentage);
+                return m;
+            })
+            .collect(Collectors.toList())
+        );
+
+        return ResponseEntity.ok(stats);
+    }
+
 }

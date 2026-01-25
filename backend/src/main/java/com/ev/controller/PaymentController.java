@@ -1,5 +1,6 @@
 package com.ev.controller;
 
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.springframework.security.core.Authentication;
@@ -41,10 +42,10 @@ public class PaymentController {
             PaymentDTO dto = new PaymentDTO();
             dto.setId(p.getId());
             dto.setAmount(p.getAmount());
-            dto.setType(p.getAmount() < 0 ? "debit" : "credit");
+            dto.setType(p.getAmount().compareTo(BigDecimal.ZERO) < 0 ? "debit" : "credit");
             dto.setDatetime(p.getCreatedAt().format(fmt));
 
-            // enum -> String (e.g. "CARD", "ESEWA", "KHALTI")
+            // (e.g. "CARD", "ESEWA", "KHALTI")
             if (p.getPaymentMethod() != null) {
                 dto.setPaymentMethod(p.getPaymentMethod().name());
             }

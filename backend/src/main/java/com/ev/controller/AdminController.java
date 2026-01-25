@@ -1,5 +1,6 @@
 package com.ev.controller;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +37,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
@@ -244,7 +247,7 @@ public class AdminController {
         station.setNotes(request.getNotes());
 
         // image preset
-        station.setImageKey(request.getImageKey());
+        station.setImageUrl(request.getImageUrl());
 
         // total / available slots
         int totalSlots = request.getLevel2Chargers() + request.getDcFastChargers();
@@ -567,6 +570,31 @@ public class AdminController {
                     return ResponseEntity.ok(convertToResponseDTO(saved));
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+    
+    
+    @GetMapping("/earnings")
+    public ResponseEntity<Map<String, Object>> getAdminEarnings(Authentication auth) {
+        String role = auth.getAuthorities().stream()
+            .findFirst().map(GrantedAuthority::getAuthority).orElse("");
+        
+        if (!"ROLE_ADMIN".equals(role)) {
+            return ResponseEntity.status(403).build();
+        }
+        
+      
+        
+        
+        BigDecimal totalPlatform = bookingRepository.sumPlatformFees();
+        BigDecimal totalStation = bookingRepository.sumStationFees();
+        long totalBookings = bookingRepository.count();
+        
+        return ResponseEntity.ok(Map.of(
+            "totalPlatformEarnings", totalPlatform,
+            "totalStationEarnings", totalStation,
+            "totalBookings", totalBookings,
+            "commissionRate", "5%"
+        ));
     }
 
 }

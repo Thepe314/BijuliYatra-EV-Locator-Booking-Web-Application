@@ -31,19 +31,28 @@ export default function EVOwnerBookingsList() {
   }, []);
 
   const handleCancelBooking = async (bookingId) => {
-    console.log('Cancelling booking from UI, id =', bookingId);
-    try {
-      await bookingService.cancelBooking(bookingId);
-      notify.success('Booking cancelled successfully');
-
-      // refresh list
-      const data = await bookingService.listBookingsEv();
-      setBookings(data || []);
-    } catch (e) {
-      console.error('Failed to cancel booking', e);
-      notify.error('Failed to cancel booking');
+  console.log('Cancelling booking from UI, id =', bookingId);
+  try {
+    await bookingService.cancelBooking(bookingId);
+    notify.success('Booking cancelled successfully');
+    
+    // Refresh list
+    const data = await bookingService.listBookingsEv();
+    setBookings(data || []);
+  } catch (error) {
+    console.error('Cancel error details:', error.response?.data || error.message);
+    
+    // Handle backend 400 errors with exact message
+    if (error.response?.status === 400) {
+      const errorMsg = error.response.data || 'Cannot cancel this booking';
+      notify.error(errorMsg);  // Shows "Cannot cancel < 30 mins before" etc.
+    } else if (error.response?.status === 403) {
+      notify.error('Not authorized to cancel this booking');
+    } else {
+      notify.error('Failed to cancel booking. Please try again.');
     }
-  };
+  }
+};
 
   // 1) filter by status + search
   const filtered = bookings
@@ -74,9 +83,9 @@ export default function EVOwnerBookingsList() {
         {/* Top nav bar */}
         <header className="border-b px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-emerald-500 p-2 rounded-lg">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+            <div className="h-11 w-11 rounded-full bg-emerald-500 flex items-center justify-center shadow-md">
+                        <Zap className="w-6 h-6 text-white" />
+                      </div>
             <span className="font-semibold text-slate-900">BijuliYatra</span>
           </div>
 
@@ -84,6 +93,7 @@ export default function EVOwnerBookingsList() {
             <button onClick={() => navigate('/ev-owner/dashboard')}>Home</button>
             <button onClick={() => navigate('/ev-owner/station')}>Find stations</button>
             <button className="text-emerald-600 font-medium">My bookings</button>
+                 <button onClick={() => navigate('/ev-owner/vehicles')}>My Vehicles</button>
             <button onClick={() => navigate('/ev-owner/wallet')}>Wallet/Payments</button>
             <button onClick={() => navigate('/profile')}>Profile</button>
           </nav>

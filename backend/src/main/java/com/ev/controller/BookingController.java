@@ -7,10 +7,10 @@ import com.ev.repository.BookingRepository;
 import com.ev.repository.ChargingStationRepository;
 import com.ev.repository.PaymentRepository;
 import com.ev.repository.UserRepository;
-
+import com.ev.service.EmailService;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
-import com.stripe.param.checkout.SessionCreateParams; // [web:20][web:27]
+import com.stripe.param.checkout.SessionCreateParams; 
 import org.springframework.beans.factory.annotation.Value;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -22,6 +22,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -38,6 +39,12 @@ public class BookingController {
     @Autowired private UserRepository userRepository;
     
     @Autowired
+    private EmailService emailService;
+    
+    @Value("${app.admin.email}")
+    private String adminEmail;
+    
+    @Autowired
     private PaymentRepository paymentRepo;
     
     @Value("${app.frontend.base-url}")
@@ -46,10 +53,31 @@ public class BookingController {
     @Value("${stripe.currency:npr}")
     private String stripeCurrency;
     
+
+    private void sendSafeEmail(String toEmail, String subject, String text) {
+        try {
+            if (toEmail == null || toEmail.trim().isEmpty()) {
+                toEmail = adminEmail;
+                System.out.println("Null email → Fallback to admin: " + toEmail);
+            }
+            emailService.sendSimpleMail(toEmail, subject, text);
+            System.out.println("Email OK → " + toEmail);
+        } catch (Exception e) {
+            System.err.println("Email FAILED → " + toEmail + ": " + e.getMessage());
+          
+        }
+    }
+
+    
     
     private void handlePaymentSuccess(Long bookingId, String gatewayPaymentIdFromCallback) {
         Booking booking = bookingRepo.findById(bookingId)
             .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+        
+        System.out.println("Payment success for booking " + bookingId + 
+                ": Total=" + booking.getTotalAmount() + 
+                ", Platform(5%)=" + booking.getPlatformFee() + 
+                ", Station=" + booking.getStationFee());
 
         // Find latest payment for this booking
         List<Payment> payments = paymentRepo.findByBookingId(bookingId);
@@ -57,7 +85,7 @@ public class BookingController {
             throw new RuntimeException("No payment found for booking " + bookingId);
         }
 
-        Payment payment = payments.get(payments.size() - 1); // naive: last one
+        Payment payment = payments.get(payments.size() - 1); // latest payment
 
         payment.setStatus(PaymentStatus.SUCCESS);
         if (gatewayPaymentIdFromCallback != null) {
@@ -68,8 +96,48 @@ public class BookingController {
 
         booking.setStatus(BookingStatus.CONFIRMED);
         bookingRepo.save(booking);
+        
+       
+        String durationHours = String.format("%.1f hours", Duration.between(booking.getStartTime(), booking.getEndTime()).toMinutes() / 60.0);
+        String timeSlot = booking.getStartTime().format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a - hh:mm a, MMM dd"));
+        
+    
+        String paymentMethodName = payment.getPaymentMethod() != null ? 
+            payment.getPaymentMethod().name() : "Unknown";
+        
+        String evOwnerEmail = booking.getEvOwner().getEmail();
+        String operatorEmail = booking.getStation().getOperator().getEmail();
+        
+        // EV OWNER 
+        sendSafeEmail(
+            evOwnerEmail != null ? evOwnerEmail : adminEmail,
+            "✅ Payment Success - Booking Confirmed #" + bookingId,
+            "Hi " + booking.getEvOwner().getFullname() + ",\n\n" +
+            "Payment successful!\n\n" +
+            "Station: '" + booking.getStation().getName() + "'\n" +
+            "Connector: " + booking.getConnectorType() + "\n" +
+            "Duration: " + durationHours + "\n" +
+            "Time: " + timeSlot + "\n" +
+            "Payment Method: **" + paymentMethodName + "**\n" +
+            "Total Paid: NPR " + booking.getTotalAmount() + "\n\n" +
+            "Thank you for using BijuliYatra!"
+        );
+        
+        // OPERATOR 
+        sendSafeEmail(
+            operatorEmail != null ? operatorEmail : adminEmail,
+            "💰 Payment Received - Booking Confirmed #" + bookingId,
+            "Payment confirmed for your station!\n\n" +
+            "Name: " + booking.getEvOwner().getFullname() + "\n" +
+            "Station: " + booking.getStation().getName() + "\n" +
+            "Method: **" + paymentMethodName + "**\n" +
+            "Duration: " + durationHours + "\n" +
+            "Connector: " + booking.getConnectorType() + "\n" +
+            "Time: " + timeSlot + "\n" +
+            "Amount: NPR " + booking.getTotalAmount()
+        );
     }
-
+ 
     
     private Session createStripeCheckoutSession(Long bookingId, long amountInRs) throws StripeException {
         long minRs = 100;
@@ -77,7 +145,7 @@ public class BookingController {
             amountInRs = minRs;
         }
 
-        long amountInSmallestUnit = amountInRs * 100; // Rs → paisa
+        long amountInSmallestUnit = amountInRs; //NPR TO outside money because Stripe doesn't accept less than 1 dollar
 
         SessionCreateParams params =
             SessionCreateParams.builder()
@@ -190,7 +258,7 @@ public class BookingController {
         }
     }
 
-    // ===================== CREATE BOOKING (Only EV Owner) =====================\
+    //  CREATE BOOKING (Only EV Owner)\
     @PostMapping
     public ResponseEntity<?> createBooking(Authentication auth, @RequestBody Map<String, Object> req) {
         try {
@@ -283,7 +351,15 @@ public class BookingController {
                 estimatedKwh = hours * 15;
             }
             
-            double totalAmount = Math.round(rate * estimatedKwh);
+            double totalAmountDouble = Math.round(rate * estimatedKwh);
+            BigDecimal totalAmount = BigDecimal.valueOf(totalAmountDouble);
+            
+            BigDecimal platformFee= totalAmount.multiply(BigDecimal.valueOf(0.07));
+            BigDecimal stationFee= totalAmount.subtract(platformFee);		
+            System.out.println("Booking fees: Total=" + totalAmount + 
+            	    ", Platform(7%)=" + platformFee + ", Station=" + stationFee);
+            
+            
 
          // 8. Create booking as PENDING (not confirmed until payment success)
             Booking booking = new Booking();
@@ -296,6 +372,8 @@ public class BookingController {
             booking.setActualKwh(0.0);
             booking.setTotalAmount(totalAmount);
             booking.setStatus(BookingStatus.IN_PROGRESS);
+            booking.setPlatformFee(platformFee);      // NEW
+            booking.setStationFee(stationFee);  
 
             // convert String -> enum once
             PaymentMethod methodEnum = PaymentMethod.valueOf(paymentMethod.toUpperCase());
@@ -309,7 +387,7 @@ public class BookingController {
             String gatewayPaymentId = null;
 
             if (methodEnum == PaymentMethod.CARD) {
-                long amountLong = (long) totalAmount;
+                long amountLong = totalAmount.multiply(BigDecimal.valueOf(100)).longValue();  
                 Session session = createStripeCheckoutSession(saved.getId(), amountLong);
                 paymentUrl = session.getUrl();
                 gatewayPaymentId = session.getId();
@@ -332,7 +410,8 @@ public class BookingController {
             payment.setGatewayPaymentId(gatewayPaymentId);
 
             paymentRepo.save(payment);
-
+            
+            
             // 10. Return bookingId + paymentUrl for redirect
             return ResponseEntity.ok(Map.of(
                     "bookingId", saved.getId(),
@@ -340,6 +419,8 @@ public class BookingController {
                     "amount", totalAmount,
                     "paymentMethod", paymentMethod
             ));
+            
+        
 
         } catch (StripeException se) {
             se.printStackTrace();
@@ -349,12 +430,10 @@ public class BookingController {
             return ResponseEntity.status(500).body("Booking/payment init failed: " + e.getMessage());
         }
     }
-    // ===================== CANCEL BOOKING =====================
-    
+    // CANCEL BOOKING 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> cancelBooking(@PathVariable Long id, Authentication auth) {
-        String email = auth.getName(); // or (String) auth.getPrincipal();
-
+        String email = auth.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
@@ -385,11 +464,85 @@ public class BookingController {
 
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepo.save(booking);
+        
+        String evOwnerEmail = booking.getEvOwner().getEmail();
+        String operatorEmail = booking.getStation().getOperator().getEmail();
+
+        // To EV Owner 
+        emailService.sendSimpleMail(
+            evOwnerEmail,
+            "Booking Cancelled - #" + id,
+            "Hi " + booking.getEvOwner().getFullname() + ",\n\n" +  // Use booking.getEvOwner()
+            "Booking #" + id + " at '" + booking.getStation().getName() + 
+            "' cancelled successfully.\n\nOriginal: " + 
+            booking.getStartTime().format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a, MMM dd")) + "\n\nThanks!"
+        );
+
+        // To Operator 
+        emailService.sendSimpleMail(
+            operatorEmail,
+            "Booking Cancelled - #" + id,
+            "Booking #" + id + " at your station cancelled by EV owner " + booking.getEvOwner().getFullname() + "."
+        );
+
+//        // To Admin 
+//        emailService.sendSimpleMail(
+//            adminEmail,
+//            "Booking Cancelled - #" + id,
+//            "Booking #" + id + " cancelled.\nStation: " + booking.getStation().getName() + 
+//            "\nEV Owner: " + booking.getEvOwner().getFullname()
+//        );
 
         System.out.println("  RESULT         = Cancelled OK (200)");
         return ResponseEntity.ok("Booking cancelled successfully");
     }
     
+    
+
+    @PostMapping("/{bookingId}/payment-failed")
+    public ResponseEntity<?> paymentFailed(@PathVariable Long bookingId, Authentication auth) {
+        System.out.println(">>> Payment FAILED → Auto-cancelling booking " + bookingId);
+        
+        String email = auth.getName();
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        Booking booking = bookingRepo.findById(bookingId)
+            .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+
+        // SKIP manual validations for payment fail (auto-cancel allowed)
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            return ResponseEntity.badRequest().body("Already cancelled");
+        }
+
+        // Same cancel logic + emails (EV + Op)
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepo.save(booking);
+        
+        String evOwnerEmail = booking.getEvOwner().getEmail();
+        String operatorEmail = booking.getStation().getOperator().getEmail();
+
+        // EV Owner: Payment failed → cancelled
+        emailService.sendSimpleMail(
+            evOwnerEmail,
+            "❌ Payment Failed - Booking Cancelled #" + bookingId,
+            "Hi " + booking.getEvOwner().getFullname() + ",\n\n" +
+            "Payment failed → booking #" + bookingId + " automatically cancelled.\n\n" +
+            "Station: '" + booking.getStation().getName() + "'\n" +
+            "You can book again anytime.\n\nAmount was: NPR " + booking.getTotalAmount()
+        );
+
+        // Operator: Payment failed → cancelled  
+        emailService.sendSimpleMail(
+            operatorEmail,
+            "❌ Payment Failed - Booking Cancelled #" + bookingId,
+            "Booking #" + bookingId + " cancelled due to payment failure.\n\n" +
+            "EV Owner: " + booking.getEvOwner().getFullname()
+        );
+
+        return ResponseEntity.ok("Payment failed - booking cancelled & notified");
+    }
+
     
     
     //Confirmed Booking after payment
@@ -428,6 +581,31 @@ public class BookingController {
             ex.printStackTrace();
             return ResponseEntity.status(500).body("Failed to process payment success");
         }
+    }
+    
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<?> updateBookingStatus(
+        @PathVariable Long id, 
+        @RequestParam String status, 
+        Authentication auth
+    ) {
+      Booking booking = bookingRepo.findById(id)
+          .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
+
+      // Only EV owner or admin
+      String email = (String) auth.getPrincipal();
+      User user = userRepository.findByEmail(email).orElseThrow();
+      if (!booking.getEvOwner().getUser_id().equals(user.getUser_id()) && 
+          !"ROLE_ADMIN".equals(auth.getAuthorities().iterator().next().getAuthority())) {
+        return ResponseEntity.status(403).body("Not authorized");
+      }
+
+      booking.setStatus(BookingStatus.valueOf(status.toUpperCase()));
+      if ("COMPLETED".equals(status)) {
+        booking.setCompletedAt(booking.getEndTime());
+      }
+      bookingRepo.save(booking);
+      return ResponseEntity.ok("Status updated");
     }
    
 }
