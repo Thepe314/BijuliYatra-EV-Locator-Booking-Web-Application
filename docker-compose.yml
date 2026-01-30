@@ -4,10 +4,10 @@ services:
     image: mysql:8.0
     container_name: bijuliyatra-mysql
     ports:
-      - "3306:3306"  # DBeaver here
+      - "3306:3306"  # DBeaver 
     environment:
-      MYSQL_ROOT_PASSWORD: "Password"        
-      MYSQL_DATABASE: evchargerdb   # Your DB
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}       
+      MYSQL_DATABASE: evchargerdb   #  DB
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -26,8 +26,8 @@ services:
         condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/evchargerdb?useSSL=false&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: "Password"
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
 
   frontend:
