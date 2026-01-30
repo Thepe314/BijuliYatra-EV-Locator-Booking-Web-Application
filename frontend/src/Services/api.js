@@ -1,0 +1,683 @@
+// Enhanced API Services - api.js or services/api.js
+import axios from 'axios';
+
+
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:8080",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+const getToken = () => {
+  const role = localStorage.getItem('activeRole') || 'admin';  // Default to admin
+  return localStorage.getItem(`authToken_${role}`) || localStorage.getItem('authToken');
+};
+
+const setToken = (token, role) => {
+  localStorage.setItem(`authToken_${role}`, token);
+  localStorage.setItem('activeRole', role);
+};
+
+
+// Add request interceptor to add token to headers
+api.interceptors.request.use(
+  config => {
+    const token = getToken();  // Uses activeRole to get `authToken_${role}`
+    if (token) {
+      config.headers['Authorization'] = 'Bearer ' + token;
+    }
+    return config;
+  },
+  error => Promise.reject(error)
+);
+
+// Response interceptor for token refresh
+api.interceptors.response.use(
+  response => response,
+  async error => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const role = localStorage.getItem('activeRole') || 'admin';
+        const newAccessToken = await authService.refresh(role);  // Pass role or current refresh token
+
+        if (newAccessToken) {
+          setToken(newAccessToken, role);  // Stores as `authToken_${role}`
+          originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken;
+          return api(originalRequest);
+        } else {
+          // Use your logout helper or inline:
+          localStorage.removeItem(`authToken_${role}`);
+          localStorage.removeItem('activeRole');
+          window.location.href = "/login";
+        }
+      } catch (refreshError) {
+        const role = localStorage.getItem('activeRole') || 'admin';
+        localStorage.removeItem(`authToken_${role}`);
+        localStorage.removeItem('activeRole');
+        window.location.href = "/login";
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// Auth Services
+export const authService = {
+ login: async (credentials) => {
+  const response = await api.post("/auth/login", credentials);
+  const data = response.data;
+
+  if (data.token) {
+    // Extract role from JWT payload or response
+    let role = 'admin';  // Default
+    try {
+      const parts = data.token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        role = payload.role || data.role || 'admin';
+      }
+    } catch (e) {
+      console.error("Failed to decode JWT payload:", e);
+      role = data.role || 'admin';
+    }
+
+    setToken(data.token, role);  // This sets `authToken_${role}` + activeRole
+
+    // Store user data (keep your existing logic)
+    localStorage.setItem(
+      "user",
+      JSON.stringify({
+        userId: data.userId ?? null,
+        role: role,
+        email: data.email ?? null,
+        fullname: data.fullname ?? null,
+      })
+    );
+  }
+
+  return data;
+},
+
+
+  signupEvOwner: async (userData) => {
+    const response = await api.post("/auth/signup/ev-owner", userData);
+    return response.data;
+  },
+
+  signupOperator: async (userData) => {
+    const response = await api.post("/auth/signup/operator", userData);
+    return response.data;
+  },
+
+  logout: async () => {
+  try {
+    await api.post("/auth/logout");  // Sends current role's JWT to backend
+  } catch (error) {
+    console.error("Logout error:", error);
+  } finally {
+    const role = localStorage.getItem('activeRole') || 'admin';  // Matches JWT role
+    localStorage.removeItem(`authToken_${role}`);
+    localStorage.removeItem('activeRole');
+    localStorage.removeItem("user");
+    window.location.href = "/login";
+  }
+},
+
+  refresh: async (role) => {  // Accept role param from interceptor
+  const activeRole = role || localStorage.getItem('activeRole') || 'admin';
+  const refreshToken = localStorage.getItem(`refreshToken_${activeRole}`);  // If per-role refresh
+  if (!refreshToken) return null;
+
+  try {
+    const response = await api.post("/auth/refresh", { refreshToken });
+    if (response.data.accessToken) {
+      setToken(response.data.accessToken, activeRole);
+      return response.data.accessToken;
+    }
+  } catch (error) {
+    console.error("Refresh token error:", error);
+  }
+  return null;
+},
+
+   requestPasswordReset: async (email) => {
+    const response = await api.post("/auth/forgot-password", { email });
+    return response.data;
+  },
+
+  verifyForgotOtp: async ({ email, otpCode }) => {
+    const response = await api.post("/auth/forgot-password/verify-otp", {
+      email,
+      otpCode
+    });
+    return response.data;
+  },
+
+verifyLoginOtp: async ({ email, otpCode }) => {
+  const response = await api.post("/auth/login/verify-otp", { email, otpCode });
+  const data = response.data;
+
+  if (data.token) {
+    let role = 'admin';
+    try {
+      const parts = data.token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        role = payload.role || data.role || 'admin';
+      }
+    } catch (e) {
+      console.error("Failed to decode JWT payload:", e);
+      role = data.role || 'admin';
+    }
+    setToken(data.token, role);
+
+    localStorage.setItem("user", JSON.stringify({
+      userId: data.userId ?? null,
+      role: role,
+      email: data.email ?? null,
+      fullname: data.fullname ?? null,
+    }));
+  }
+
+  return data;
+},
+
+  resetPassword: async (email, newPassword) => {
+    const response = await api.post("/auth/reset-password", {
+      email,
+      newPassword,
+    });
+    return response.data;
+  },
+
+  isAuthenticated: () => {
+  const role = localStorage.getItem('activeRole') || 'admin';
+  return !!localStorage.getItem(`authToken_${role}`);
+},
+
+
+};
+
+// User Management Services
+export const userService = {
+  listUsers: async (filters = {}) => {
+    try {
+      const response = await api.get("/admin/users", { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      throw error;
+    }
+  },
+
+  getUserById: async (userId) => {
+    try {
+      const response = await api.get(`/admin/users/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      throw error;
+    }
+  },
+
+  getUserByIdE: async (userId) => {
+    try {
+      const response = await api.get(`/users/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      throw error;
+    }
+  },
+
+  getUsersByRole: async (roleType) => {
+    try {
+      const response = await api.get(`/admin/users/role/${roleType}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching users by role:", error);
+      throw error;
+    }
+  },
+
+  countUsersByRole: async (roleType) => {
+    try {
+      const response = await api.get(`/admin/users/count/role/${roleType}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error counting users:", error);
+      throw error;
+    }
+  },
+
+createUser: async (userData) => {
+  try {
+    const response = await api.post("/admin/new", userData);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
+},
+
+  
+
+  updateUser: async (userId, userData) => {
+  try {
+    const response = await api.put(`/admin/edit/${userId}`, userData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating user:", error);
+    throw error;
+  }
+},
+
+ deleteUser: async (userId) => {
+  try {
+    const response = await api.delete(`/admin/delete/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    throw error;
+  }
+},
+
+  updateUserStatus: async (userId, status) => {
+    try {
+      const response = await api.patch(`/admin/users/${userId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      console.error("Error changing user status:", error);
+      throw error;
+    }
+  },
+
+  getOperators: async () => {
+  const response = await api.get("/admin/role/CHARGER_OPERATOR");
+  return response.data;
+  
+},
+ getCurrentProfile: async () => {
+    const res = await api.get('/users/me');
+    return res.data;
+  },
+
+  updateCurrentProfile: async (payload) => {
+    const res = await api.put('/users/me', payload);
+    return res.data;
+  },
+};
+
+export const stationService = {
+  // Operator endpoints
+  listStationOperator: async (filters = {}) => {
+    try {
+      const response = await api.get("/operator/stations", { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching operator stations:", error);
+      throw error;
+    }
+  },
+
+   // Owner endpoints
+  listStationsForOwner: async (filters = {}) => {
+    try {
+      const response = await api.get("/evowner/stations", { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching operator stations:", error);
+      throw error;
+    }
+  },
+
+  // Admin endpoints
+  listStationAdmin: async (filters = {}) => {
+    try {
+      const response = await api.get("/admin/stations", { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching admin stations:", error);
+      throw error;
+    }
+  },
+
+  
+
+  createStation: async (stationData) => {
+    try {
+      const response = await api.post("/operator/stations", stationData);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating station:", error);
+      throw error;
+    }
+  },
+
+   createStationAdmin: async (stationData) => {
+    try {
+      const response = await api.post("/admin/stations", stationData);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating station:", error);
+      throw error;
+    }
+  },
+
+  updateStation: async (stationId, stationData) => {
+    try {
+      const response = await api.put(`/operator/stations/${stationId}`, stationData);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating station:", error);
+      throw error;
+    }
+  },
+  getStationById: async (id) => {
+  const res = await api.get(`/admin/stations/${id}`);
+  return res.data;
+},
+
+ getStationByIdO: async (id) => {
+  const res = await api.get(`/operator/stations/${id}`);
+  return res.data;
+},
+
+getStationByIdE: async (id) => {
+  const res = await api.get(`/evowner/${id}`);  
+  return res.data;
+},
+
+  updateStationAdmin: async (id, data) => {
+    const res = await api.put(`/admin/stations/edit/${id}`, data);
+    return res.data;
+  },
+
+updateStationOperator: async (id, data) => {
+  const res = await api.put(`/operator/stations/edit/${id}`, data);
+  return res.data;
+},
+  // Delete for operators - only their own stations
+  deleteStation: async (stationId) => {
+    try {
+      const response = await api.delete(`/operator/stations/${stationId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting station:", error);
+      throw error;
+    }
+  },
+
+  // Delete for admin - any station
+  deleteStationAdmin: async (stationId) => {
+    try {
+      const response = await api.delete(`/admin/stations/${stationId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting station (admin):", error);
+      throw error;
+    }
+  },
+
+  getStationStats: async (stationId) => {
+    try {
+      const response = await api.get(`/operator/stations/${stationId}/stats`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching station stats:", error);
+      throw error;
+    }
+  },
+
+listStationsForOwner: async (filters = {}) => {
+  try {
+    const response = await api.get("/evowner/station", { params: filters });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching EV owner stations:", error);
+    throw error;
+  }
+},
+
+listNearbyStations: async ({ lat, lng }) => {
+  const res = await api.get('/stations/nearby', {
+    params: { lat, lng },
+  });
+  return res;
+},
+
+
+
+};
+
+
+
+
+// Booking Management Services
+export const bookingService = {
+  listBookings: async (filters = {}) => {
+    try {
+      const response = await api.get("/bookings", { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      throw error;
+    }
+  },
+
+  //Admin
+  listBookingsAdmin: async (filters = {}) => {
+  try {
+    const response = await api.get("/admin/bookings", {
+      params: {
+        page: filters.page ?? 0,
+        size: filters.limit ?? 10,
+        sort: filters.sort ?? "bookedAt,desc",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching admin bookings:", error);
+    throw error;
+  }
+},
+
+
+listBookingsEv: async (filters = {}) => {
+    try {
+      const response = await api.get("/bookings", { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      throw error;
+    }
+  },
+
+getActiveBookingsCount: async (stationIds) => {
+  try {
+    const response = await api.post("/admin/bookings/active-counts", stationIds);
+    return response.data; // Returns: { "1": 1, "2": 0, "3": 2 }
+  } catch (error) {
+    console.error("Error fetching active bookings count:", error);
+    return {};
+  }
+},
+
+  getRecentBookings: async (limit = 5, timeRange = 'week') => {
+    try {
+      const response = await api.get("/bookings/recent", { params: { limit, timeRange } });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching recent bookings:", error);
+      throw error;
+    }
+  },
+
+  getBookingById: async (bookingId) => {
+    try {
+      const response = await api.get(`/bookings/${bookingId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching booking:", error);
+      throw error;
+    }
+  },
+
+  createBooking: async (bookingData) => {
+  try {
+    const response = await api.post("/bookings", bookingData);
+    // backend returns: { bookingId, paymentUrl, amount, paymentMethod }
+    return response.data;
+  } catch (error) {
+    console.error("Error creating booking:", error);
+    throw error;
+  }
+},
+
+  updateBooking: async (bookingId, bookingData) => {
+    try {
+      const response = await api.put(`/bookings/${bookingId}`, bookingData);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating booking:", error);
+      throw error;
+    }
+  },
+
+  confirmBooking: async (bookingId) => {
+  const res = await api.patch(`/bookings/${bookingId}/confirm`);
+  return res.data;
+},
+
+  cancelBooking: async (bookingId) => {
+    try {
+      const response = await api.delete(`/bookings/${bookingId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      throw error;
+    }
+  },
+  getStationBookings: async (stationId, date) => {
+  const response = await api.get(`/stations/${stationId}/bookings`, {
+    params: { date }
+  });
+  return response;
+},
+
+getAvailability: async (stationId, date) => {
+  const res = await api.get(`/bookings/stations/${stationId}/bookings`, {
+    params: { date },
+  });
+  return res.data;
+},
+
+markPaymentSuccess: async (bookingId, gatewayPaymentId) => {
+  const url = `/bookings/${bookingId}/payment-success`;
+  console.log("=== markPaymentSuccess CALL ===");
+  console.log("URL =", url);
+  console.log("gatewayPaymentId param =", gatewayPaymentId);
+  console.log("================================");
+  const res = await api.post(url, null, {
+    params: gatewayPaymentId ? { gatewayPaymentId } : {},
+  });
+  return res.data;
+},
+
+ listAdminEarnings: async () => {
+    const response = await api.get('/admin/earnings');
+    return response.data;
+  },
+  
+};
+export const paymentService = {
+  // GET /payments/my -> current user's payments
+  async listMyPayments() {
+    const res = await api.get('/payments/my');
+    return res.data;
+  },
+
+  // (optional) GET /payments/:id
+  async getPaymentById(id) {
+    const res = await api.get(`/payments/${id}`);
+    return res.data;
+  },
+};
+
+// Dashboard/Analytics Services
+export const analyticsService = {
+  getDashboardStats: async (timeRange = 'week') => {
+    try {
+      const response = await api.get("/admin/dashboard/stats", { params: { timeRange } });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      throw error;
+    }
+  },
+
+  getRevenueData: async (timeRange = 'week') => {
+    try {
+      const response = await api.get("/admin/analytics/revenue", { params: { timeRange } });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching revenue data:", error);
+      throw error;
+    }
+  },
+
+  getEnergyData: async (timeRange = 'week') => {
+    try {
+      const response = await api.get("/admin/analytics/energy", { params: { timeRange } });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching energy data:", error);
+      throw error;
+    }
+  },
+
+  getUserGrowth: async (timeRange = 'week') => {
+    try {
+      const response = await api.get("/admin/analytics/user-growth", { params: { timeRange } });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user growth data:", error);
+      throw error;
+    }
+  },
+};
+// services/vehicleService.js
+export const vehicleService = {
+
+   listVehicles: async () => {
+    try {
+      console.log('Fetching vehicles...'); // Debug
+      const response = await api.get('/ev-owner/vehicles');
+      console.log('Vehicles response:', response.data); // Debug
+      return response;
+    } catch (error) {
+      console.error('List vehicles error:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+ createVehicle: async (data) => api.post('/ev-owner/vehicles', data), 
+ updateVehicle: async (id, data) => api.put(`/ev-owner/vehicles/${id}`, data),
+  deleteVehicle: async (id) => api.delete(`/ev-owner/vehicles/${id}`),
+};
+
+// services/favoriteService.js
+export const favoriteService = {
+  getMyFavorites: () => api.get('/evowner/favorites')
+};
+
+
+
+
+
+export { api };

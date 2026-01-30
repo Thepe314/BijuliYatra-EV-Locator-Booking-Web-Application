@@ -1,0 +1,6 @@
+# pack-refs with: peeled fully-peeled sorted 
+ef463080e2a1f7169295d1de95471daf8d9f356d refs/heads/EvBranch
+dfcf414a524053a28308590a25e1c602474d1b50 refs/heads/main
+ef463080e2a1f7169295d1de95471daf8d9f356d refs/remotes/origin/EvBranch
+dfcf414a524053a28308590a25e1c602474d1b50 refs/remotes/origin/HEAD
+dfcf414a524053a28308590a25e1c602474d1b50 refs/remotes/origin/main
